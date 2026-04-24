@@ -1,4 +1,4 @@
-package com.app.lokacara.ui.screen
+package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -412,7 +413,7 @@ fun EventCard(event: Event) {
 }
 
 @Composable
-fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+fun DetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
         Icon(icon, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(6.dp))
@@ -429,41 +430,84 @@ fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: Stri
 
 @Composable
 fun FloatingBottomNav() {
+    var selectedItem by remember { mutableIntStateOf(0) }
+    
     Box(
         modifier = Modifier
-            .width(320.dp) // Reduced width
-            .height(64.dp) // Reduced height
-            .shadow(elevation = 12.dp, shape = RoundedCornerShape(32.dp))
-            .background(Color.White, RoundedCornerShape(32.dp)),
-        contentAlignment = Alignment.Center
+            .width(338.dp) // SVG Width
+            .height(100.dp), // Height to allow protrusion
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+        // The White Pill Bar
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(71.dp), // SVG Height
+            shape = RoundedCornerShape(35.5.dp), // SVG rx
+            color = Color.White,
+            shadowElevation = 8.dp
         ) {
-            Icon(Icons.Default.Home, null, tint = SvgPrimaryBlue, modifier = Modifier.size(24.dp))
-            Icon(Icons.Outlined.Explore, null, tint = Color.Gray, modifier = Modifier.size(22.dp))
-            
-            Spacer(modifier = Modifier.width(48.dp)) // Space for central button
-            
-            Icon(Icons.Outlined.ConfirmationNumber, null, tint = Color.Gray, modifier = Modifier.size(22.dp))
-            Icon(Icons.Outlined.Person, null, tint = Color.Gray, modifier = Modifier.size(22.dp))
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Home Icon
+                NavIconItem(Icons.Default.Home, selectedItem == 0) { selectedItem = 0 }
+                
+                // Explore Icon
+                NavIconItem(Icons.Outlined.Explore, selectedItem == 1) { selectedItem = 1 }
+                
+                // Gap for the FAB
+                Spacer(modifier = Modifier.width(64.dp))
+                
+                // Tickets Icon
+                NavIconItem(Icons.Outlined.ConfirmationNumber, selectedItem == 2) { selectedItem = 2 }
+                
+                // Profile Icon
+                NavIconItem(Icons.Outlined.Person, selectedItem == 3) { selectedItem = 3 }
+            }
         }
         
-        // Repaired Central "Add" Button
+        // The FAB (Overlapping the bar)
         Box(
             modifier = Modifier
-                .size(54.dp)
-                .offset(y = (-18).dp) // Clean protrusion
+                .size(64.dp) // SVG size
+                .offset(y = (12).dp) // Lowered (turunin dikit) from -19dp
+                .align(Alignment.TopCenter)
+                .shadow(elevation = 12.dp, shape = CircleShape)
                 .background(SvgPrimaryBlue, CircleShape)
-                .shadow(elevation = 4.dp, shape = CircleShape)
                 .clickable { /* Action */ },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(28.dp))
+            // White circle with blue plus (Matches the "cut-out" look of the SVG)
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = SvgPrimaryBlue,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
+}
+
+@Composable
+fun NavIconItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = if (isSelected) SvgPrimaryBlue else Color(0xFF999999),
+        modifier = Modifier
+            .size(26.dp)
+            .clickable { onClick() }
+    )
 }
 
 @Preview(showBackground = true)
