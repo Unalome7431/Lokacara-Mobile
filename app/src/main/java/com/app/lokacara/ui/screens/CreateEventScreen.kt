@@ -32,7 +32,10 @@ import com.app.lokacara.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateEventScreen(onBack: () -> Unit = {}) {
+fun CreateEventScreen(
+    onBack: () -> Unit = {},
+    onPublish: () -> Unit = {}
+) {
     val lightBlueBg = Color(0xFFD6E4FF)
     val darkerBlueBg = Color(0xFFA1C1FF)
     val primaryOrange = Color(0xFFFFAA00)
@@ -281,7 +284,7 @@ fun CreateEventScreen(onBack: () -> Unit = {}) {
 
         // 8. Tombol Terbitkan Event
         Button(
-            onClick = { /* TODO: Aksi Terbitkan Event */ },
+            onClick = { onPublish() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

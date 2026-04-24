@@ -29,7 +29,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 
 // Colors extracted from SVG
@@ -51,85 +54,80 @@ data class Event(
 )
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController) {
     var selectedLocation by remember { mutableStateOf("Solo") }
     var selectedCategory by remember { mutableStateOf("Semua") }
-    var showCreateScreen by remember { mutableStateOf(false) }
 
-    if (showCreateScreen) {
-        CreateEventScreen(onBack = { showCreateScreen = false })
-    } else {
-        val events = listOf(
-            Event(
-                "Seminar Ai di Kota Surakarta",
-                "Acara ini dibuat untuk memenuhi tugas mata kuliah kecerdasan buatan...",
-                "25 April 2026",
-                "Pura Mangkunegaran",
-                "Gratis",
-                R.drawable.seminar,
-                "Teknologi"
-            ),
-            Event(
-                "Sound of Solo Festival",
-                "Konser musik tahunan yang menghadirkan musisi papan atas Indonesia...",
-                "2 Mei 2026",
-                "Benteng Vastenburg",
-                "Rp 50.000",
-                R.drawable.seminar_2,
-                "Musik"
-            ),
-            Event(
-                "Fullstack Workshop 2026",
-                "Belajar membangun aplikasi modern dari zero ke hero bersama mentor expert...",
-                "10 Mei 2026",
-                "Solo Techno Park",
-                "Gratis",
-                R.drawable.seminar_3,
-                "Teknologi"
-            )
+    val events = listOf(
+        Event(
+            "Seminar Ai di Kota Surakarta",
+            "Acara ini dibuat untuk memenuhi tugas mata kuliah kecerdasan buatan...",
+            "25 April 2026",
+            "Pura Mangkunegaran",
+            "Gratis",
+            R.drawable.seminar,
+            "Teknologi"
+        ),
+        Event(
+            "Sound of Solo Festival",
+            "Konser musik tahunan yang menghadirkan musisi papan atas Indonesia...",
+            "2 Mei 2026",
+            "Benteng Vastenburg",
+            "Rp 50.000",
+            R.drawable.seminar_2,
+            "Musik"
+        ),
+        Event(
+            "Fullstack Workshop 2026",
+            "Belajar membangun aplikasi modern dari zero ke hero bersama mentor expert...",
+            "10 Mei 2026",
+            "Solo Techno Park",
+            "Gratis",
+            R.drawable.seminar_3,
+            "Teknologi"
         )
+    )
 
-        // Filter events based on category
-        val filteredEvents = if (selectedCategory == "Semua") {
-            events
-        } else {
-            events.filter { it.category == selectedCategory }
+    // Filter events based on category
+    val filteredEvents = if (selectedCategory == "Semua") {
+        events
+    } else {
+        events.filter { it.category == selectedCategory }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
+        Scaffold(
+            containerColor = Color.Transparent
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                item { HomeHeader() }
+                item { PopularEventSection() }
+                item {
+                    NearbyEventsHeader(
+                        currentLocation = selectedLocation,
+                        selectedCategory = selectedCategory,
+                        onLocationChange = { selectedLocation = it },
+                        onCategoryChange = { selectedCategory = it }
+                    )
+                }
+                items(filteredEvents) { event ->
+                    EventCard(event)
+                }
+                item { Spacer(modifier = Modifier.height(110.dp)) }
+            }
         }
 
-        Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
-            Scaffold(
-                containerColor = Color.Transparent
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    item { HomeHeader() }
-                    item { PopularEventSection() }
-                    item {
-                        NearbyEventsHeader(
-                            currentLocation = selectedLocation,
-                            selectedCategory = selectedCategory,
-                            onLocationChange = { selectedLocation = it },
-                            onCategoryChange = { selectedCategory = it }
-                        )
-                    }
-                    items(filteredEvents) { event ->
-                        EventCard(event)
-                    }
-                    item { Spacer(modifier = Modifier.height(110.dp)) }
-                }
-            }
-
-            // Floating Bottom Nav Bar
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
-            ) {
-                FloatingBottomNav(onCreateClick = { showCreateScreen = true })
-            }
+        // Floating Bottom Nav Bar
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+        ) {
+            FloatingBottomNav(navController = navController)
         }
     }
 }
@@ -304,7 +302,7 @@ fun NearbyEventsHeader(
                 ) {
                     locations.forEach { location ->
                         DropdownMenuItem(
-                            text = { Text(location, fontFamily = PlusJakartaSansFont) },
+                            text = { Text(location, fontFamily = PlusJakartaSansFont, color = Color.Black) },
                             onClick = {
                                 onLocationChange(location)
                                 expanded = false
@@ -434,21 +432,18 @@ fun DetailItem(icon: ImageVector, text: String) {
 }
 
 @Composable
-fun FloatingBottomNav(onCreateClick: () -> Unit) {
-    var selectedItem by remember { mutableIntStateOf(0) }
-
+fun FloatingBottomNav(navController: NavController) {
     Box(
         modifier = Modifier
-            .width(338.dp) // SVG Width
-            .height(100.dp), // Height to allow protrusion
+            .width(338.dp)
+            .height(100.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // The White Pill Bar
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(71.dp), // SVG Height
-            shape = RoundedCornerShape(35.5.dp), // SVG rx
+                .height(71.dp),
+            shape = RoundedCornerShape(35.5.dp),
             color = Color.White,
             shadowElevation = 8.dp
         ) {
@@ -457,24 +452,20 @@ fun FloatingBottomNav(onCreateClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Home Icon
-                NavIconItem(Icons.Default.Home, selectedItem == 0) { selectedItem = 0 }
-
-                // Explore Icon
-                NavIconItem(Icons.Outlined.Explore, selectedItem == 1) { selectedItem = 1 }
-
-                // Gap for the FAB
+                NavIconItem(Icons.Default.Home, true) {
+                    // Already on Home
+                }
+                NavIconItem(Icons.Outlined.Explore, false) {
+                    navController.navigate(Screen.Explore.route)
+                }
                 Spacer(modifier = Modifier.width(64.dp))
-
-                // Tickets Icon
-                NavIconItem(Icons.Outlined.ConfirmationNumber, selectedItem == 2) { selectedItem = 2 }
-
-                // Profile Icon
-                NavIconItem(Icons.Outlined.Person, selectedItem == 3) { selectedItem = 3 }
+                NavIconItem(Icons.Outlined.ConfirmationNumber, false) { }
+                NavIconItem(Icons.Outlined.Person, false) {
+                    navController.navigate(Screen.Profile.route)
+                }
             }
         }
 
-        // Native FAB implementation replacing the SVGs
         Box(
             modifier = Modifier
                 .size(64.dp)
@@ -483,12 +474,10 @@ fun FloatingBottomNav(onCreateClick: () -> Unit) {
                 .shadow(elevation = 12.dp, shape = CircleShape)
                 .background(SvgPrimaryBlue, CircleShape)
                 .clickable {
-                    selectedItem = 4
-                    onCreateClick()
+                    navController.navigate(Screen.CreateEvent.route)
                 },
             contentAlignment = Alignment.Center
         ) {
-            // White circle with blue plus
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -522,6 +511,6 @@ fun NavIconItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun HomeScreenPreview() {
     LokacaraMobileTheme {
-        HomeScreen()
+        HomeScreen(navController = rememberNavController())
     }
 }

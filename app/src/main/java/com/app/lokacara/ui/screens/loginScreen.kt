@@ -22,7 +22,8 @@ import com.app.lokacara.ui.theme.*
 
 @Composable
 fun LoginScreen(
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -95,7 +96,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { },
+            onClick = { onLoginSuccess() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -126,7 +127,8 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     LokacaraMobileTheme {
         LoginScreen(
-            onNavigateToRegister = {}
+            onNavigateToRegister = {},
+            onLoginSuccess = {}
         )
     }
 }

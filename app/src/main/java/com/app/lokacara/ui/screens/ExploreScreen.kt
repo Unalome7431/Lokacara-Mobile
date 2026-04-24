@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,15 +27,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.theme.*
-import androidx.compose.foundation.Image
 
 @Composable
-fun ExploreScreen() {
+fun ExploreScreen(navController: NavController) {
     // State untuk mode pencarian
     var isSearchExpanded by remember { mutableStateOf(false) }
 
@@ -107,7 +109,7 @@ fun ExploreScreen() {
         }
 
         Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) {
-            BottomNavbar()
+            BottomNavbar(navController = navController)
         }
     }
 }
@@ -308,6 +310,6 @@ private fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit)
 @Composable
 fun ExploreScreenPreview() {
     LokacaraMobileTheme {
-        ExploreScreen()
+        ExploreScreen(navController = rememberNavController())
     }
 }

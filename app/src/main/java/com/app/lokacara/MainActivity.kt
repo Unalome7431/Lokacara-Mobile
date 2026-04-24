@@ -8,8 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.app.lokacara.ui.screens.HomeScreen
-import com.app.lokacara.ui.screens.OnboardingScreen
+import com.app.lokacara.ui.navigation.NavGraph
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,13 +17,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LokacaraMobileTheme {
-                var showSplash by remember { mutableStateOf(true) }
-
-                if (showSplash) {
-                    OnboardingScreen(onFinish = { showSplash = false })
-                } else {
-                    HomeScreen()
-                }
+                NavGraph()
             }
         }
     }

@@ -21,11 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.app.lokacara.ui.theme.* // Import warna dari theme
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.theme.*
 
 @Composable
-fun BottomNavbar() {
-    var selectedItem by remember { mutableIntStateOf(0) }
+fun BottomNavbar(navController: NavController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Box(
         modifier = Modifier
@@ -48,11 +53,25 @@ fun BottomNavbar() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                NavIconItem(Icons.Default.Home, selectedItem == 0) { selectedItem = 0 }
-                NavIconItem(Icons.Outlined.Explore, selectedItem == 1) { selectedItem = 1 }
+                NavIconItem(Icons.Default.Home, currentRoute == Screen.Home.route) {
+                    if (currentRoute != Screen.Home.route) {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }
+                }
+                NavIconItem(Icons.Outlined.Explore, currentRoute == Screen.Explore.route) {
+                    if (currentRoute != Screen.Explore.route) {
+                        navController.navigate(Screen.Explore.route)
+                    }
+                }
                 Spacer(modifier = Modifier.width(64.dp))
-                NavIconItem(Icons.Outlined.ConfirmationNumber, selectedItem == 2) { selectedItem = 2 }
-                NavIconItem(Icons.Outlined.Person, selectedItem == 3) { selectedItem = 3 }
+                NavIconItem(Icons.Outlined.ConfirmationNumber, false) { /* Action Tickets */ }
+                NavIconItem(Icons.Outlined.Person, currentRoute == Screen.Profile.route) {
+                    if (currentRoute != Screen.Profile.route) {
+                        navController.navigate(Screen.Profile.route)
+                    }
+                }
             }
         }
 
@@ -62,8 +81,10 @@ fun BottomNavbar() {
                 .offset(y = (12).dp)
                 .align(Alignment.TopCenter)
                 .shadow(elevation = 12.dp, shape = CircleShape)
-                .background(Primary500, CircleShape) // Pakai Primary500
-                .clickable { /* Action (e.g., Create Event) */ },
+                .background(Primary500, CircleShape)
+                .clickable {
+                    navController.navigate(Screen.CreateEvent.route)
+                },
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -75,7 +96,7 @@ fun BottomNavbar() {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    tint = Primary500, // Pakai Primary500
+                    tint = Primary500,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -100,7 +121,7 @@ private fun NavIconItem(icon: ImageVector, isSelected: Boolean, onClick: () -> U
 fun BottomNavbarPreview() {
     LokacaraMobileTheme {
         Box(modifier = Modifier.padding(24.dp)) {
-            BottomNavbar()
+            BottomNavbar(navController = rememberNavController())
         }
     }
 }
