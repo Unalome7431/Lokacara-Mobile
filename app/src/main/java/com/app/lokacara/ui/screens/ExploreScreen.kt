@@ -108,7 +108,7 @@ fun ExploreScreen(navController: NavController) {
             }
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) {
+        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             BottomNavbar(navController = navController)
         }
     }

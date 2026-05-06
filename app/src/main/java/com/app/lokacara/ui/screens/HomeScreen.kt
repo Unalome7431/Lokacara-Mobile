@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
+import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 
@@ -121,13 +122,12 @@ fun HomeScreen(navController: NavController) {
             }
         }
 
-        // Floating Bottom Nav Bar
+        // Bottom Nav Bar
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
         ) {
-            FloatingBottomNav(navController = navController)
+            BottomNavbar(navController = navController)
         }
     }
 }
@@ -429,82 +429,6 @@ fun DetailItem(icon: ImageVector, text: String) {
             )
         )
     }
-}
-
-@Composable
-fun FloatingBottomNav(navController: NavController) {
-    Box(
-        modifier = Modifier
-            .width(338.dp)
-            .height(100.dp),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(71.dp),
-            shape = RoundedCornerShape(35.5.dp),
-            color = Color.White,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                NavIconItem(Icons.Default.Home, true) {
-                    // Already on Home
-                }
-                NavIconItem(Icons.Outlined.Explore, false) {
-                    navController.navigate(Screen.Explore.route)
-                }
-                Spacer(modifier = Modifier.width(64.dp))
-                NavIconItem(Icons.Outlined.ConfirmationNumber, false) { }
-                NavIconItem(Icons.Outlined.Person, false) {
-                    navController.navigate(Screen.Profile.route)
-                }
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .offset(y = (12).dp)
-                .align(Alignment.TopCenter)
-                .shadow(elevation = 12.dp, shape = CircleShape)
-                .background(SvgPrimaryBlue, CircleShape)
-                .clickable {
-                    navController.navigate(Screen.CreateEvent.route)
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create Event",
-                    tint = SvgPrimaryBlue,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun NavIconItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = if (isSelected) SvgPrimaryBlue else Color(0xFF999999),
-        modifier = Modifier
-            .size(26.dp)
-            .clickable { onClick() }
-    )
 }
 
 @Preview(showBackground = true)
