@@ -31,27 +31,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 
-// Colors extracted from SVG
-val SvgBackground = Color(0xFFFAF8FF)
-val SvgPrimaryBlue = Color(0xFF0D59F2)
-val SvgOrange = Color(0xFFFFAA00)
-val SvgTextDark = Color(0xFF333333)
-val SvgChipGray = Color(0xFFCCCCCC)
-
 // Data model for Event
 data class Event(
+    val id: String, // Added unique ID for performance (keys)
     val title: String,
     val description: String,
     val date: String,
     val location: String,
     val price: String,
     val imageRes: Int,
-    val category: String // Added category for filtering
+    val category: String
 )
 
 @Composable
@@ -59,75 +54,49 @@ fun HomeScreen(navController: NavController) {
     var selectedLocation by remember { mutableStateOf("Solo") }
     var selectedCategory by remember { mutableStateOf("Semua") }
 
-    val events = listOf(
-        Event(
-            "Seminar Ai di Kota Surakarta",
-            "Acara ini dibuat untuk memenuhi tugas mata kuliah kecerdasan buatan...",
-            "25 April 2026",
-            "Pura Mangkunegaran",
-            "Gratis",
-            R.drawable.seminar,
-            "Teknologi"
-        ),
-        Event(
-            "Sound of Solo Festival",
-            "Konser musik tahunan yang menghadirkan musisi papan atas Indonesia...",
-            "2 Mei 2026",
-            "Benteng Vastenburg",
-            "Rp 50.000",
-            R.drawable.seminar_2,
-            "Musik"
-        ),
-        Event(
-            "Fullstack Workshop 2026",
-            "Belajar membangun aplikasi modern dari zero ke hero bersama mentor expert...",
-            "10 Mei 2026",
-            "Solo Techno Park",
-            "Gratis",
-            R.drawable.seminar_3,
-            "Teknologi"
+    // Optimization: Memoize events list
+    val events = remember {
+        listOf(
+            Event("1", "Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah kecerdasan buatan...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar, "Teknologi"),
+            Event("2", "Sound of Solo Festival", "Konser musik tahunan yang menghadirkan musisi papan atas Indonesia...", "2 Mei 2026", "Benteng Vastenburg", "Rp 50.000", R.drawable.seminar_2, "Musik"),
+            Event("3", "Fullstack Workshop 2026", "Belajar membangun aplikasi modern dari zero ke hero bersama mentor expert...", "10 Mei 2026", "Solo Techno Park", "Gratis", R.drawable.seminar_3, "Teknologi")
         )
-    )
+    }
 
-    // Filter events based on category
-    val filteredEvents = if (selectedCategory == "Semua") {
-        events
-    } else {
-        events.filter { it.category == selectedCategory }
+    // Optimization: Use remember for filtered events to avoid recalculation on every recomposition
+    val filteredEvents = remember(selectedCategory, events) {
+        if (selectedCategory == "Semua") {
+            events
+        } else {
+            events.filter { it.category == selectedCategory }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
-        Scaffold(
-            containerColor = Color.Transparent
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                item { HomeHeader() }
-                item { PopularEventSection() }
-                item {
-                    NearbyEventsHeader(
-                        currentLocation = selectedLocation,
-                        selectedCategory = selectedCategory,
-                        onLocationChange = { selectedLocation = it },
-                        onCategoryChange = { selectedCategory = it }
-                    )
-                }
-                items(filteredEvents) { event ->
-                    EventCard(event)
-                }
-                item { Spacer(modifier = Modifier.height(110.dp)) }
-            }
-        }
-
-        // Bottom Nav Bar
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
         ) {
-            BottomNavbar(navController = navController)
+            item(key = "header", contentType = "Header") { HomeHeader() }
+            item(key = "popular_section", contentType = "Popular") { PopularEventSection() }
+            item(key = "nearby_header", contentType = "NearbyHeader") {
+                NearbyEventsHeader(
+                    currentLocation = selectedLocation,
+                    selectedCategory = selectedCategory,
+                    onLocationChange = { selectedLocation = it },
+                    onCategoryChange = { selectedCategory = it }
+                )
+            }
+            
+            // Optimization: Use unique keys and contentType for better recycling
+            items(
+                items = filteredEvents,
+                key = { it.id },
+                contentType = { "EventCard" }
+            ) { event ->
+                EventCard(event)
+            }
+            
+            item(key = "footer_spacer") { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 }
@@ -166,10 +135,13 @@ fun HomeHeader() {
 
 @Composable
 fun PopularEventSection() {
-    val popularEvents = listOf(
-        Event("Yogyakarta Concert", "Rabu 14 April 2026 | 13.00", "Yogyakarta Arena", "", "", R.drawable.candi, "Musik"),
-        Event("Tech Summit 2026", "Senin 20 April 2026 | 09.00", "Solo Convention Center", "", "", R.drawable.seminar_3, "Teknologi")
-    )
+    // Optimization: Memoize the list
+    val popularEvents = remember {
+        listOf(
+            Event("p1", "Yogyakarta Concert", "Rabu 14 April 2026 | 13.00", "Yogyakarta Arena", "", "", R.drawable.candi, "Musik"),
+            Event("p2", "Tech Summit 2026", "Senin 20 April 2026 | 09.00", "Solo Convention Center", "", "", R.drawable.seminar_3, "Teknologi")
+        )
+    }
 
     // Infinite looping setup
     val pageCount = Int.MAX_VALUE
@@ -179,10 +151,12 @@ fun PopularEventSection() {
         pageCount = { pageCount }
     )
 
-    // Auto-slide effect (every 3 seconds)
-    LaunchedEffect(key1 = pagerState.currentPage) {
-        kotlinx.coroutines.delay(3000)
-        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    // Optimization: Ensure LaunchedEffect doesn't trigger unnecessarily
+    LaunchedEffect(Unit) {
+        while(true) {
+            kotlinx.coroutines.delay(4000) // Slightly longer delay for better UX
+            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+        }
     }
 
     Column {
@@ -201,9 +175,10 @@ fun PopularEventSection() {
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            // Optimization: Limit offscreen pages
+            beyondViewportPageCount = 1
         ) { page ->
-            // Map the infinite page index back to our 0-3 list
             val event = popularEvents[page % popularEvents.size]
 
             Box(
@@ -213,12 +188,14 @@ fun PopularEventSection() {
                     .clip(RoundedCornerShape(24.dp))
                     .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
             ) {
-                Image(
-                    painter = painterResource(id = event.imageRes),
+                // Optimization: Use AsyncImage for better resource management
+                AsyncImage(
+                    model = event.imageRes,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+                
                 // Gradient Overlay
                 Box(modifier = Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
@@ -266,7 +243,8 @@ fun NearbyEventsHeader(
     onCategoryChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val locations = listOf("Solo", "Yogyakarta", "Semarang", "Jakarta")
+    val locations = remember { listOf("Solo", "Yogyakarta", "Semarang", "Jakarta") }
+    val categories = remember { listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi") }
 
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Row(
@@ -313,13 +291,12 @@ fun NearbyEventsHeader(
             }
         }
 
-        val categories = listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi")
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(categories) { category ->
+            items(categories, key = { it }) { category ->
                 val isSelected = category == selectedCategory
                 Surface(
                     color = if (isSelected) SvgOrange else SvgChipGray.copy(alpha = 0.3f),
@@ -354,8 +331,9 @@ fun EventCard(event: Event) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Image(
-                painter = painterResource(id = event.imageRes),
+            // Optimization: AsyncImage for smooth scrolling
+            AsyncImage(
+                model = event.imageRes,
                 contentDescription = null,
                 modifier = Modifier
                     .size(110.dp)
@@ -431,10 +409,16 @@ fun DetailItem(icon: ImageVector, text: String) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HomeScreenPreview() {
     LokacaraMobileTheme {
-        HomeScreen(navController = rememberNavController())
+        Scaffold(
+            bottomBar = { BottomNavbar(navController = rememberNavController()) }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                HomeScreen(navController = rememberNavController())
+            }
+        }
     }
 }

@@ -1,18 +1,18 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -21,164 +21,165 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
+
+@Immutable
+data class NavigationItem(
+    val route: String,
+    val icon: ImageVector,
+    val contentDescription: String
+)
 
 @Composable
 fun BottomNavbar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        HorizontalDivider(
-            thickness = 0.5.dp,
-            color = Color.Gray.copy(alpha = 0.2f)
+    val items = remember {
+        listOf(
+            NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Home"),
+            NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Explore"),
+            NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Create"),
+            NavigationItem("tickets", Icons.Outlined.ConfirmationNumber, "Tickets"),
+            NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profile")
         )
-        Surface(
-            color = Color.White,
-            tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxWidth()
+    }
+
+    // Optimization: Memoize the navigation handler to ensure stability across recompositions
+    val onNavigate: (String) -> Unit = remember(navController) {
+        { route ->
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+
+    // Optimization: Unified background color (Always White)
+    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+        HorizontalDivider(thickness = 0.5.dp, color = Gray200)
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AnimatedNavItem(
-                    icon = Icons.Default.Home,
-                    isSelected = currentRoute == Screen.Home.route,
-                    onClick = {
-                        if (currentRoute != Screen.Home.route) {
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
+            items.forEachIndexed { index, item ->
+                val isSelected = currentRoute == item.route
+                val isCenter = index == 2
+
+                if (isCenter) {
+                    CenterActionButton(onClick = {
+                        if (currentRoute != item.route) {
+                            onNavigate(item.route)
+                        }
+                    })
+                } else {
+                    NavItem(
+                        item = item,
+                        isSelected = isSelected,
+                        onClick = {
+                            if (currentRoute != item.route) {
+                                onNavigate(item.route)
                             }
                         }
-                    }
-                )
-                
-                AnimatedNavItem(
-                    icon = Icons.Outlined.Explore,
-                    isSelected = currentRoute == Screen.Explore.route,
-                    onClick = {
-                        if (currentRoute != Screen.Explore.route) {
-                            navController.navigate(Screen.Explore.route)
-                        }
-                    }
-                )
-
-                // Prominent Add Button
-                AnimatedAddButton(
-                    onClick = {
-                        if (currentRoute != Screen.CreateEvent.route) {
-                            navController.navigate(Screen.CreateEvent.route)
-                        }
-                    }
-                )
-
-                AnimatedNavItem(
-                    icon = Icons.Outlined.ConfirmationNumber,
-                    isSelected = false,
-                    onClick = { /* Action Tickets */ }
-                )
-
-                AnimatedNavItem(
-                    icon = Icons.Outlined.Person,
-                    isSelected = currentRoute == Screen.Profile.route,
-                    onClick = {
-                        if (currentRoute != Screen.Profile.route) {
-                            navController.navigate(Screen.Profile.route)
-                        }
-                    }
-                )
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun AnimatedNavItem(
-    icon: ImageVector,
+private fun RowScope.NavItem(
+    item: NavigationItem,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
     
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.8f else 1f,
-        animationSpec = tween(durationMillis = 150),
-        label = "scale"
+    // Modification: Using Yellow (Secondary500) for highlight instead of Blue
+    val highlightColor = Secondary500.copy(alpha = 0.12f)
+    val animatedBgColor by animateColorAsState(
+        targetValue = if (isSelected) highlightColor else Color.Transparent,
+        animationSpec = tween(300),
+        label = "bgTint"
     )
 
     Box(
         modifier = Modifier
-            .size(48.dp)
-            .scale(scale)
-            .clip(CircleShape)
+            .fillMaxHeight()
+            .weight(1f)
+            .drawBehind {
+                drawRect(animatedBgColor)
+            }
             .clickable(
                 interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
+                indication = null,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Top Indicator Line - Using Yellow (Secondary500)
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.5f)
+                    .height(3.dp)
+                    .background(Secondary500, RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+            )
+        }
+
         Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (isSelected) Primary500 else Gray400,
+            imageVector = item.icon,
+            contentDescription = item.contentDescription,
+            tint = if (isSelected) Secondary600 else Gray500,
             modifier = Modifier.size(26.dp)
         )
     }
 }
 
 @Composable
-fun AnimatedAddButton(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1f,
-        animationSpec = tween(durationMillis = 150),
-        label = "scaleAdd"
-    )
-
+private fun CenterActionButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(52.dp)
-            .scale(scale)
+            .padding(horizontal = 8.dp)
+            .size(48.dp)
             .clip(CircleShape)
-            .background(Primary500)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
-            ),
+            // Modification: Using Yellow (Secondary500) for center button
+            .background(Secondary500)
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Create Event",
+            contentDescription = "Create",
             tint = Color.White,
             modifier = Modifier.size(28.dp)
         )
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Preview(showBackground = true)
 @Composable
-fun BottomNavbarPreview() {
-    LokacaraMobileTheme {
+fun LokacaraNavbarPreview() {
+    LokacaraMobileTheme(darkTheme = false) {
         BottomNavbar(navController = rememberNavController())
     }
 }
