@@ -62,7 +62,6 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp)
         ) {
             BottomNavbar(navController = navController)
         }

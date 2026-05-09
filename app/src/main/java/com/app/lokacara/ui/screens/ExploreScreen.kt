@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.BottomNavbar
@@ -37,79 +38,70 @@ import com.app.lokacara.ui.theme.*
 
 @Composable
 fun ExploreScreen(navController: NavController) {
-    // State untuk mode pencarian
     var isSearchExpanded by remember { mutableStateOf(false) }
-
-    // State untuk nilai input pencarian
     var eventName by remember { mutableStateOf("") }
     var eventLocation by remember { mutableStateOf("") }
     var eventCategory by remember { mutableStateOf("") }
-
     var selectedCategoryFilter by remember { mutableStateOf("Semua") }
 
-    // Data event dummy
-    val events = listOf(
-        Event("Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar),
-        Event("Sound of Solo Festival", "Konser musik tahunan...", "2 Mei 2026", "Benteng Vastenburg", "Rp 50.000", R.drawable.seminar_2),
-        Event("Fullstack Workshop 2026", "Belajar membangun aplikasi modern...", "10 Mei 2026", "Solo Techno Park", "Gratis", R.drawable.seminar_3)
-    )
+    // Optimization: Memoize events list
+    val events = remember {
+        listOf(
+            Event("Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar),
+            Event("Sound of Solo Festival", "Konser musik tahunan...", "2 Mei 2026", "Benteng Vastenburg", "Rp 50.000", R.drawable.seminar_2),
+            Event("Fullstack Workshop 2026", "Belajar membangun aplikasi modern...", "10 Mei 2026", "Solo Techno Park", "Gratis", R.drawable.seminar_3)
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(Gray100)) {
-        Scaffold(
-            containerColor = Color.Transparent
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                item { ExploreHeader() }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            item(key = "header") { ExploreHeader() }
 
-                item {
-                    // Logika Switch Tampilan Pencarian
-                    if (isSearchExpanded) {
-                        ExpandedSearchSection(
-                            eventName = eventName,
-                            onEventNameChange = { eventName = it },
-                            eventLocation = eventLocation,
-                            onEventLocationChange = { eventLocation = it },
-                            eventCategory = eventCategory,
-                            onEventCategoryChange = { eventCategory = it },
-                            onSearchSubmit = { isSearchExpanded = false } // Tutup saat tombol search diklik (Opsional)
-                        )
-                    } else {
-                        CollapsedSearchBar(
-                            onClick = { isSearchExpanded = true } // Buka mode pencarian
-                        )
-                    }
+            item(key = "search_section") {
+                if (isSearchExpanded) {
+                    ExpandedSearchSection(
+                        eventName = eventName,
+                        onEventNameChange = { eventName = it },
+                        eventLocation = eventLocation,
+                        onEventLocationChange = { eventLocation = it },
+                        eventCategory = eventCategory,
+                        onEventCategoryChange = { eventCategory = it },
+                        onSearchSubmit = { isSearchExpanded = false }
+                    )
+                } else {
+                    CollapsedSearchBar(
+                        onClick = { isSearchExpanded = true }
+                    )
                 }
-
-                // Sembunyikan rekomendasi jika sedang fokus mencari (agar bersih seperti di gambar)
-                if (!isSearchExpanded) {
-                    item {
-                        Text(
-                            text = "Lagi Ramai🔥",
-                            style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500),
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-                        )
-                    }
-                    item {
-                        ExploreCategories(
-                            selectedCategory = selectedCategoryFilter,
-                            onCategorySelected = { selectedCategoryFilter = it }
-                        )
-                    }
-                    items(events) { event ->
-                        EventCard(event = event)
-                    }
-                }
-
-                item { Spacer(modifier = Modifier.height(110.dp)) }
             }
-        }
 
-        Box(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) {
-            BottomNavbar(navController = navController)
+            if (!isSearchExpanded) {
+                item(key = "hot_label") {
+                    Text(
+                        text = "Lagi Ramai🔥",
+                        style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                    )
+                }
+                item(key = "categories") {
+                    ExploreCategories(
+                        selectedCategory = selectedCategoryFilter,
+                        onCategorySelected = { selectedCategoryFilter = it }
+                    )
+                }
+                // Optimization: Use keys and unique IDs (using title as key here, assuming unique for dummy)
+                items(
+                    items = events,
+                    key = { it.title },
+                    contentType = { "EventCard" }
+                ) { event ->
+                    EventCard(event = event)
+                }
+            }
+
+            item(key = "footer_spacer") { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 }
@@ -130,7 +122,6 @@ private fun ExploreHeader() {
     }
 }
 
-// Komponen Search Bar saat belum di-klik (Bentuknya dibuat mirip TextField tapi berupa Box Button agar tidak langsung memunculkan keyboard)
 @Composable
 private fun CollapsedSearchBar(onClick: () -> Unit) {
     Box(
@@ -161,9 +152,8 @@ private fun ExpandedSearchSection(
     eventCategory: String, onEventCategoryChange: (String) -> Unit,
     onSearchSubmit: () -> Unit
 ) {
-    // Data Dummy Saran Autocomplete
-    val locationSuggestions = listOf("Surabaya", "Surakarta", "Jakarta", "Semarang")
-    val categorySuggestions = listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik")
+    val locationSuggestions = remember { listOf("Surabaya", "Surakarta", "Jakarta", "Semarang") }
+    val categorySuggestions = remember { listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik") }
 
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -171,7 +161,7 @@ private fun ExpandedSearchSection(
                 value = eventName,
                 onValueChange = onEventNameChange,
                 placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)) },
-                modifier = Modifier.weight(1f).height(56.dp), // Disamakan tingginya
+                modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Secondary100, unfocusedContainerColor = Secondary100,
@@ -181,7 +171,6 @@ private fun ExpandedSearchSection(
             )
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Tombol Cari Kotak
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -196,7 +185,6 @@ private fun ExpandedSearchSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Lokasi Event (Dengan Autocomplete Dropdown)
         AutocompleteField(
             value = eventLocation,
             onValueChange = onEventLocationChange,
@@ -207,18 +195,16 @@ private fun ExpandedSearchSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Kategori Event (Dengan Autocomplete Dropdown)
         AutocompleteField(
             value = eventCategory,
             onValueChange = onEventCategoryChange,
             placeholder = "Kategori",
-            icon = Icons.Outlined.FormatListBulleted, // Ikon List
+            icon = Icons.Outlined.FormatListBulleted,
             suggestions = categorySuggestions
         )
     }
 }
 
-// Komponen Reusable untuk Autocomplete Dropdown
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AutocompleteField(
@@ -230,8 +216,10 @@ private fun AutocompleteField(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    // Filter saran berdasarkan input pengguna
-    val filteredSuggestions = suggestions.filter { it.contains(value, ignoreCase = true) }
+    // Optimization: Use derivedStateOf or remember with filter to avoid unnecessary recompositions
+    val filteredSuggestions = remember(value, suggestions) {
+        if (value.isEmpty()) emptyList() else suggestions.filter { it.contains(value, ignoreCase = true) }
+    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -241,12 +229,11 @@ private fun AutocompleteField(
             value = value,
             onValueChange = {
                 onValueChange(it)
-                // Buka dropdown otomatis jika ada input yang cocok
                 expanded = it.isNotEmpty() && filteredSuggestions.isNotEmpty()
             },
             placeholder = { Text(placeholder, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)) },
             trailingIcon = { Icon(icon, contentDescription = null, tint = Primary500) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(), // menuAnchor() wajib untuk trigger dropdown
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Secondary100,
@@ -258,21 +245,20 @@ private fun AutocompleteField(
             singleLine = true
         )
 
-        // Dropdown Menu yang melayang
         if (filteredSuggestions.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
-                    .background(Secondary100) // Warna background kuning muda
-                    .border(1.dp, Primary500, RoundedCornerShape(8.dp)) // Border biru
+                    .background(Secondary100)
+                    .border(1.dp, Primary500, RoundedCornerShape(8.dp))
             ) {
                 filteredSuggestions.forEach { selectionOption ->
                     DropdownMenuItem(
                         text = { Text(selectionOption, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900)) },
                         onClick = {
-                            onValueChange(selectionOption) // Set teks ke pilihan
-                            expanded = false // Tutup dropdown
+                            onValueChange(selectionOption)
+                            expanded = false
                         },
                         leadingIcon = {
                             Icon(icon, contentDescription = null, tint = Gray900, modifier = Modifier.size(16.dp))
@@ -284,25 +270,44 @@ private fun AutocompleteField(
     }
 }
 
-// (Kode ExploreCategories dan CategoryChip di bawah ini sama seperti sebelumnya, tidak dirubah)
 @Composable
 private fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit) {
-    val categoriesRow1 = listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi")
-    val categoriesRow2 = listOf("Semua", "Musik", "Teknologi", "Anime")
+    val categoriesRow1 = remember { listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi") }
+    val categoriesRow2 = remember { listOf("Semua", "Musik", "Teknologi", "Anime") }
     Column(modifier = Modifier.padding(bottom = 12.dp)) {
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-            items(categoriesRow1) { category -> CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp), 
+            horizontalArrangement = Arrangement.spacedBy(8.dp), 
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            items(categoriesRow1, key = { it }) { category -> 
+                CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } 
+            }
         }
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(categoriesRow2) { category -> CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp), 
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(categoriesRow2, key = { it }) { category -> 
+                CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } 
+            }
         }
     }
 }
 
 @Composable
 private fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(color = if (isSelected) Secondary500 else Gray200, shape = RoundedCornerShape(100.dp), modifier = Modifier.clickable { onClick() }) {
-        Text(text = text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = if (isSelected) Color.White else Gray900, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 12.sp))
+    Surface(
+        color = if (isSelected) Secondary500 else Gray200, 
+        shape = RoundedCornerShape(100.dp), 
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = text, 
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), 
+            color = if (isSelected) Color.White else Gray900, 
+            style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 12.sp)
+        )
     }
 }
 
@@ -310,6 +315,12 @@ private fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit)
 @Composable
 fun ExploreScreenPreview() {
     LokacaraMobileTheme {
-        ExploreScreen(navController = rememberNavController())
+        Scaffold(
+            bottomBar = { BottomNavbar(navController = rememberNavController()) }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                ExploreScreen(navController = rememberNavController())
+            }
+        }
     }
 }

@@ -55,3 +55,10 @@ val SemanticNeutralInteraction = Color(0xFFD1D5DB)
 val SemanticInfoBase = Color(0xFF3B82F6)
 val SemanticInfoLight = Color(0xFFDBEAFE)
 val SemanticInfoInteraction = Color(0xFF93C5FD)
+
+// Svg Colors extracted for global use
+val SvgBackground = Color(0xFFFAF8FF)
+val SvgPrimaryBlue = Color(0xFF0D59F2)
+val SvgOrange = Color(0xFFFFAA00)
+val SvgTextDark = Color(0xFF333333)
+val SvgChipGray = Color(0xFFCCCCCC)

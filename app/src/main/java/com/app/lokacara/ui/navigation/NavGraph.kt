@@ -1,68 +1,115 @@
 package com.app.lokacara.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
 
 @Composable
 fun NavGraph(startDestination: String = Screen.Onboarding.route) {
-    val navController = rememberNavController()
+    val rootNavController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = rootNavController, startDestination = startDestination) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
-                navController.navigate(Screen.Register.route) {
+                rootNavController.navigate(Screen.Register.route) {
                     popUpTo(Screen.Onboarding.route) { inclusive = true }
                 }
             })
         }
         composable(Screen.Register.route) {
             RegisterScreen(onNavigateToLogin = {
-                navController.navigate(Screen.Login.route)
+                rootNavController.navigate(Screen.Login.route)
             })
         }
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToRegister = {
-                    navController.navigate(Screen.Register.route)
+                    rootNavController.navigate(Screen.Register.route)
                 },
                 onLoginSuccess = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                        popUpTo(Screen.Register.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
-        }
-        composable(Screen.Explore.route) {
-            ExploreScreen(navController = navController)
-        }
-        composable(Screen.CreateEvent.route) {
-            CreateEventScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
-                onPublish = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable(Screen.Profile.route) {
-            ProfileScreen(
-                navController = navController,
-                onLogout = {
-                    navController.navigate(Screen.Login.route) {
+                    rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
+        
+        // Main Container for screens with Bottom Navigation
+        composable("main_container") {
+            MainContainer(rootNavController)
+        }
+    }
+}
+
+@Composable
+fun MainContainer(rootNavController: androidx.navigation.NavController) {
+    val internalNavController = rememberNavController()
+
+    Scaffold(
+        containerColor = Color.Transparent,
+        bottomBar = {
+            BottomNavbar(navController = internalNavController)
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            NavHost(
+                navController = internalNavController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(Screen.Home.route) {
+                    HomeScreen(navController = internalNavController)
+                }
+                composable(Screen.Explore.route) {
+                    ExploreScreen(navController = internalNavController)
+                }
+                composable("tickets") {
+                    TicketsScreen(navController = internalNavController)
+                }
+                composable(Screen.Profile.route) {
+                    ProfileScreen(
+                        navController = internalNavController,
+                        onLogout = {
+                            rootNavController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+                composable(Screen.CreateEvent.route) {
+                    CreateEventScreen(
+                        onBack = { internalNavController.popBackStack() },
+                        onPublish = {
+                            internalNavController.navigate(Screen.Home.route) {
+                                popUpTo(internalNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MainContainerPreview() {
+    com.app.lokacara.ui.theme.LokacaraMobileTheme {
+        MainContainer(rootNavController = rememberNavController())
     }
 }
