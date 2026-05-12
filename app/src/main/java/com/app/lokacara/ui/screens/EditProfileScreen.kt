@@ -70,7 +70,7 @@ fun EditProfileScreen(navController: NavController) {
             // Profile Picture with Camera Icon
             Box(contentAlignment = Alignment.BottomEnd) {
                 Image(
-                    painter = painterResource(id = R.drawable.seminar_2), // Dummy image
+                    painter = painterResource(id = R.drawable.profileicon),
                     contentDescription = "Profile Picture",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

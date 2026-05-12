@@ -67,7 +67,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
         ) {
             // Profile Picture
             Image(
-                painter = painterResource(id = R.drawable.seminar_2), // Dummy image
+                painter = painterResource(id = R.drawable.profileicon),
                 contentDescription = "Profile Picture",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
