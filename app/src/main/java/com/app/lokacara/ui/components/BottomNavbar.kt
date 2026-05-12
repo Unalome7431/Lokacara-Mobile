@@ -162,7 +162,6 @@ private fun CenterActionButton(onClick: () -> Unit) {
             .padding(horizontal = 8.dp)
             .size(48.dp)
             .clip(CircleShape)
-            // Modification: Using Yellow (Secondary500) for center button
             .background(Secondary500)
             .clickable { onClick() },
         contentAlignment = Alignment.Center

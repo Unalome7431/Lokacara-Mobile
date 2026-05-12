@@ -26,25 +26,26 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.app.lokacara.R
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 
 @Composable
 fun ExploreHeader() {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(painter = painterResource(id = R.drawable.logo_lokacara), contentDescription = "Logo", modifier = Modifier.height(34.dp))
-        Row {
-            Icon(Icons.Outlined.Notifications, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-            Spacer(modifier = Modifier.width(16.dp))
-            Icon(Icons.Outlined.FavoriteBorder, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-        }
+        Image(
+            painter = painterResource(id = R.drawable.logo_lokacara),
+            contentDescription = "Logo",
+            modifier = Modifier.height(34.dp)
+        )
     }
 }
-
 @Composable
 fun CollapsedSearchBar(onClick: () -> Unit) {
     Box(
