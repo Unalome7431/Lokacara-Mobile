@@ -101,6 +101,9 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.Notification.route) {
                     NotificationScreen(navController = internalNavController)
                 }
+                composable(Screen.Bookmark.route) {
+                    BookmarkScreen(navController = internalNavController)
+                }
             }
         }
     }

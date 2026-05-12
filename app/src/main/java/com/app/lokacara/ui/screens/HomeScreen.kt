@@ -15,9 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-// --- IMPORT SHARED COMPONENT ---
 import com.app.lokacara.ui.components.EventCard
-// --- IMPORT HOME COMPONENTS ---
 import com.app.lokacara.ui.components.HomeHeader
 import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
@@ -61,7 +59,12 @@ fun HomeScreen(
                 items = filteredEvents,
                 key = { it.id }
             ) { event ->
-                EventCard(event = event)
+                EventCard(
+                    event = event,
+                    onBookmarkClick = {
+                        viewModel.toggleBookmark(event.id)
+                    }
+                )
             }
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
