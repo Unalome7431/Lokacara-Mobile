@@ -1,326 +1,108 @@
 package com.app.lokacara.ui.screens
 
-import androidx.compose.foundation.Image
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.FormatListBulleted
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
-import com.app.lokacara.R
-import com.app.lokacara.model.Event
-import com.app.lokacara.ui.components.BottomNavbar
-import com.app.lokacara.ui.components.EventCard
-import com.app.lokacara.ui.theme.*
+import com.app.lokacara.ui.components.*
+import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.viewmodel.ExploreViewModel
 
 @Composable
-fun ExploreScreen(navController: NavController) {
-    var isSearchExpanded by remember { mutableStateOf(false) }
-    var eventName by remember { mutableStateOf("") }
-    var eventLocation by remember { mutableStateOf("") }
-    var eventCategory by remember { mutableStateOf("") }
-    var selectedCategoryFilter by remember { mutableStateOf("Semua") }
+fun ExploreScreen(
+    navController: NavController,
+    viewModel: ExploreViewModel = viewModel()
+) {
+    val isSearchExpanded by viewModel.isSearchExpanded.collectAsState()
+    val eventName by viewModel.eventName.collectAsState()
+    val eventLocation by viewModel.eventLocation.collectAsState()
+    val eventCategory by viewModel.eventCategory.collectAsState()
+    val selectedCategoryChip by viewModel.selectedCategoryChip.collectAsState()
+    val events by viewModel.filteredEvents.collectAsState()
 
-    // Optimization: Memoize events list
-    val events = remember {
-        listOf(
-            Event("Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar),
-            Event("Sound of Solo Festival", "Konser musik tahunan...", "2 Mei 2026", "Benteng Vastenburg", "Rp 50.000", R.drawable.seminar_2),
-            Event("Fullstack Workshop 2026", "Belajar membangun aplikasi modern...", "10 Mei 2026", "Solo Techno Park", "Gratis", R.drawable.seminar_3)
-        )
+    val focusManager = LocalFocusManager.current
+
+    val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
+            eventCategory.isNotEmpty() || selectedCategoryChip != "Semua"
+
+    BackHandler(enabled = isSearchExpanded || hasActiveFilter) {
+        if (isSearchExpanded) {
+            viewModel.isSearchExpanded.value = false
+            focusManager.clearFocus()
+        } else {
+            viewModel.resetFilters()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Gray100)) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            item(key = "header") { ExploreHeader() }
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
 
-            item(key = "search_section") {
+            item { ExploreHeader() }
+
+            item {
                 if (isSearchExpanded) {
                     ExpandedSearchSection(
                         eventName = eventName,
-                        onEventNameChange = { eventName = it },
+                        onEventNameChange = { viewModel.eventName.value = it },
                         eventLocation = eventLocation,
-                        onEventLocationChange = { eventLocation = it },
+                        onEventLocationChange = { viewModel.eventLocation.value = it },
                         eventCategory = eventCategory,
-                        onEventCategoryChange = { eventCategory = it },
-                        onSearchSubmit = { isSearchExpanded = false }
+                        onEventCategoryChange = { viewModel.eventCategory.value = it },
+                        locationSuggestions = viewModel.locationSuggestions,
+                        categorySuggestions = viewModel.categorySuggestions,
+                        onSearchSubmit = {
+                            viewModel.isSearchExpanded.value = false
+                            focusManager.clearFocus()
+                        }
                     )
                 } else {
-                    CollapsedSearchBar(
-                        onClick = { isSearchExpanded = true }
-                    )
+                    CollapsedSearchBar(onClick = { viewModel.isSearchExpanded.value = true })
                 }
             }
 
             if (!isSearchExpanded) {
-                item(key = "hot_label") {
-                    Text(
-                        text = "Lagi Ramai🔥",
-                        style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                item {
+                    HotLabelSection(
+                        selectedCategory = selectedCategoryChip,
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it },
+                        allCategories = viewModel.categorySuggestions
                     )
                 }
-                item(key = "categories") {
+
+                item {
                     ExploreCategories(
-                        selectedCategory = selectedCategoryFilter,
-                        onCategorySelected = { selectedCategoryFilter = it }
+                        selectedCategory = selectedCategoryChip,
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it }
                     )
                 }
-                // Optimization: Use keys and unique IDs (using title as key here, assuming unique for dummy)
-                items(
-                    items = events,
-                    key = { it.title },
-                    contentType = { "EventCard" }
-                ) { event ->
-                    EventCard(event = event)
+
+                if (events.isEmpty()) {
+                    item { EmptyStateView() }
+                } else {
+                    items(items = events, key = { it.id }) { event ->
+                        EventCard(event = event)
+                    }
                 }
             }
 
-            item(key = "footer_spacer") { Spacer(modifier = Modifier.height(24.dp)) }
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 }
 
-@Composable
-private fun ExploreHeader() {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(painter = painterResource(id = R.drawable.logo_lokacara), contentDescription = "Logo", modifier = Modifier.height(34.dp))
-        Row {
-            Icon(Icons.Outlined.Notifications, contentDescription = null, tint = Secondary500, modifier = Modifier.size(26.dp))
-            Spacer(modifier = Modifier.width(16.dp))
-            Icon(Icons.Outlined.FavoriteBorder, contentDescription = null, tint = Secondary500, modifier = Modifier.size(26.dp))
-        }
-    }
-}
 
-@Composable
-private fun CollapsedSearchBar(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .height(52.dp)
-            .border(1.dp, Primary300, RoundedCornerShape(100.dp))
-            .background(Color.White, RoundedCornerShape(100.dp))
-            .clickable { onClick() },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Mencari nama, lokasi, kategori event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500))
-            Icon(Icons.Outlined.Search, contentDescription = "Cari", tint = Primary500)
-        }
-    }
-}
-
-@Composable
-private fun ExpandedSearchSection(
-    eventName: String, onEventNameChange: (String) -> Unit,
-    eventLocation: String, onEventLocationChange: (String) -> Unit,
-    eventCategory: String, onEventCategoryChange: (String) -> Unit,
-    onSearchSubmit: () -> Unit
-) {
-    val locationSuggestions = remember { listOf("Surabaya", "Surakarta", "Jakarta", "Semarang") }
-    val categorySuggestions = remember { listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik") }
-
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = eventName,
-                onValueChange = onEventNameChange,
-                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)) },
-                modifier = Modifier.weight(1f).height(56.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Secondary100, unfocusedContainerColor = Secondary100,
-                    focusedBorderColor = Primary500, unfocusedBorderColor = Primary500
-                ),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .border(1.dp, Primary500, RoundedCornerShape(8.dp))
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .clickable { onSearchSubmit() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Outlined.Search, contentDescription = "Cari", tint = Primary500)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        AutocompleteField(
-            value = eventLocation,
-            onValueChange = onEventLocationChange,
-            placeholder = "Lokasi Event",
-            icon = Icons.Outlined.LocationOn,
-            suggestions = locationSuggestions
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        AutocompleteField(
-            value = eventCategory,
-            onValueChange = onEventCategoryChange,
-            placeholder = "Kategori",
-            icon = Icons.Outlined.FormatListBulleted,
-            suggestions = categorySuggestions
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AutocompleteField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    icon: ImageVector,
-    suggestions: List<String>
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    // Optimization: Use derivedStateOf or remember with filter to avoid unnecessary recompositions
-    val filteredSuggestions = remember(value, suggestions) {
-        if (value.isEmpty()) emptyList() else suggestions.filter { it.contains(value, ignoreCase = true) }
-    }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {
-                onValueChange(it)
-                expanded = it.isNotEmpty() && filteredSuggestions.isNotEmpty()
-            },
-            placeholder = { Text(placeholder, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)) },
-            trailingIcon = { Icon(icon, contentDescription = null, tint = Primary500) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Secondary100,
-                unfocusedContainerColor = Secondary100,
-                focusedBorderColor = Primary500,
-                unfocusedBorderColor = Primary500,
-                cursorColor = Primary500
-            ),
-            singleLine = true
-        )
-
-        if (filteredSuggestions.isNotEmpty()) {
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier
-                    .background(Secondary100)
-                    .border(1.dp, Primary500, RoundedCornerShape(8.dp))
-            ) {
-                filteredSuggestions.forEach { selectionOption ->
-                    DropdownMenuItem(
-                        text = { Text(selectionOption, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900)) },
-                        onClick = {
-                            onValueChange(selectionOption)
-                            expanded = false
-                        },
-                        leadingIcon = {
-                            Icon(icon, contentDescription = null, tint = Gray900, modifier = Modifier.size(16.dp))
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit) {
-    val categoriesRow1 = remember { listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi") }
-    val categoriesRow2 = remember { listOf("Semua", "Musik", "Teknologi", "Anime") }
-    Column(modifier = Modifier.padding(bottom = 12.dp)) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp), 
-            horizontalArrangement = Arrangement.spacedBy(8.dp), 
-            modifier = Modifier.padding(bottom = 8.dp)
-        ) {
-            items(categoriesRow1, key = { it }) { category -> 
-                CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } 
-            }
-        }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp), 
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(categoriesRow2, key = { it }) { category -> 
-                CategoryChip(category, selectedCategory == category) { onCategorySelected(category) } 
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        color = if (isSelected) Secondary500 else Gray200, 
-        shape = RoundedCornerShape(100.dp), 
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Text(
-            text = text, 
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), 
-            color = if (isSelected) Color.White else Gray900, 
-            style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 12.sp)
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ExploreScreenPreview() {
-    LokacaraMobileTheme {
-        Scaffold(
-            bottomBar = { BottomNavbar(navController = rememberNavController()) }
-        ) { padding ->
-            Box(modifier = Modifier.padding(padding)) {
-                ExploreScreen(navController = rememberNavController())
-            }
-        }
+    com.app.lokacara.ui.theme.LokacaraMobileTheme {
+        val dummyNavController = androidx.navigation.compose.rememberNavController()
+        ExploreScreen(navController = dummyNavController)
     }
 }
