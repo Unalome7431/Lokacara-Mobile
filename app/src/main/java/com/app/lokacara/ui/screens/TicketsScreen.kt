@@ -41,7 +41,6 @@ fun TicketsScreen(
     val historyEvents by viewModel.historyEvents.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        // Header (Sama dengan Home)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -60,7 +59,6 @@ fun TicketsScreen(
             }
         }
 
-        // Tabs (Terbagi Tengah)
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
             tabs.forEachIndexed { index, title ->
                 Column(
