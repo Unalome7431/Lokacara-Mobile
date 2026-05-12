@@ -47,4 +47,15 @@ class HomeViewModel : ViewModel() {
     fun updateCategory(category: String) {
         selectedCategory.value = category
     }
+
+    fun toggleBookmark(eventId: String) {
+        _allNearbyEvents.value = _allNearbyEvents.value.map { event ->
+            if (event.id == eventId) {
+                event.copy(isBookmarked = !event.isBookmarked)
+            } else {
+                event
+            }
+        }
+
+    }
 }
