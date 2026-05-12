@@ -26,11 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.app.lokacara.ui.theme.*
-import com.app.lokacara.model.UpcomingEvent
+import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
-
-
+import com.app.lokacara.model.UpcomingEvent
+import com.app.lokacara.ui.theme.*
 
 @Composable
 fun BigTicketCard(
@@ -40,19 +39,15 @@ fun BigTicketCard(
     location: String,
     uniqueCode: String,
     userName: String,
+    onQrClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        // Top Blue Section
+    Column(modifier = modifier.fillMaxWidth()) {
+        // Bagian Atas (Biru)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = Primary700,
-                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-                )
+                .background(color = Primary700, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 .padding(24.dp)
         ) {
             Column {
@@ -64,7 +59,6 @@ fun BigTicketCard(
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
-
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TicketInfoItem("Tanggal", date, Color.White)
                     TicketInfoItem("Jam", time, Color.White)
@@ -77,13 +71,8 @@ fun BigTicketCard(
             }
         }
 
-        // Dashed Line Separator
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .background(Primary700)
-        ) {
+        // Garis Putus-putus
+        Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(Primary700)) {
             Box(modifier = Modifier.align(Alignment.CenterStart).offset(x = (-10).dp).size(20.dp).background(Color.White, CircleShape))
             Box(modifier = Modifier.align(Alignment.CenterEnd).offset(x = 10.dp).size(20.dp).background(Color.White, CircleShape))
             Canvas(modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 20.dp)) {
@@ -97,24 +86,27 @@ fun BigTicketCard(
             }
         }
 
-        // Bottom Yellow Section
+        // Bagian Bawah (Kuning)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = Secondary500,
-                    shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
-                )
+                .background(color = Secondary500, shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
                 .padding(24.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .background(Color.White.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onQrClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("QR YA", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    Image(
+                        painter = painterResource(id = R.drawable.qr_dummy),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.fillMaxSize().padding(4.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -137,24 +129,18 @@ fun TicketInfoItem(label: String, value: String, color: Color) {
 @Composable
 fun SmallUpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-
             Image(
                 painter = painterResource(id = event.imageRes),
-                contentDescription = event.title,
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp)), // Biar sudutnya tetap melengkung
-                contentScale = ContentScale.Crop // Biar gambar proporsional dan tidak gepeng
+                contentDescription = null,
+                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(event.title, fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Gray900)
@@ -168,31 +154,23 @@ fun SmallUpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
 @Composable
 fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
     val bgColor = if (event.isBlueBg) Primary100 else Secondary100
-
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(0.dp)
+        colors = CardDefaults.cardColors(containerColor = bgColor)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Gray900)
+                Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = Gray600)
+                    Icon(Icons.Outlined.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Gray600)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("${event.date}  ${event.time}", fontSize = 12.sp, color = Gray600)
+                    Text("${event.date} ${event.time}", fontSize = 12.sp, color = Gray600)
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Gray600)
+                    Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = Gray600)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(event.location, fontSize = 12.sp, color = Gray600)
                 }
@@ -205,7 +183,7 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
                     Text(event.category, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Icon(Icons.Default.ArrowForwardIos, contentDescription = "Detail", modifier = Modifier.size(16.dp), tint = Gray600)
+            Icon(Icons.Default.ArrowForwardIos, null, modifier = Modifier.size(16.dp), tint = Gray600)
         }
     }
 }
@@ -213,78 +191,52 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
 @Composable
 fun HistoryDetailDialog(event: HistoryEvent, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Image(
                     painter = painterResource(id = event.imageRes),
-                    contentDescription = "Sertifikat",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
-
                 Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = event.title,
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = Gray900,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Primary500, CircleShape)
-                            .clickable { /* Handle Download */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Download, contentDescription = "Download", tint = Color.White, modifier = Modifier.size(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f))
+                    IconButton(onClick = {}, modifier = Modifier.background(Primary500, CircleShape).size(36.dp)) {
+                        Icon(Icons.Default.Download, null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
-
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = Gray600)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("${event.date}  ${event.time}", fontSize = 12.sp, color = Gray600)
+                            Icon(Icons.Outlined.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Gray600)
+                            Text(" ${event.date} ${event.time}", fontSize = 12.sp, color = Gray600)
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Gray600)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(event.location, fontSize = 12.sp, color = Gray600)
+                            Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = Gray600)
+                            Text(" ${event.location}", fontSize = 12.sp, color = Gray600)
                         }
                     }
-
-                    Box(
-                        modifier = Modifier
-                            .background(Secondary500, RoundedCornerShape(12.dp))
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                    ) {
+                    Box(modifier = Modifier.background(Secondary500, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 6.dp)) {
                         Text(event.category, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun QrCodeDialog(qrImageRes: Int, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.size(300.dp)) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(id = qrImageRes),
+                    contentDescription = "Zoomed QR",
+                    modifier = Modifier.fillMaxSize().padding(32.dp)
+                )
             }
         }
     }
