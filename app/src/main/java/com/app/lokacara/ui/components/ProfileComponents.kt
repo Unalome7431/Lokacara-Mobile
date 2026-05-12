@@ -139,17 +139,17 @@ fun MyEventCard(event: MyEventData) {
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Row(modifier = Modifier.padding(0.dp)) {
+        Row(modifier = Modifier.padding(12.dp)) {
             Image(
                 painter = painterResource(id = event.imageRes),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(width = 110.dp, height = 120.dp)
-                    .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)),
+                    .size(110.dp)
+                    .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp, horizontal = 4.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = event.title,
                     color = Primary500,
@@ -162,12 +162,12 @@ fun MyEventCard(event: MyEventData) {
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 MyEventDetailItem(Icons.Outlined.CalendarToday, event.date)
                 MyEventDetailItem(Icons.Outlined.LocationOn, event.attendees)
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = event.status,
