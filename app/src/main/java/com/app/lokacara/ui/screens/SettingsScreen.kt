@@ -4,16 +4,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,6 +70,7 @@ fun SettingsScreen(navController: NavController) {
             SettingsSectionTitle(title = "Preferensi")
             SettingsCard {
                 SettingsToggleRow(
+                    icon = Icons.Rounded.Notifications,
                     title = "Notifikasi",
                     isChecked = notificationsEnabled,
                     onCheckedChange = { notificationsEnabled = it }
@@ -79,7 +82,11 @@ fun SettingsScreen(navController: NavController) {
             // 2. Keamanan
             SettingsSectionTitle(title = "Keamanan")
             SettingsCard {
-                SettingsActionRow(title = "Ubah Kata Sandi", onClick = { /* Navigate to Change Password */ })
+                SettingsActionRow(
+                    icon = Icons.Rounded.Lock,
+                    title = "Ubah Kata Sandi", 
+                    onClick = { /* Navigate to Change Password */ }
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -87,11 +94,23 @@ fun SettingsScreen(navController: NavController) {
             // 3. Bantuan & Informasi
             SettingsSectionTitle(title = "Bantuan & Informasi")
             SettingsCard {
-                SettingsActionRow(title = "Pusat Bantuan", onClick = { /* Navigate to Help Center */ })
+                SettingsActionRow(
+                    icon = Icons.Rounded.HelpOutline,
+                    title = "Pusat Bantuan", 
+                    onClick = { /* Navigate to Help Center */ }
+                )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                SettingsActionRow(title = "Syarat & Ketentuan", onClick = { /* Navigate to T&C */ })
+                SettingsActionRow(
+                    icon = Icons.Rounded.Article,
+                    title = "Syarat & Ketentuan", 
+                    onClick = { /* Navigate to T&C */ }
+                )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                SettingsActionRow(title = "Kebijakan Privasi", onClick = { /* Navigate to Privacy Policy */ })
+                SettingsActionRow(
+                    icon = Icons.Rounded.PrivacyTip,
+                    title = "Kebijakan Privasi", 
+                    onClick = { /* Navigate to Privacy Policy */ }
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -106,12 +125,26 @@ fun SettingsScreen(navController: NavController) {
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(SemanticErrorLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = null,
+                            tint = SemanticErrorBase,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "Hapus Akun",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
-                        color = Color.Red // Red for danger
+                        color = SemanticErrorBase // Red for danger
                     )
                 }
             }
@@ -146,7 +179,7 @@ fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun SettingsToggleRow(title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -154,19 +187,35 @@ fun SettingsToggleRow(title: String, isChecked: Boolean, onCheckedChange: (Boole
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
-            color = Gray900
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Secondary100, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Secondary500,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Gray900
+            )
+        }
         Switch(
             checked = isChecked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Primary500,
+                checkedTrackColor = Secondary500, // Changed from Primary500 to Secondary500 (Yellow)
                 uncheckedThumbColor = Gray400,
                 uncheckedTrackColor = Gray100
             )
@@ -175,7 +224,7 @@ fun SettingsToggleRow(title: String, isChecked: Boolean, onCheckedChange: (Boole
 }
 
 @Composable
-fun SettingsActionRow(title: String, onClick: () -> Unit) {
+fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -184,13 +233,29 @@ fun SettingsActionRow(title: String, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
-            color = Gray900
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Secondary100, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Secondary500, // Using yellow as requested
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Gray900
+            )
+        }
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
             contentDescription = null,
