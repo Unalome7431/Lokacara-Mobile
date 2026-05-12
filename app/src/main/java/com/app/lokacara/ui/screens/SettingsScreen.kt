@@ -191,7 +191,7 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(Secondary100, CircleShape),
+                    .background(Primary100, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -237,7 +237,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(Secondary100, CircleShape),
+                    .background(Primary100, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

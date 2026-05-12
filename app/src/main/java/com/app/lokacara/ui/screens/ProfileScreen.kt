@@ -161,13 +161,13 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp,
-                    color = Primary500 // Yellow/Orange ish if looking at design, let's use warning or yellow color. Looking at the image, it's yellow. Let's use a yellow color.
+                    color = SemanticErrorBase // Red for danger
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.Logout,
                     contentDescription = "Keluar",
-                    tint = Primary500,
+                    tint = SemanticErrorBase,
                     modifier = Modifier.size(20.dp)
                 )
             }
