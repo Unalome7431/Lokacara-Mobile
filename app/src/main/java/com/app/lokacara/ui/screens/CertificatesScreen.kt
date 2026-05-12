@@ -26,9 +26,9 @@ import com.app.lokacara.ui.theme.*
 fun CertificatesScreen(navController: NavController) {
     // Dummy Data
     val certificates = listOf(
-        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.candi), // Fallback image if no cert image
-        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.candi),
-        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.candi)
+        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.sertifcontoh),
+        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.sertifcontoh),
+        CertificateData("Konser Musik di Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Musik", R.drawable.sertifcontoh)
     )
 
     Column(

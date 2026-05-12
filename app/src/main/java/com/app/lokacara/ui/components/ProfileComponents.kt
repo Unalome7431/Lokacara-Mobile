@@ -14,6 +14,11 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -204,12 +209,32 @@ fun CertificateCard(cert: CertificateData) {
     val gradientBrush = Brush.linearGradient(
         colors = listOf(Primary300, Secondary400) // Adjust colors as needed for the border
     )
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        Dialog(onDismissRequest = { showDialog = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+            ) {
+                Image(
+                    painter = painterResource(id = cert.imageRes),
+                    contentDescription = "Full Certificate",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
+                )
+            }
+        }
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 10.dp)
-            .border(width = 1.5.dp, brush = gradientBrush, shape = RoundedCornerShape(20.dp)),
+            .border(width = 1.5.dp, brush = gradientBrush, shape = RoundedCornerShape(20.dp))
+            .clickable { showDialog = true },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
