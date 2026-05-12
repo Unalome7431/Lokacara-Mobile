@@ -22,11 +22,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.app.lokacara.data.SettingsManager
+import kotlinx.coroutines.launch
 import com.app.lokacara.ui.theme.*
 
 @Composable
 fun SettingsScreen(navController: NavController) {
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val notificationsEnabled by settingsManager.notificationsEnabled.collectAsState(initial = true)
+    val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
     Column(
@@ -73,7 +81,11 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Rounded.Notifications,
                     title = "Notifikasi",
                     isChecked = notificationsEnabled,
-                    onCheckedChange = { notificationsEnabled = it }
+                    onCheckedChange = { 
+                        coroutineScope.launch {
+                            settingsManager.setNotificationsEnabled(it) 
+                        }
+                    }
                 )
             }
 
