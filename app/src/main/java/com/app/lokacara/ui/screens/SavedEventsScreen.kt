@@ -9,20 +9,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.app.lokacara.R
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.model.Event
+import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
 
@@ -32,6 +33,7 @@ fun SavedEventsScreen(
     viewModel: ProfileViewModel = viewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -62,12 +64,30 @@ fun SavedEventsScreen(
             Spacer(modifier = Modifier.width(20.dp))
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for navbar
-        ) {
-            items(savedEvents) { event ->
-                EventCard(event = event)
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Primary500
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    if (savedEvents.isEmpty()) {
+                        item {
+                            EmptyEventState(
+                                text = "Belum Ada Event Tersimpan\nCari Event Disini",
+                                onClick = { navController.navigate(Screen.Explore.route) }
+                            )
+                        }
+                    } else {
+                        items(savedEvents) { event ->
+                            EventCard(event = event)
+                        }
+                    }
+                }
             }
         }
     }
@@ -80,4 +100,3 @@ fun SavedEventsScreenPreview() {
         SavedEventsScreen(navController = rememberNavController())
     }
 }
-

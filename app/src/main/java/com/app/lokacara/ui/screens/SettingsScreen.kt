@@ -209,7 +209,7 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Secondary500,
+                    tint = Primary500,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -227,7 +227,7 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Secondary500, // Changed from Primary500 to Secondary500 (Yellow)
+                checkedTrackColor = Primary500, 
                 uncheckedThumbColor = Gray400,
                 uncheckedTrackColor = Gray100
             )
@@ -255,7 +255,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Secondary500, // Using yellow as requested
+                    tint = Primary500, 
                     modifier = Modifier.size(20.dp)
                 )
             }

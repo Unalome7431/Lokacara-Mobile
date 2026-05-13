@@ -107,7 +107,10 @@ fun ProfileDetailItem(label: String, value: String) {
 }
 
 @Composable
-fun EmptyEventState(onClick: () -> Unit) {
+fun EmptyEventState(
+    text: String = "Belum Membuat Event\nCoba Disini",
+    onClick: () -> Unit
+) {
     val stroke = Stroke(
         width = 3f,
         pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
@@ -128,7 +131,7 @@ fun EmptyEventState(onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Belum Membuat Event\nCoba Disini",
+            text = text,
             fontFamily = NunitoFont,
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,

@@ -2,9 +2,11 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
 import com.app.lokacara.model.MyEventData
+import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +16,17 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val repository: ProfileRepository = ProfileRepository()
 ) : ViewModel() {
+
+    private val _userProfile = MutableStateFlow(
+        UserProfile(
+            name = "Daffa Arrivo",
+            email = "daffarrivo@studenet.uns.ac.id",
+            phone = "+628788133233145",
+            location = "Surakarta, Jawa Tengah",
+            profileImageRes = R.drawable.profileicon
+        )
+    )
+    val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
     private val _myEvents = MutableStateFlow<List<MyEventData>>(emptyList())
     val myEvents: StateFlow<List<MyEventData>> = _myEvents.asStateFlow()
@@ -31,6 +44,17 @@ class ProfileViewModel(
         loadMyEvents()
         loadSavedEvents()
         loadCertificates()
+    }
+
+    fun updateProfileField(label: String, newValue: String) {
+        val currentProfile = _userProfile.value
+        _userProfile.value = when (label) {
+            "Nama Lengkap" -> currentProfile.copy(name = newValue)
+            "Email" -> currentProfile.copy(email = newValue)
+            "Nomor" -> currentProfile.copy(phone = newValue)
+            "Lokasi" -> currentProfile.copy(location = newValue)
+            else -> currentProfile
+        }
     }
 
     fun loadMyEvents() {
