@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,11 +36,16 @@ import com.app.lokacara.ui.theme.*
 
 @Composable
 fun EditProfileScreen(navController: NavController) {
-    // States for form
+    // States for display
     var name by remember { mutableStateOf("Daffa Arrivo") }
     var email by remember { mutableStateOf("daffarrivo@studenet.uns.ac.id") }
     var phone by remember { mutableStateOf("+628788133233145") }
     var location by remember { mutableStateOf("Surakarta, Jawa Tengah") }
+
+    // Dialog state
+    var showDialog by remember { mutableStateOf(false) }
+    var editFieldLabel by remember { mutableStateOf("") }
+    var editFieldValue by remember { mutableStateOf("") }
 
     // State for photo picker
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -51,6 +55,23 @@ fun EditProfileScreen(navController: NavController) {
     )
 
     val scrollState = rememberScrollState()
+
+    if (showDialog) {
+        EditFieldDialog(
+            label = editFieldLabel,
+            initialValue = editFieldValue,
+            onDismiss = { showDialog = false },
+            onSave = { newValue ->
+                when (editFieldLabel) {
+                    "Nama Lengkap" -> name = newValue
+                    "Email" -> email = newValue
+                    "Nomor" -> phone = newValue
+                    "Lokasi" -> location = newValue
+                }
+                showDialog = false
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -88,7 +109,7 @@ fun EditProfileScreen(navController: NavController) {
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Profile Picture with Camera Icon
             Box(contentAlignment = Alignment.BottomEnd) {
@@ -120,9 +141,9 @@ fun EditProfileScreen(navController: NavController) {
                 
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(28.dp)
                         .background(Color.White, CircleShape)
-                        .padding(4.dp)
+                        .padding(2.dp)
                         .clickable {
                             photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
@@ -131,89 +152,167 @@ fun EditProfileScreen(navController: NavController) {
                     Icon(
                         imageVector = Icons.Rounded.CameraAlt,
                         contentDescription = "Edit Photo",
-                        tint = Primary500,
+                        tint = Gray600,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Form Fields
-            EditProfileTextField(label = "Nama Lengkap", value = name, onValueChange = { name = it })
             Spacer(modifier = Modifier.height(16.dp))
-            EditProfileTextField(label = "Email", value = email, onValueChange = { email = it }, keyboardType = KeyboardType.Email)
-            Spacer(modifier = Modifier.height(16.dp))
-            EditProfileTextField(label = "Nomor Telepon", value = phone, onValueChange = { phone = it }, keyboardType = KeyboardType.Phone)
-            Spacer(modifier = Modifier.height(16.dp))
-            EditProfileTextField(label = "Lokasi", value = location, onValueChange = { location = it })
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Save Button
-            Button(
-                onClick = {
-                    // Action to save profile (will be handled by ViewModel later)
-                    navController.popBackStack() 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary500),
-                shape = RoundedCornerShape(12.dp)
-            ) {
+            // Name with Edit Icon
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Simpan Perubahan",
+                    text = name,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.White
+                    fontSize = 20.sp,
+                    color = Gray900
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Edit,
+                    contentDescription = "Edit Name",
+                    tint = Gray600,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable {
+                            editFieldLabel = "Nama Lengkap"
+                            editFieldValue = name
+                            showDialog = true
+                        }
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Details Card
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    ProfileDetailRow(label = "Email", value = email, onClick = {
+                        editFieldLabel = "Email"
+                        editFieldValue = email
+                        showDialog = true
+                    })
+                    HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileDetailRow(label = "Nomor", value = phone, onClick = {
+                        editFieldLabel = "Nomor"
+                        editFieldValue = phone
+                        showDialog = true
+                    })
+                    HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileDetailRow(label = "Lokasi", value = location, onClick = {
+                        editFieldLabel = "Lokasi"
+                        editFieldValue = location
+                        showDialog = true
+                    })
+                }
+            }
+
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-fun EditProfileTextField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType = KeyboardType.Text
-) {
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+fun ProfileDetailRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
             text = label,
             fontFamily = NunitoFont,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Normal,
             fontSize = 14.sp,
-            color = Gray700,
-            modifier = Modifier.padding(bottom = 8.dp)
+            color = Gray500
         )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary500,
-                unfocusedBorderColor = Gray300,
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedTextColor = Gray900,
-                unfocusedTextColor = Gray900
-            ),
-            singleLine = true,
-            textStyle = LocalTextStyle.current.copy(
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Medium,
-                fontSize = 16.sp
-            )
+        Text(
+            text = value,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            color = Gray900
         )
     }
+}
+
+@Composable
+fun EditFieldDialog(
+    label: String,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialValue) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit $label",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Gray900
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Primary500,
+                    unfocusedBorderColor = Gray300,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedTextColor = Gray900,
+                    unfocusedTextColor = Gray900
+                ),
+                textStyle = LocalTextStyle.current.copy(
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text) }) {
+                Text(
+                    text = "Simpan",
+                    color = Primary500,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Batal",
+                    color = Gray500,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Preview(showBackground = true)

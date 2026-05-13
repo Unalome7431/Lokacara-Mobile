@@ -17,46 +17,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
-fun SavedEventsScreen(navController: NavController) {
-    // Dummy Data
-    val savedEvents = listOf(
-        Event(
-            id = "1",
-            title = "Seminar Ai di Kota Surakarta",
-            description = "Acara ini dibuat untuk memenuhi tugas mata kul...",
-            date = "25 April 2026",
-            location = "Pura Mangkunegaran",
-            price = "Gratis",
-            imageRes = R.drawable.seminar_2,
-            category = "Seminar"
-        ),
-        Event(
-            id = "2",
-            title = "Seminar Ai di Kota Surakarta",
-            description = "Acara ini dibuat untuk memenuhi tugas mata kul...",
-            date = "25 April 2026",
-            location = "Pura Mangkunegaran",
-            price = "Gratis",
-            imageRes = R.drawable.seminar_3,
-            category = "Seminar"
-        ),
-        Event(
-            id = "3",
-            title = "Seminar Ai di Kota Surakarta",
-            description = "Acara ini dibuat untuk memenuhi tugas mata kul...",
-            date = "25 April 2026",
-            location = "Pura Mangkunegaran",
-            price = "Gratis",
-            imageRes = R.drawable.seminar_4,
-            category = "Seminar"
-        )
-    )
+fun SavedEventsScreen(
+    navController: NavController,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val savedEvents by viewModel.savedEvents.collectAsState()
 
     Column(
         modifier = Modifier

@@ -17,19 +17,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.ui.components.CertificateCard
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
-fun CertificatesScreen(navController: NavController) {
-    // Dummy Data
-    val certificates = listOf(
-        CertificateData("Seminar Ai di Kota Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Seminar", R.drawable.sertifcontoh),
-        CertificateData("Seminar Ai di Kota Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Seminar", R.drawable.sertifcontoh),
-        CertificateData("Seminar Ai di Kota Surakarta", "25 April 2026", "15:00", "Pura Mangkunegaran", "Seminar", R.drawable.sertifcontoh)
-    )
+fun CertificatesScreen(
+    navController: NavController,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val certificates by viewModel.certificates.collectAsState()
 
     Column(
         modifier = Modifier

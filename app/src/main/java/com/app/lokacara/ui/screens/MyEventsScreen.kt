@@ -17,18 +17,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.app.lokacara.R
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.MyEventCard
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.ProfileViewModel
+
+import com.app.lokacara.ui.navigation.Screen
 
 @Composable
-fun MyEventsScreen(navController: NavController) {
-    // Dummy Data
-    val myEvents = listOf(
-        MyEventData("Seminar Ai di Kota Surakarta", "25 April 2026", "Diikuti 100 orang", "Selesai", R.drawable.seminar_2)
-    )
+fun MyEventsScreen(
+    navController: NavController,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val myEvents by viewModel.myEvents.collectAsState()
 
     Column(
         modifier = Modifier
@@ -65,7 +71,9 @@ fun MyEventsScreen(navController: NavController) {
         ) {
             if (myEvents.isEmpty()) {
                 item {
-                    EmptyEventState()
+                    EmptyEventState(
+                        onClick = { navController.navigate(Screen.CreateEvent.route) }
+                    )
                 }
             } else {
                 items(myEvents) { event ->

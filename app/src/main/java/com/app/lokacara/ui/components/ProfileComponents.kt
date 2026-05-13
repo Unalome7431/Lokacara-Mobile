@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.sp
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
 
 @Composable
 fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
@@ -104,33 +107,34 @@ fun ProfileDetailItem(label: String, value: String) {
 }
 
 @Composable
-fun EmptyEventState() {
+fun EmptyEventState(onClick: () -> Unit) {
+    val stroke = Stroke(
+        width = 3f,
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
+    )
+    val color = Gray500
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
-            .background(Color.Transparent)
-            .clip(RoundedCornerShape(16.dp))
-            .padding(32.dp),
+            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .drawBehind {
+                drawRoundRect(color = color, style = stroke, cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()))
+            }
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .clickable { onClick() }
+            .padding(vertical = 48.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Box(modifier = Modifier.padding(32.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Belum Membuat Event\nCoba Disini",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Gray900,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
+        Text(
+            text = "Belum Membuat Event\nCoba Disini",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Gray900,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
