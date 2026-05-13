@@ -107,6 +107,9 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.Certificates.route) { CertificatesScreen(navController = internalNavController) }
                 composable(Screen.Settings.route) { SettingsScreen(navController = internalNavController) }
                 composable(Screen.About.route) { AboutScreen(navController = internalNavController) }
+                composable(Screen.Bookmark.route) {
+                    BookmarkScreen(navController = internalNavController)
+                }
             }
         }
     }
