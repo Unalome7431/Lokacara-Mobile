@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
@@ -47,24 +48,29 @@ fun HomeHeader(navController: NavController) {
             contentDescription = "Logo",
             modifier = Modifier.height(34.dp)
         )
-        Row {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
             IconButton(
-                onClick = { navController.navigate(Screen.Notification.route) },
-                modifier = Modifier.size(26.dp)
+                onClick = { navController.navigate(Screen.Notification.route) }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = "Notifikasi",
-                    tint = Secondary500
+                    tint = Secondary500,
+                    modifier = Modifier.size(26.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Icon(
-                imageVector = Icons.Outlined.FavoriteBorder,
-                contentDescription = null,
-                tint = Secondary500,
-                modifier = Modifier.size(26.dp)
-            )
+
+            IconButton(
+                onClick = { navController.navigate(Screen.Bookmark.route) }
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Event Tersimpan",
+                    tint = Secondary500,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
         }
     }
 }
