@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +34,14 @@ import com.app.lokacara.ui.theme.*
 @Composable
 fun AboutScreen(navController: NavController) {
     val scrollState = rememberScrollState()
+    
+    val carouselImages = listOf(
+        R.drawable.candi,
+        R.drawable.seminar,
+        R.drawable.seminar_2,
+        R.drawable.seminar_3
+    )
+    val pagerState = rememberPagerState(pageCount = { carouselImages.size })
 
     Column(
         modifier = Modifier
@@ -69,7 +76,7 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // First Text Paragraph
+        // First Text Paragraph (Restored)
         Text(
             text = buildAnnotatedString {
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Gray900)) {
@@ -86,45 +93,20 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Image Card
-        Box(modifier = Modifier.fillMaxWidth()) {
+        // Carousel Section (No dots)
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(16.dp))
+        ) { page ->
             Image(
-                painter = painterResource(id = R.drawable.candi), // Assumes candi.png exists
-                contentDescription = "Prambanan",
+                painter = painterResource(id = carouselImages[page]),
+                contentDescription = "Carousel Image $page",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                modifier = Modifier.fillMaxSize()
             )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "Yogyakarta Concert",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = "Rabu 14 April 2026 | 13.00",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = "Yogyakarta Arena",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -150,7 +132,7 @@ fun AboutScreen(navController: NavController) {
         Button(
             onClick = { /* Contact Action */ },
             modifier = Modifier.align(Alignment.CenterHorizontally),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500), // Blue button
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             shape = RoundedCornerShape(24.dp)
         ) {
             Text(
@@ -163,7 +145,7 @@ fun AboutScreen(navController: NavController) {
             )
         }
         
-        Spacer(modifier = Modifier.height(100.dp)) // Space for bottom navbar
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -174,4 +156,3 @@ fun AboutScreenPreview() {
         AboutScreen(navController = rememberNavController())
     }
 }
-

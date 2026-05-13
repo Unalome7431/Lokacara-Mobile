@@ -11,6 +11,8 @@ import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
@@ -22,18 +24,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileMenuItem
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
-fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
+fun ProfileScreen(
+    navController: NavController, 
+    onLogout: () -> Unit,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val userProfile by viewModel.userProfile.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Gray50) // Or Color(0xFFF9F9FB)
+            .background(Gray50)
     ) {
         // Top Bar
         Row(
@@ -56,7 +66,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
                 color = Gray900
             )
             Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp)) // To balance the back button
+            Spacer(modifier = Modifier.width(20.dp))
         }
 
         Column(
@@ -67,7 +77,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
         ) {
             // Profile Picture
             Image(
-                painter = painterResource(id = R.drawable.profileicon),
+                painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
                 contentDescription = "Profile Picture",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -79,7 +89,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
 
             // Name
             Text(
-                text = "Daffa Arrivo",
+                text = userProfile.name,
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
@@ -161,7 +171,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp,
-                    color = SemanticErrorBase // Red for danger
+                    color = SemanticErrorBase
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
@@ -172,7 +182,7 @@ fun ProfileScreen(navController: NavController, onLogout: () -> Unit) {
                 )
             }
             
-            Spacer(modifier = Modifier.height(100.dp)) // Space for bottom navbar
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }

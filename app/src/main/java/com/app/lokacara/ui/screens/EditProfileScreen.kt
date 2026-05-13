@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
@@ -25,27 +26,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
-fun EditProfileScreen(navController: NavController) {
-    // States for display
-    var name by remember { mutableStateOf("Daffa Arrivo") }
-    var email by remember { mutableStateOf("daffarrivo@studenet.uns.ac.id") }
-    var phone by remember { mutableStateOf("+628788133233145") }
-    var location by remember { mutableStateOf("Surakarta, Jawa Tengah") }
+fun EditProfileScreen(
+    navController: NavController,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val userProfile by viewModel.userProfile.collectAsState()
 
     // Dialog state
     var showDialog by remember { mutableStateOf(false) }
     var editFieldLabel by remember { mutableStateOf("") }
     var editFieldValue by remember { mutableStateOf("") }
+    var editKeyboardType by remember { mutableStateOf(KeyboardType.Text) }
 
     // State for photo picker
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -60,14 +64,10 @@ fun EditProfileScreen(navController: NavController) {
         EditFieldDialog(
             label = editFieldLabel,
             initialValue = editFieldValue,
+            keyboardType = editKeyboardType,
             onDismiss = { showDialog = false },
             onSave = { newValue ->
-                when (editFieldLabel) {
-                    "Nama Lengkap" -> name = newValue
-                    "Email" -> email = newValue
-                    "Nomor" -> phone = newValue
-                    "Lokasi" -> location = newValue
-                }
+                viewModel.updateProfileField(editFieldLabel, newValue)
                 showDialog = false
             }
         )
@@ -127,7 +127,7 @@ fun EditProfileScreen(navController: NavController) {
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.profileicon),
+                        painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
                         contentDescription = "Profile Picture",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -163,7 +163,7 @@ fun EditProfileScreen(navController: NavController) {
             // Name with Edit Icon
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = name,
+                    text = userProfile.name,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
@@ -178,7 +178,8 @@ fun EditProfileScreen(navController: NavController) {
                         .size(18.dp)
                         .clickable {
                             editFieldLabel = "Nama Lengkap"
-                            editFieldValue = name
+                            editFieldValue = userProfile.name
+                            editKeyboardType = KeyboardType.Text
                             showDialog = true
                         }
                 )
@@ -196,21 +197,24 @@ fun EditProfileScreen(navController: NavController) {
                 Column(
                     modifier = Modifier.padding(vertical = 8.dp)
                 ) {
-                    ProfileDetailRow(label = "Email", value = email, onClick = {
+                    ProfileDetailRow(label = "Email", value = userProfile.email, onClick = {
                         editFieldLabel = "Email"
-                        editFieldValue = email
+                        editFieldValue = userProfile.email
+                        editKeyboardType = KeyboardType.Email
                         showDialog = true
                     })
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileDetailRow(label = "Nomor", value = phone, onClick = {
+                    ProfileDetailRow(label = "Nomor", value = userProfile.phone, onClick = {
                         editFieldLabel = "Nomor"
-                        editFieldValue = phone
+                        editFieldValue = userProfile.phone
+                        editKeyboardType = KeyboardType.Phone
                         showDialog = true
                     })
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileDetailRow(label = "Lokasi", value = location, onClick = {
+                    ProfileDetailRow(label = "Lokasi", value = userProfile.location, onClick = {
                         editFieldLabel = "Lokasi"
-                        editFieldValue = location
+                        editFieldValue = userProfile.location
+                        editKeyboardType = KeyboardType.Text
                         showDialog = true
                     })
                 }
@@ -252,6 +256,7 @@ fun ProfileDetailRow(label: String, value: String, onClick: () -> Unit) {
 fun EditFieldDialog(
     label: String,
     initialValue: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
@@ -274,6 +279,7 @@ fun EditFieldDialog(
                 onValueChange = { text = it },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Primary500,

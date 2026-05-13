@@ -26,7 +26,6 @@ import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.MyEventCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
-
 import com.app.lokacara.ui.navigation.Screen
 
 @Composable
@@ -35,6 +34,7 @@ fun MyEventsScreen(
     viewModel: ProfileViewModel = viewModel()
 ) {
     val myEvents by viewModel.myEvents.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -65,19 +65,28 @@ fun MyEventsScreen(
             Spacer(modifier = Modifier.width(20.dp))
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for navbar
-        ) {
-            if (myEvents.isEmpty()) {
-                item {
-                    EmptyEventState(
-                        onClick = { navController.navigate(Screen.CreateEvent.route) }
-                    )
-                }
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Primary500
+                )
             } else {
-                items(myEvents) { event ->
-                    MyEventCard(event)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    if (myEvents.isEmpty()) {
+                        item {
+                            EmptyEventState(
+                                onClick = { navController.navigate(Screen.CreateEvent.route) }
+                            )
+                        }
+                    } else {
+                        items(myEvents) { event ->
+                            MyEventCard(event)
+                        }
+                    }
                 }
             }
         }
