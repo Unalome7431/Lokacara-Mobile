@@ -1,0 +1,286 @@
+package com.app.lokacara.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.app.lokacara.data.SettingsManager
+import kotlinx.coroutines.launch
+import com.app.lokacara.ui.theme.*
+
+@Composable
+fun SettingsScreen(navController: NavController) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context) }
+    val notificationsEnabled by settingsManager.notificationsEnabled.collectAsState(initial = true)
+    val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Gray50)
+    ) {
+        // Top Bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.ArrowBackIosNew,
+                contentDescription = "Back",
+                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Pengaturan",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Gray900
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.width(20.dp))
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 1. Preferensi
+            SettingsSectionTitle(title = "Preferensi")
+            SettingsCard {
+                SettingsToggleRow(
+                    icon = Icons.Rounded.Notifications,
+                    title = "Notifikasi",
+                    isChecked = notificationsEnabled,
+                    onCheckedChange = { 
+                        coroutineScope.launch {
+                            settingsManager.setNotificationsEnabled(it) 
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 2. Keamanan
+            SettingsSectionTitle(title = "Keamanan")
+            SettingsCard {
+                SettingsActionRow(
+                    icon = Icons.Rounded.Lock,
+                    title = "Ubah Kata Sandi", 
+                    onClick = { /* Navigate to Change Password */ }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 3. Bantuan & Informasi
+            SettingsSectionTitle(title = "Bantuan & Informasi")
+            SettingsCard {
+                SettingsActionRow(
+                    icon = Icons.Rounded.HelpOutline,
+                    title = "Pusat Bantuan", 
+                    onClick = { /* Navigate to Help Center */ }
+                )
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                SettingsActionRow(
+                    icon = Icons.Rounded.Article,
+                    title = "Syarat & Ketentuan", 
+                    onClick = { /* Navigate to T&C */ }
+                )
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                SettingsActionRow(
+                    icon = Icons.Rounded.PrivacyTip,
+                    title = "Kebijakan Privasi", 
+                    onClick = { /* Navigate to Privacy Policy */ }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 4. Danger Zone
+            SettingsSectionTitle(title = "Lainnya")
+            SettingsCard {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { /* Show Delete Account Dialog */ }
+                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(SemanticErrorLight, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = null,
+                            tint = SemanticErrorBase,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Hapus Akun",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = SemanticErrorBase // Red for danger
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+fun SettingsSectionTitle(title: String) {
+    Text(
+        text = title,
+        fontFamily = NunitoFont,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        color = Gray500,
+        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+    )
+}
+
+@Composable
+fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Primary100, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Secondary500,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Gray900
+            )
+        }
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Secondary500, // Changed from Primary500 to Secondary500 (Yellow)
+                uncheckedThumbColor = Gray400,
+                uncheckedTrackColor = Gray100
+            )
+        )
+    }
+}
+
+@Composable
+fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Primary100, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Secondary500, // Using yellow as requested
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Gray900
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Gray400,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SettingsScreenPreview() {
+    LokacaraMobileTheme {
+        SettingsScreen(navController = rememberNavController())
+    }
+}

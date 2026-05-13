@@ -25,6 +25,7 @@ val Secondary800 = Color(0xFF78350F)
 val Secondary900 = Color(0xFF451A03)
 
 
+val Gray50 = Color(0xFFF9FAFB)
 val Gray100 = Color(0xFFF3F4F6)
 val Gray200 = Color(0xFFE5E7EB)
 val Gray300 = Color(0xFFD1D5DB)
