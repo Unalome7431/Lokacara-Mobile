@@ -115,7 +115,7 @@ fun ExpandedSearchSection(
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = eventName, onValueChange = onEventNameChange,
-                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)) },
+                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)) },
                 textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(8.dp), colors = textFieldColors, singleLine = true,
@@ -146,7 +146,7 @@ fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholde
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
             value = value, onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
-            placeholder = { Text(placeholder, fontSize = 14.sp, color = Gray500) },
+            placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray500) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = { Icon(icon, null, tint = Primary500) },
             modifier = Modifier.fillMaxWidth().menuAnchor(), shape = RoundedCornerShape(8.dp),

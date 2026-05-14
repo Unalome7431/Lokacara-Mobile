@@ -110,6 +110,10 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.Bookmark.route) {
                     BookmarkScreen(navController = internalNavController)
                 }
+                composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController = internalNavController) }
+                composable(Screen.HelpCenter.route) { HelpCenterScreen(navController = internalNavController) }
+                composable(Screen.TermsConditions.route) { TermsConditionsScreen(navController = internalNavController) }
+                composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController = internalNavController) }
             }
         }
     }

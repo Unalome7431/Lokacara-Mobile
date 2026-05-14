@@ -255,7 +255,7 @@ fun CreateEventScreen(
                         Text(
                             text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet,",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             color = Gray500
                         )
                     },
@@ -390,7 +390,7 @@ fun CreateEventTextField(
                 Text(
                     text = placeholder,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     color = Gray500
                 )
             },
