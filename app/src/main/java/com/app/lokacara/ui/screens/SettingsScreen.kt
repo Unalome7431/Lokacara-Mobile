@@ -25,17 +25,69 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import com.app.lokacara.data.SettingsManager
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.lokacara.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.ui.navigation.Screen
 
 @Composable
-fun SettingsScreen(navController: NavController) {
-    val context = LocalContext.current
-    val settingsManager = remember { SettingsManager(context) }
-    val notificationsEnabled by settingsManager.notificationsEnabled.collectAsState(initial = true)
-    val coroutineScope = rememberCoroutineScope()
+fun SettingsScreen(
+    navController: NavController,
+    viewModel: SettingsViewModel = viewModel()
+) {
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val scrollState = rememberScrollState()
+    
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(
+                    text = "Hapus Akun",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.",
+                    fontFamily = NunitoFont,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        // Perform delete account logic here
+                    }
+                ) {
+                    Text(
+                        text = "Hapus",
+                        color = SemanticErrorBase,
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(
+                        text = "Batal",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        color = Gray500
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -82,9 +134,7 @@ fun SettingsScreen(navController: NavController) {
                     title = "Notifikasi",
                     isChecked = notificationsEnabled,
                     onCheckedChange = { 
-                        coroutineScope.launch {
-                            settingsManager.setNotificationsEnabled(it) 
-                        }
+                        viewModel.setNotificationsEnabled(it) 
                     }
                 )
             }
@@ -97,7 +147,7 @@ fun SettingsScreen(navController: NavController) {
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
                     title = "Ubah Kata Sandi", 
-                    onClick = { /* Navigate to Change Password */ }
+                    onClick = { navController.navigate(Screen.ChangePassword.route) }
                 )
             }
 
@@ -109,19 +159,19 @@ fun SettingsScreen(navController: NavController) {
                 SettingsActionRow(
                     icon = Icons.Rounded.HelpOutline,
                     title = "Pusat Bantuan", 
-                    onClick = { /* Navigate to Help Center */ }
+                    onClick = { navController.navigate(Screen.HelpCenter.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.Article,
                     title = "Syarat & Ketentuan", 
-                    onClick = { /* Navigate to T&C */ }
+                    onClick = { navController.navigate(Screen.TermsConditions.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
                     title = "Kebijakan Privasi", 
-                    onClick = { /* Navigate to Privacy Policy */ }
+                    onClick = { navController.navigate(Screen.PrivacyPolicy.route) }
                 )
             }
 
@@ -133,7 +183,7 @@ fun SettingsScreen(navController: NavController) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { /* Show Delete Account Dialog */ }
+                        .clickable { showDeleteDialog = true }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

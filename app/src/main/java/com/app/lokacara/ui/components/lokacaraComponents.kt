@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
 
@@ -39,7 +40,7 @@ fun LokacaraTextField(
         placeholder = {
             Text(
                 text = placeholder,
-                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
                 color = Gray500
             )
         },
@@ -64,6 +65,8 @@ fun LokacaraTextField(
             disabledContainerColor = Secondary100,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
+            focusedTextColor = Gray900,
+            unfocusedTextColor = Gray900
         ),
         shape = MaterialTheme.shapes.small,
         singleLine = true
