@@ -151,7 +151,9 @@ fun ChangePasswordScreen(navController: NavController) {
                             unfocusedBorderColor = Gray200,
                             focusedBorderColor = Primary500,
                             focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50
+                            unfocusedContainerColor = Gray50,
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900
                         )
                     )
 
@@ -185,7 +187,9 @@ fun ChangePasswordScreen(navController: NavController) {
                             unfocusedBorderColor = Gray200,
                             focusedBorderColor = Primary500,
                             focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50
+                            unfocusedContainerColor = Gray50,
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900
                         )
                     )
 
@@ -219,7 +223,9 @@ fun ChangePasswordScreen(navController: NavController) {
                             unfocusedBorderColor = Gray200,
                             focusedBorderColor = Primary500,
                             focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50
+                            unfocusedContainerColor = Gray50,
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900
                         )
                     )
                 }

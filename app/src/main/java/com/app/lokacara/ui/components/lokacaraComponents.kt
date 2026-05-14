@@ -65,6 +65,8 @@ fun LokacaraTextField(
             disabledContainerColor = Secondary100,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
+            focusedTextColor = Gray900,
+            unfocusedTextColor = Gray900
         ),
         shape = MaterialTheme.shapes.small,
         singleLine = true

@@ -115,7 +115,9 @@ fun HelpCenterScreen(navController: NavController) {
                     unfocusedBorderColor = Color.Transparent,
                     focusedBorderColor = Primary500,
                     focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    unfocusedContainerColor = Color.White,
+                    focusedTextColor = Gray900,
+                    unfocusedTextColor = Gray900
                 )
             )
 

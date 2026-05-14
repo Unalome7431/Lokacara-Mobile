@@ -263,7 +263,9 @@ fun CreateEventScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = Gray900,
+                        unfocusedTextColor = Gray900
                     ),
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium
@@ -400,6 +402,8 @@ fun CreateEventTextField(
                 disabledContainerColor = containerColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = Gray900,
+                unfocusedTextColor = Gray900
             ),
             shape = RoundedCornerShape(16.dp),
             singleLine = true,
