@@ -13,6 +13,12 @@ class NotificationViewModel : ViewModel() {
     private val repository = NotificationRepository()
     private val _notifications = MutableStateFlow(repository.getNotifications())
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     val selectedTab = MutableStateFlow(0)
 
     val filteredNotifications = selectedTab.map { tabIndex ->

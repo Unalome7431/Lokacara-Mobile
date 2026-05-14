@@ -27,16 +27,30 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
 @Composable
-fun ChangePasswordScreen(navController: NavController) {
-    var oldPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    
-    var oldPasswordVisible by remember { mutableStateOf(false) }
-    var newPasswordVisible by remember { mutableStateOf(false) }
-    var confirmPasswordVisible by remember { mutableStateOf(false) }
+fun ChangePasswordScreen(
+    navController: NavController,
+    viewModel: ChangePasswordViewModel = viewModel()
+) {
+    val oldPassword by viewModel.oldPassword.collectAsState()
+    val newPassword by viewModel.newPassword.collectAsState()
+    val confirmPassword by viewModel.confirmPassword.collectAsState()
+    val oldPasswordVisible by viewModel.oldPasswordVisible.collectAsState()
+    val newPasswordVisible by viewModel.newPasswordVisible.collectAsState()
+    val confirmPasswordVisible by viewModel.confirmPasswordVisible.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val changeSuccess by viewModel.changeSuccess.collectAsState()
+
+    LaunchedEffect(changeSuccess) {
+        if (changeSuccess) {
+            viewModel.resetChangeSuccess()
+            navController.popBackStack()
+        }
+    }
 
     val scrollState = rememberScrollState()
 
@@ -133,13 +147,13 @@ fun ChangePasswordScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = oldPassword,
-                        onValueChange = { oldPassword = it },
+                        onValueChange = { viewModel.oldPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Masukkan kata sandi lama", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (oldPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            IconButton(onClick = { oldPasswordVisible = !oldPasswordVisible }) {
+                            IconButton(onClick = { viewModel.oldPasswordVisible.value = !viewModel.oldPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (oldPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                                     contentDescription = null,
@@ -169,13 +183,13 @@ fun ChangePasswordScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = newPassword,
-                        onValueChange = { newPassword = it },
+                        onValueChange = { viewModel.newPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Masukkan kata sandi baru", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                            IconButton(onClick = { viewModel.newPasswordVisible.value = !viewModel.newPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (newPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                                     contentDescription = null,
@@ -205,13 +219,13 @@ fun ChangePasswordScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
+                        onValueChange = { viewModel.confirmPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Ulangi kata sandi baru", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            IconButton(onClick = { viewModel.confirmPasswordVisible.value = !viewModel.confirmPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (confirmPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                                     contentDescription = null,
@@ -233,21 +247,39 @@ fun ChangePasswordScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            errorMessage?.let { msg ->
+                Text(
+                    text = msg,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = SemanticErrorBase,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             Button(
-                onClick = { /* Handle Password Change */ },
+                onClick = { viewModel.changePassword() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
+                enabled = !isLoading,
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Primary500)
             ) {
-                Text(
-                    text = "Simpan Perubahan",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text(
+                        text = "Simpan Perubahan",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(100.dp))
@@ -259,6 +291,9 @@ fun ChangePasswordScreen(navController: NavController) {
 @Composable
 fun ChangePasswordScreenPreview() {
     LokacaraMobileTheme {
-        ChangePasswordScreen(navController = rememberNavController())
+        ChangePasswordScreen(
+            navController = rememberNavController(),
+            viewModel = viewModel()
+        )
     }
 }

@@ -13,6 +13,12 @@ class ExploreViewModel : ViewModel() {
     val locationSuggestions = repository.getLocations()
     val categorySuggestions = repository.getCategories()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     // UI States
     val isSearchExpanded = MutableStateFlow(false)
     val eventName = MutableStateFlow("")
@@ -35,7 +41,9 @@ class ExploreViewModel : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     init {
+        _isLoading.value = true
         _allEvents.value = repository.getEvents()
+        _isLoading.value = false
     }
 
     fun resetFilters() {

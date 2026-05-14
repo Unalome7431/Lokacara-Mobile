@@ -19,14 +19,27 @@ import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.lokacara.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    viewModel: AuthViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val email by viewModel.email.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
+
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            viewModel.resetLoginSuccess()
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -68,7 +81,7 @@ fun LoginScreen(
 
         LokacaraTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { viewModel.email.value = it },
             placeholder = "Email / Nomor Telepon"
         )
 
@@ -76,7 +89,7 @@ fun LoginScreen(
 
         LokacaraTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { viewModel.password.value = it },
             placeholder = "Kata Sandi",
             isPassword = true
         )
@@ -96,10 +109,11 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { onLoginSuccess() },
+            onClick = { viewModel.login() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
+            enabled = !isLoading,
             elevation = ButtonDefaults.buttonElevation(
                 defaultElevation = 4.dp,
                 pressedElevation = 8.dp
@@ -107,7 +121,22 @@ fun LoginScreen(
             colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             shape = RoundedCornerShape(100.dp)
         ) {
-            Text("Masuk", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Text("Masuk", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        errorMessage?.let { msg ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = msg,
+                style = MaterialTheme.typography.labelSmall,
+                color = SemanticErrorBase,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -128,7 +157,8 @@ fun LoginScreenPreview() {
     LokacaraMobileTheme {
         LoginScreen(
             onNavigateToRegister = {},
-            onLoginSuccess = {}
+            onLoginSuccess = {},
+            viewModel = viewModel()
         )
     }
 }
