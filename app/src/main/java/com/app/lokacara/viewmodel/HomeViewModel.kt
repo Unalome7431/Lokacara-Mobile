@@ -12,6 +12,12 @@ class HomeViewModel : ViewModel() {
     val locations = repository.getLocations()
     val categories = repository.getCategories()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     // Data Source Events
     private val _allNearbyEvents = MutableStateFlow<List<Event>>(emptyList())
 
@@ -36,8 +42,10 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun loadData() {
+        _isLoading.value = true
         _popularEvents.value = repository.getPopularEvents()
         _allNearbyEvents.value = repository.getNearbyEvents()
+        _isLoading.value = false
     }
 
     fun updateLocation(location: String) {

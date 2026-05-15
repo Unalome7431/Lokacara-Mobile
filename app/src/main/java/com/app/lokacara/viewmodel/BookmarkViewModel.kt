@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 class BookmarkViewModel : ViewModel() {
     private val repository = BookmarkRepository()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     private val _savedEvents = MutableStateFlow(repository.getSavedEvents())
     val savedEvents: StateFlow<List<Event>> = _savedEvents.asStateFlow()
 

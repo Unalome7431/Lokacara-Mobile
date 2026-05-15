@@ -22,14 +22,27 @@ import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.lokacara.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    viewModel: AuthViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isChecked by remember { mutableStateOf(false) }
+    val email by viewModel.email.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val isChecked by viewModel.isChecked.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val registerSuccess by viewModel.registerSuccess.collectAsState()
+
+    LaunchedEffect(registerSuccess) {
+        if (registerSuccess) {
+            viewModel.resetRegisterSuccess()
+            onNavigateToLogin()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,7 +84,7 @@ fun RegisterScreen(
 
         LokacaraTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { viewModel.email.value = it },
             placeholder = "Email / Nomor Telepon"
         )
 
@@ -79,7 +92,7 @@ fun RegisterScreen(
 
         LokacaraTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { viewModel.password.value = it },
             placeholder = "Kata Sandi",
             isPassword = true
         )
@@ -92,7 +105,7 @@ fun RegisterScreen(
         ) {
             Checkbox(
                 checked = isChecked,
-                onCheckedChange = { isChecked = it },
+                onCheckedChange = { viewModel.isChecked.value = it },
                 colors = CheckboxDefaults.colors(
                     checkedColor = Primary500,
                     uncheckedColor = Gray300
@@ -118,10 +131,11 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { },
+            onClick = { viewModel.register() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
+            enabled = !isLoading,
             elevation = ButtonDefaults.buttonElevation(
                 defaultElevation = 4.dp,
                 pressedElevation = 8.dp
@@ -129,7 +143,22 @@ fun RegisterScreen(
             colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             shape = RoundedCornerShape(100.dp)
         ) {
-            Text("Daftar", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Text("Daftar", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        errorMessage?.let { msg ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = msg,
+                style = MaterialTheme.typography.labelSmall,
+                color = SemanticErrorBase,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -166,7 +195,8 @@ fun RegisterScreen(
 fun RegisterScreenPreview() {
     LokacaraMobileTheme {
         RegisterScreen(
-            onNavigateToLogin = {}
+            onNavigateToLogin = {},
+            viewModel = viewModel()
         )
     }
 }

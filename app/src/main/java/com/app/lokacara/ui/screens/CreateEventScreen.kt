@@ -29,13 +29,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.app.lokacara.viewmodel.CreateEventViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
     onBack: () -> Unit = {},
-    onPublish: () -> Unit = {}
+    onPublish: () -> Unit = {},
+    viewModel: CreateEventViewModel = viewModel()
 ) {
+    val namaEvent by viewModel.namaEvent.collectAsState()
+    val kategori by viewModel.kategori.collectAsState()
+    val penyelenggara by viewModel.penyelenggara.collectAsState()
+    val waktuMulai by viewModel.waktuMulai.collectAsState()
+    val waktuSelesai by viewModel.waktuSelesai.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val aplikasiTempat by viewModel.aplikasiTempat.collectAsState()
+    val alamat by viewModel.alamat.collectAsState()
+    val deskripsi by viewModel.deskripsi.collectAsState()
+    val kuota by viewModel.kuota.collectAsState()
+    val publishSuccess by viewModel.publishSuccess.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(publishSuccess) {
+        if (publishSuccess) {
+            viewModel.resetPublishSuccess()
+            onPublish()
+        }
+    }
+
     val lightBlueBg = Color(0xFFD6E4FF)
     val darkerBlueBg = Color(0xFFA1C1FF)
     val primaryOrange = Color(0xFFFFAA00)
@@ -143,28 +166,25 @@ fun CreateEventScreen(
         }
 
         // 3. Rentetan Input Teks Dasar
-        var namaEvent by remember { mutableStateOf("") }
         CreateEventTextField(
             value = namaEvent,
-            onValueChange = { namaEvent = it },
+            onValueChange = { viewModel.namaEvent.value = it },
             label = "Nama Event",
             placeholder = "Nama Event",
             containerColor = lightBlueBg
         )
 
-        var kategori by remember { mutableStateOf("") }
         CreateEventTextField(
             value = kategori,
-            onValueChange = { kategori = it },
+            onValueChange = { viewModel.kategori.value = it },
             label = "Kategori",
             placeholder = "Kategori",
             containerColor = lightBlueBg
         )
 
-        var penyelenggara by remember { mutableStateOf("") }
         CreateEventTextField(
             value = penyelenggara,
-            onValueChange = { penyelenggara = it },
+            onValueChange = { viewModel.penyelenggara.value = it },
             label = "Penyelenggara",
             placeholder = "Nama organisasi / EO",
             containerColor = lightBlueBg
@@ -183,12 +203,9 @@ fun CreateEventScreen(
                 )
             }
         ) {
-            var waktuMulai by remember { mutableStateOf("") }
-            var waktuSelesai by remember { mutableStateOf("") }
-
             CreateEventTextField(
                 value = waktuMulai,
-                onValueChange = { waktuMulai = it },
+                onValueChange = { viewModel.waktuMulai.value = it },
                 label = "Mulai",
                 placeholder = "mm/dd/yyyy, --:--",
                 containerColor = Color.White,
@@ -196,7 +213,7 @@ fun CreateEventScreen(
             )
             CreateEventTextField(
                 value = waktuSelesai,
-                onValueChange = { waktuSelesai = it },
+                onValueChange = { viewModel.waktuSelesai.value = it },
                 label = "Selesai",
                 placeholder = "mm/dd/yyyy, --:--",
                 containerColor = Color.White,
@@ -206,7 +223,6 @@ fun CreateEventScreen(
 
         // 5 & 6. Detail Event & Deskripsi Event Connected
         Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-            var isOnline by remember { mutableStateOf(true) }
 
             // 5. Detail Event
             SectionContainer(
@@ -214,15 +230,12 @@ fun CreateEventScreen(
                 backgroundColor = lightBlueBg,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                 trailingContent = {
-                    CustomToggleSwitch(isOnline = isOnline, onToggle = { isOnline = it })
+                    CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.isOnline.value = it })
                 }
             ) {
-                var aplikasiTempat by remember { mutableStateOf("") }
-                var alamat by remember { mutableStateOf("") }
-
                 CreateEventTextField(
                     value = aplikasiTempat,
-                    onValueChange = { aplikasiTempat = it },
+                    onValueChange = { viewModel.aplikasiTempat.value = it },
                     label = if (isOnline) "Aplikasi" else "Tempat",
                     placeholder = if (isOnline) "nama aplikasi" else "nama tempat",
                     containerColor = Color.White,
@@ -230,7 +243,7 @@ fun CreateEventScreen(
                 )
                 CreateEventTextField(
                     value = alamat,
-                    onValueChange = { alamat = it },
+                    onValueChange = { viewModel.alamat.value = it },
                     label = "Alamat/Link",
                     placeholder = "uns.id/ivogamteng",
                     containerColor = Color.White,
@@ -244,10 +257,9 @@ fun CreateEventScreen(
                 backgroundColor = darkerBlueBg,
                 shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
             ) {
-                var deskripsi by remember { mutableStateOf("") }
                 TextField(
                     value = deskripsi,
-                    onValueChange = { deskripsi = it },
+                    onValueChange = { viewModel.deskripsi.value = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
@@ -279,14 +291,26 @@ fun CreateEventScreen(
             backgroundColor = lightBlueBg,
             subtitle = "Batas maksimal pendaftar",
             trailingContent = {
-                var kuota by remember { mutableIntStateOf(50) }
-                Stepper(value = kuota, onValueChange = { kuota = it })
+                Stepper(value = kuota, onValueChange = { viewModel.kuota.value = it })
             }
         )
 
         // 8. Tombol Terbitkan Event
+        errorMessage?.let { msg ->
+            Text(
+                text = msg,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = SemanticErrorBase,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         Button(
-            onClick = { onPublish() },
+            onClick = { viewModel.publish() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -495,6 +519,10 @@ fun Stepper(value: Int, onValueChange: (Int) -> Unit) {
 @Composable
 fun CreateEventScreenPreview() {
     com.app.lokacara.ui.theme.LokacaraMobileTheme {
-        CreateEventScreen()
+        CreateEventScreen(
+            onBack = {},
+            onPublish = {},
+            viewModel = viewModel()
+        )
     }
 }

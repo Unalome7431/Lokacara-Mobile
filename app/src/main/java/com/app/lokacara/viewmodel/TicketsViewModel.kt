@@ -12,6 +12,12 @@ class TicketsViewModel : ViewModel() {
 
     private val repository = TicketsRepository()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     private val _upcomingEvents = MutableStateFlow<List<UpcomingEvent>>(emptyList())
     val upcomingEvents: StateFlow<List<UpcomingEvent>> = _upcomingEvents.asStateFlow()
 
@@ -23,7 +29,9 @@ class TicketsViewModel : ViewModel() {
     }
 
     private fun loadEvents() {
+        _isLoading.value = true
         _upcomingEvents.value = repository.getUpcomingEvents()
         _historyEvents.value = repository.getHistoryEvents()
+        _isLoading.value = false
     }
 }
