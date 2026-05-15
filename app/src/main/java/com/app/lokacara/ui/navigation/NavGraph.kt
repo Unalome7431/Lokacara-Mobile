@@ -9,12 +9,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
 
@@ -73,10 +71,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 composable(Screen.Home.route) { HomeScreen(navController = internalNavController) }
-                composable(
-                    route = "event_detail/{eventId}",
-                    arguments = listOf(navArgument("eventId") { type = NavType.StringType })
-                ) {
+                composable(Screen.EventDetail.route) {
                     EventDetailScreen(navController = internalNavController)
                 }
                 composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }

@@ -44,8 +44,8 @@ fun HomeScreen(
             item(key = "popular_section") {
                 PopularEventSection(
                     popularEvents = popularEvents,
-                    onEventClick = { event ->
-                        navController.navigate(Screen.EventDetail(event.id).route)
+                    onEventClick = {
+                        navController.navigate(Screen.EventDetail.route)
                     }
                 )
             }
@@ -71,7 +71,7 @@ fun HomeScreen(
                         viewModel.toggleBookmark(event.id)
                     },
                     onClick = {
-                        navController.navigate(Screen.EventDetail(event.id).route)
+                        navController.navigate(Screen.EventDetail.route)
                     }
                 )
             }
