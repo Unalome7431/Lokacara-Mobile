@@ -1,5 +1,8 @@
 package com.app.lokacara.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Event(
     val id: String,
     val title: String,

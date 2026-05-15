@@ -13,12 +13,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -46,6 +48,7 @@ fun EventDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     var showJoinDialog by remember { mutableStateOf(false) }
+    var showShareDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -107,42 +110,60 @@ fun EventDetailScreen(
                     }
                 }
                 else -> {
-                    Image(
-                        painter = painterResource(id = event.imageRes),
-                        contentDescription = null,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(220.dp)
-                            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                            .height(260.dp)
+                            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+                    ) {
+                        Image(
+                            painter = painterResource(id = event.imageRes),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
 
-                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.65f)
+                                        )
+                                    )
+                                )
+                        )
 
                         Text(
                             text = event.title,
                             fontFamily = NunitoFont,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 22.sp,
-                            color = Gray900
+                            color = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(horizontal = 24.dp, vertical = 20.dp)
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        Surface(
-                            color = Secondary500,
-                            shape = RoundedCornerShape(100.dp)
-                        ) {
-                            Text(
-                                text = event.category,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                fontFamily = PlusJakartaSansFont,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = Color.White
-                            )
-                        }
+                    Surface(
+                        color = Secondary500,
+                        shape = RoundedCornerShape(100.dp),
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    ) {
+                        Text(
+                            text = event.category,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            fontFamily = PlusJakartaSansFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -208,22 +229,36 @@ fun EventDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Button(
-                        onClick = { showJoinDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 24.dp),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Gabung Event",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Color.White
-                        )
+                        Button(
+                            onClick = { showJoinDialog = true },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                        ) {
+                            Text(
+                                text = "Gabung Event",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showShareDialog = true },
+                            modifier = Modifier.size(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "Share",
+                                tint = Primary500
+                            )
+                        }
                     }
 
                     if (relatedEvents.isNotEmpty()) {
@@ -284,6 +319,42 @@ fun EventDetailScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showJoinDialog = false }) {
+                    Text(
+                        text = "OK",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary500
+                    )
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = Color.White
+        )
+    }
+
+    if (showShareDialog) {
+        AlertDialog(
+            onDismissRequest = { showShareDialog = false },
+            title = {
+                Text(
+                    text = "Bagikan Event",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Primary500
+                )
+            },
+            text = {
+                Text(
+                    text = "Link event \"${event.title}\" telah disalin ke clipboard.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 14.sp,
+                    color = Gray600,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showShareDialog = false }) {
                     Text(
                         text = "OK",
                         fontFamily = NunitoFont,

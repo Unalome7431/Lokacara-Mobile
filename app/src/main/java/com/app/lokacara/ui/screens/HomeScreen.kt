@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +35,13 @@ fun HomeScreen(
     val filteredEvents by viewModel.filteredEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
 
+    val onEventClick = remember {
+        { navController.navigate(Screen.EventDetail.route) }
+    }
+    val onBookmarkClick: (String) -> Unit = remember {
+        { eventId -> viewModel.toggleBookmark(eventId) }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
 
@@ -44,9 +52,7 @@ fun HomeScreen(
             item(key = "popular_section") {
                 PopularEventSection(
                     popularEvents = popularEvents,
-                    onEventClick = {
-                        navController.navigate(Screen.EventDetail.route)
-                    }
+                    onEventClick = { onEventClick() }
                 )
             }
 
@@ -67,16 +73,12 @@ fun HomeScreen(
             ) { event ->
                 EventCard(
                     event = event,
-                    onBookmarkClick = {
-                        viewModel.toggleBookmark(event.id)
-                    },
-                    onClick = {
-                        navController.navigate(Screen.EventDetail.route)
-                    }
+                    onBookmarkClick = { onBookmarkClick(event.id) },
+                    onClick = onEventClick
                 )
             }
 
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 }

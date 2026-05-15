@@ -13,6 +13,8 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,11 +23,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
@@ -79,17 +84,28 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val pageCount = Int.MAX_VALUE
-    val initialPage = pageCount / 2
-    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+    val virtualPageCount = popularEvents.size * 1000
+    val initialPage = virtualPageCount / 2
+    val pagerState = rememberPagerState(
         initialPage = initialPage,
-        pageCount = { pageCount }
+        pageCount = { virtualPageCount }
     )
 
-    LaunchedEffect(Unit) {
-        while(true) {
-            delay(4000)
-            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    val cardShape = remember { RoundedCornerShape(24.dp) }
+    val gradientBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color.Black.copy(0.3f), Color.Transparent, Color.Black.copy(0.5f)),
+            startY = 0f
+        )
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(4000)
+                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+            }
         }
     }
 
@@ -105,50 +121,47 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
         )
 
-        androidx.compose.foundation.pager.HorizontalPager(
+        HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth(),
             beyondViewportPageCount = 1
         ) { page ->
-            val event = popularEvents[page % popularEvents.size]
+            key(page) {
+                val event = popularEvents[page % popularEvents.size]
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
-                    .clickable { onEventClick(event) }
-            ) {
-                AsyncImage(
-                    model = event.imageRes,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                Box(modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(0.3f), Color.Transparent, Color.Black.copy(0.5f)),
-                        startY = 0f
-                    )
-                ))
-
-                Text(
-                    text = event.title,
-                    color = Color.White,
-                    style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                    modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
-                )
-
-                Column(
-                    modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
-                    horizontalAlignment = Alignment.End
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(cardShape)
+                        .shadow(elevation = 8.dp, shape = cardShape)
+                        .clickable { onEventClick(event) }
                 ) {
-                    Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
-                    Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                    AsyncImage(
+                        model = event.imageRes,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
+
+                    Text(
+                        text = event.title,
+                        color = Color.White,
+                        style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                        modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
+                    )
+
+                    Column(
+                        modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
+                        Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                    }
                 }
             }
         }
