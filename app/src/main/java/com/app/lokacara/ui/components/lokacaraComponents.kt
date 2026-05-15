@@ -40,6 +40,7 @@ fun LokacaraTextField(
         placeholder = {
             Text(
                 text = placeholder,
+                fontFamily = PlusJakartaSansFont,
                 fontSize = 12.sp,
                 color = Gray500
             )
