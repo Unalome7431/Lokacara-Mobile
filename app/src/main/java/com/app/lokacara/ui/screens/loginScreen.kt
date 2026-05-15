@@ -139,10 +139,27 @@ fun LoginScreen(
             )
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Belum memiliki akun? ", style = MaterialTheme.typography.labelSmall, color = Gray500)
+            Text(
+                text = "Daftar",
+                style = MaterialTheme.typography.labelSmall,
+                color = Primary500,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onNavigateToRegister() }
+            )
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
         Image(
-            painter = painterResource(id = R.drawable.logo_lokacara), // Sesuaikan id logomu
+            painter = painterResource(id = R.drawable.logo_lokacara),
             contentDescription = "Logo Bawah",
             modifier = Modifier
                 .size(200.dp)
