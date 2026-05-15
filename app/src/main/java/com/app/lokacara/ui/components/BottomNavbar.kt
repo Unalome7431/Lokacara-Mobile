@@ -55,7 +55,6 @@ fun BottomNavbar(navController: NavController) {
         )
     }
 
-    // Optimization: Memoize the navigation handler to ensure stability across recompositions
     val onNavigate: (String) -> Unit = remember(navController) {
         { route ->
             navController.navigate(route) {
@@ -68,7 +67,6 @@ fun BottomNavbar(navController: NavController) {
         }
     }
 
-    // Optimization: Unified background color (Always White)
     Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
         HorizontalDivider(thickness = 0.5.dp, color = Gray200)
         
@@ -113,7 +111,6 @@ private fun RowScope.NavItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     
-    // Modification: Using Yellow (Secondary500) for highlight instead of Blue
     val highlightColor = Secondary500.copy(alpha = 0.12f)
     val animatedBgColor by animateColorAsState(
         targetValue = if (isSelected) highlightColor else Color.Transparent,
@@ -135,7 +132,6 @@ private fun RowScope.NavItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Top Indicator Line - Using Yellow (Secondary500)
         if (isSelected) {
             Box(
                 modifier = Modifier

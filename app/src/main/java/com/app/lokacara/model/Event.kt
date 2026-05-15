@@ -9,5 +9,6 @@ data class Event(
     val price: String,
     val imageRes: Int,
     val category: String,
-    val isBookmarked: Boolean = false
+    val isBookmarked: Boolean = false,
+    val penyelenggara: String = ""
 )

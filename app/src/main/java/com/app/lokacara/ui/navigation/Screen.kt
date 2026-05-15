@@ -11,7 +11,6 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object Notification : Screen("notification")
     
-    // Profile Sub-screens
     object EditProfile : Screen("edit_profile")
     object MyEvents : Screen("my_events")
     object SavedEvents : Screen("saved_events")
@@ -23,4 +22,5 @@ sealed class Screen(val route: String) {
     object HelpCenter : Screen("help_center")
     object TermsConditions : Screen("terms_conditions")
     object PrivacyPolicy : Screen("privacy_policy")
+    data class EventDetail(val eventId: String) : Screen("event_detail/{eventId}")
 }

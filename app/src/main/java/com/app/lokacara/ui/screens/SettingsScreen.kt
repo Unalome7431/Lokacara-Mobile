@@ -63,7 +63,6 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        // Perform delete account logic here
                     }
                 ) {
                     Text(
@@ -94,7 +93,6 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +124,6 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. Preferensi
             SettingsSectionTitle(title = "Preferensi")
             SettingsCard {
                 SettingsToggleRow(
@@ -141,7 +138,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. Keamanan
             SettingsSectionTitle(title = "Keamanan")
             SettingsCard {
                 SettingsActionRow(
@@ -153,7 +149,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Bantuan & Informasi
             SettingsSectionTitle(title = "Bantuan & Informasi")
             SettingsCard {
                 SettingsActionRow(
@@ -177,7 +172,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 4. Danger Zone
             SettingsSectionTitle(title = "Lainnya")
             SettingsCard {
                 Row(
@@ -206,7 +200,7 @@ fun SettingsScreen(
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
-                        color = SemanticErrorBase // Red for danger
+                        color = SemanticErrorBase
                     )
                 }
             }

@@ -57,7 +57,6 @@ val SemanticInfoBase = Color(0xFF3B82F6)
 val SemanticInfoLight = Color(0xFFDBEAFE)
 val SemanticInfoInteraction = Color(0xFF93C5FD)
 
-// Svg Colors extracted for global use
 val SvgBackground = Color(0xFFFAF8FF)
 val SvgPrimaryBlue = Color(0xFF0D59F2)
 val SvgOrange = Color(0xFFFFAA00)

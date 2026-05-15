@@ -45,7 +45,6 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,7 +74,6 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Picture
             Image(
                 painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
                 contentDescription = "Profile Picture",
@@ -87,7 +85,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Name
             Text(
                 text = userProfile.name,
                 fontFamily = NunitoFont,
@@ -98,7 +95,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Group 1
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp),
@@ -134,7 +130,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Group 2
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp),
@@ -158,7 +153,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Logout Button
             Row(
                 modifier = Modifier
                     .clickable { onLogout() }

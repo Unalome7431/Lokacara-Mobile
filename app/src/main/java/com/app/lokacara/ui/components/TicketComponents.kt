@@ -43,7 +43,6 @@ fun BigTicketCard(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        // Bagian Atas (Biru)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -71,7 +70,6 @@ fun BigTicketCard(
             }
         }
 
-        // Garis Putus-putus
         Box(modifier = Modifier.fillMaxWidth().height(20.dp).background(Primary700)) {
             Box(modifier = Modifier.align(Alignment.CenterStart).offset(x = (-10).dp).size(20.dp).background(Color.White, CircleShape))
             Box(modifier = Modifier.align(Alignment.CenterEnd).offset(x = 10.dp).size(20.dp).background(Color.White, CircleShape))
@@ -86,7 +84,6 @@ fun BigTicketCard(
             }
         }
 
-        // Bagian Bawah (Kuning)
         Box(
             modifier = Modifier
                 .fillMaxWidth()

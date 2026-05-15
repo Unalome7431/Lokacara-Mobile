@@ -8,7 +8,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.app.lokacara.R
 
-// 1. Setup FontFamily untuk Nunito (Headings)
 val NunitoFont = FontFamily(
     Font(R.font.nunito_regular, FontWeight.Normal),
     Font(R.font.nunito_medium, FontWeight.Medium),
@@ -17,7 +16,6 @@ val NunitoFont = FontFamily(
     Font(R.font.nunito_extrabold, FontWeight.ExtraBold)
 )
 
-// 2. Setup FontFamily untuk Plus Jakarta Sans (Body)
 val PlusJakartaSansFont = FontFamily(
     Font(R.font.plusjakartasans_regular, FontWeight.Normal),
     Font(R.font.plusjakartasans_medium, FontWeight.Medium),
@@ -25,58 +23,55 @@ val PlusJakartaSansFont = FontFamily(
     Font(R.font.plusjakartasans_bold, FontWeight.Bold)
 )
 
-// 3. Mapping ke Material 3 Typography
 val Typography = Typography(
 
-    // === HEADINGS (Nunito) ===
-    displayLarge = TextStyle( // h1
+    displayLarge = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.ExtraBold,
         fontSize = 64.sp
     ),
-    displayMedium = TextStyle( // h2
+    displayMedium = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.Bold,
         fontSize = 56.sp
     ),
-    displaySmall = TextStyle( // h3
+    displaySmall = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.Bold,
         fontSize = 48.sp
     ),
-    headlineLarge = TextStyle( // h4
+    headlineLarge = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.SemiBold,
         fontSize = 40.sp
     ),
-    headlineMedium = TextStyle( // h5
+    headlineMedium = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.SemiBold,
         fontSize = 32.sp
     ),
-    headlineSmall = TextStyle( // h6
+    headlineSmall = TextStyle(
         fontFamily = NunitoFont,
         fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp
     ),
 
-    // === BODY (Plus Jakarta Sans) ===
-    bodyLarge = TextStyle( // large
+    bodyLarge = TextStyle(
         fontFamily = PlusJakartaSansFont,
-        fontWeight = FontWeight.Normal, // Regular
+        fontWeight = FontWeight.Normal,
         fontSize = 24.sp
     ),
-    bodyMedium = TextStyle( // base
+    bodyMedium = TextStyle(
         fontFamily = PlusJakartaSansFont,
-        fontWeight = FontWeight.Normal, // Regular
+        fontWeight = FontWeight.Normal,
         fontSize = 20.sp
     ),
-    bodySmall = TextStyle( // small
+    bodySmall = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp
     ),
-    labelSmall = TextStyle( // micro
+    labelSmall = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp

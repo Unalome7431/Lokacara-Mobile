@@ -71,7 +71,6 @@ fun CreateEventScreen(
             .padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // 1. Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -99,11 +98,10 @@ fun CreateEventScreen(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = primaryOrange,
-                modifier = Modifier.clickable { /* TODO: Aksi Simpan Draf */ }
+                modifier = Modifier.clickable { }
             )
         }
 
-        // 2. Poster Event
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = "Poster Event",
@@ -128,7 +126,7 @@ fun CreateEventScreen(
                         )
                     }
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { /* TODO: Aksi Unggah Poster */ },
+                    .clickable { },
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -165,7 +163,6 @@ fun CreateEventScreen(
             )
         }
 
-        // 3. Rentetan Input Teks Dasar
         CreateEventTextField(
             value = namaEvent,
             onValueChange = { viewModel.namaEvent.value = it },
@@ -190,7 +187,6 @@ fun CreateEventScreen(
             containerColor = lightBlueBg
         )
 
-        // 4. Waktu dan Tanggal
         SectionContainer(
             title = "Waktu dan Tanggal",
             backgroundColor = lightBlueBg,
@@ -221,10 +217,8 @@ fun CreateEventScreen(
             )
         }
 
-        // 5 & 6. Detail Event & Deskripsi Event Connected
         Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
 
-            // 5. Detail Event
             SectionContainer(
                 title = "Detail Event",
                 backgroundColor = lightBlueBg,
@@ -251,7 +245,6 @@ fun CreateEventScreen(
                 )
             }
 
-            // 6. Deskripsi Event
             SectionContainer(
                 title = "Deskripsi Event",
                 backgroundColor = darkerBlueBg,
@@ -285,7 +278,6 @@ fun CreateEventScreen(
             }
         }
 
-        // 7. Kuota Peserta
         SectionContainer(
             title = "Kuota Peserta",
             backgroundColor = lightBlueBg,
@@ -295,7 +287,6 @@ fun CreateEventScreen(
             }
         )
 
-        // 8. Tombol Terbitkan Event
         errorMessage?.let { msg ->
             Text(
                 text = msg,

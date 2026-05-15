@@ -41,7 +41,6 @@ fun MyEventsScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()

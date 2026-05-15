@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.ExploreViewModel
 
 @Composable
@@ -87,7 +88,12 @@ fun ExploreScreen(
                     item { EmptyStateView() }
                 } else {
                     items(items = events, key = { it.id }) { event ->
-                        EventCard(event = event)
+                        EventCard(
+                            event = event,
+                            onClick = {
+                                navController.navigate(Screen.EventDetail(event.id).route)
+                            }
+                        )
                     }
                 }
             }

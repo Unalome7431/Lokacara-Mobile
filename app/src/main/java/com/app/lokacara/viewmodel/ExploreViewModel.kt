@@ -19,14 +19,12 @@ class ExploreViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // UI States
     val isSearchExpanded = MutableStateFlow(false)
     val eventName = MutableStateFlow("")
     val eventLocation = MutableStateFlow("")
     val eventCategory = MutableStateFlow("")
     val selectedCategoryChip = MutableStateFlow("Semua")
 
-    // Filter Logic
     val filteredEvents: StateFlow<List<Event>> = combine(
         _allEvents, eventName, eventLocation, eventCategory, selectedCategoryChip
     ) { events, name, loc, cat, chip ->
