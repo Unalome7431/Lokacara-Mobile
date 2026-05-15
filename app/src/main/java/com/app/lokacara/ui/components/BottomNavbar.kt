@@ -1,10 +1,7 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,12 +13,10 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -66,13 +61,14 @@ fun BottomNavbar(navController: NavController) {
         }
     }
 
+    val indicatorShape = remember { RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp) }
+    val highlightColor = remember { Secondary500.copy(alpha = 0.12f) }
+
     Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
         HorizontalDivider(thickness = 0.5.dp, color = Gray200)
-        
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
+            modifier = Modifier.fillMaxWidth().height(64.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -82,18 +78,16 @@ fun BottomNavbar(navController: NavController) {
 
                 if (isCenter) {
                     CenterActionButton(onClick = {
-                        if (currentRoute != item.route) {
-                            onNavigate(item.route)
-                        }
+                        if (!isSelected) onNavigate(item.route)
                     })
                 } else {
                     NavItem(
                         item = item,
                         isSelected = isSelected,
+                        highlightColor = highlightColor,
+                        indicatorShape = indicatorShape,
                         onClick = {
-                            if (currentRoute != item.route) {
-                                onNavigate(item.route)
-                            }
+                            if (!isSelected) onNavigate(item.route)
                         }
                     )
                 }
@@ -106,29 +100,16 @@ fun BottomNavbar(navController: NavController) {
 private fun RowScope.NavItem(
     item: NavigationItem,
     isSelected: Boolean,
+    highlightColor: Color,
+    indicatorShape: RoundedCornerShape,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    
-    val highlightColor = Secondary500.copy(alpha = 0.12f)
-    val animatedBgColor by animateColorAsState(
-        targetValue = if (isSelected) highlightColor else Color.Transparent,
-        animationSpec = tween(120),
-        label = "bgTint"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxHeight()
             .weight(1f)
-            .drawBehind {
-                drawRect(animatedBgColor)
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
+            .background(if (isSelected) highlightColor else Color.Transparent)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
@@ -137,7 +118,7 @@ private fun RowScope.NavItem(
                     .align(Alignment.TopCenter)
                     .fillMaxWidth(0.5f)
                     .height(3.dp)
-                    .background(Secondary500, RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+                    .background(Secondary500, indicatorShape)
             )
         }
 

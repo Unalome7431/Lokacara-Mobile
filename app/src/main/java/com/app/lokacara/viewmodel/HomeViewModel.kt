@@ -34,7 +34,7 @@ class HomeViewModel : ViewModel() {
         } else {
             events.filter { it.category == category }
         }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadData()

@@ -1,5 +1,8 @@
 package com.app.lokacara.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class MyEventData(
     val title: String,
     val date: String,
@@ -8,6 +11,7 @@ data class MyEventData(
     val imageRes: Int
 )
 
+@Immutable
 data class CertificateData(
     val title: String,
     val date: String,
@@ -17,6 +21,7 @@ data class CertificateData(
     val imageRes: Int
 )
 
+@Immutable
 data class UserProfile(
     val name: String,
     val email: String,

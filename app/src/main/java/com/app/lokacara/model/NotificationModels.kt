@@ -1,7 +1,10 @@
 package com.app.lokacara.model
 
+import androidx.compose.runtime.Immutable
+
 enum class NotificationType { SOCIAL, SYSTEM }
 
+@Immutable
 data class NotificationItem(
     val id: String,
     val senderName: String = "",

@@ -1,5 +1,8 @@
 package com.app.lokacara.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class UpcomingEvent(
     val title: String,
     val date: String,
@@ -9,6 +12,7 @@ data class UpcomingEvent(
     val imageRes: Int
 )
 
+@Immutable
 data class HistoryEvent(
     val title: String,
     val date: String,
