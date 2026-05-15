@@ -51,11 +51,6 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = "Profil Saya",
@@ -65,7 +60,6 @@ fun ProfileScreen(
                 color = Gray900
             )
             Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
         }
 
         Column(
