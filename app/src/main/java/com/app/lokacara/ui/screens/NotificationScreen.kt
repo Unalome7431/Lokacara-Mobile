@@ -34,7 +34,6 @@ fun NotificationScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
 
-        // --- HEADER SECTION (Ubah Row menjadi Box) ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,14 +55,13 @@ fun NotificationScreen(
 
             Text(
                 text = "Notifikasi",
-                modifier = Modifier.align(Alignment.Center), // <-- Memaksa teks persis di tengah Box
+                modifier = Modifier.align(Alignment.Center),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
                 color = Gray900
             )
         }
-        // Tabs
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, title ->
                 Column(

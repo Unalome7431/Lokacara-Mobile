@@ -183,7 +183,7 @@ fun MyEventCard(event: MyEventData) {
 
                 Text(
                     text = event.status,
-                    color = Secondary500, // Orange
+                    color = Secondary500,
                     style = TextStyle(
                         fontFamily = PlusJakartaSansFont,
                         fontWeight = FontWeight.Bold,
@@ -214,7 +214,7 @@ fun MyEventDetailItem(icon: ImageVector, text: String) {
 @Composable
 fun CertificateCard(cert: CertificateData) {
     val gradientBrush = Brush.linearGradient(
-        colors = listOf(Primary300, Secondary400) // Adjust colors as needed for the border
+        colors = listOf(Primary300, Secondary400)
     )
     var showDialog by remember { mutableStateOf(false) }
 
@@ -247,7 +247,6 @@ fun CertificateCard(cert: CertificateData) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Certificate Image
             Image(
                 painter = painterResource(id = cert.imageRes),
                 contentDescription = null,
@@ -289,7 +288,6 @@ fun CertificateCard(cert: CertificateData) {
                     CertDetailItem(Icons.Outlined.LocationOn, cert.location)
                 }
 
-                // Category Badge
                 Box(
                     modifier = Modifier
                         .background(Secondary500, RoundedCornerShape(16.dp))

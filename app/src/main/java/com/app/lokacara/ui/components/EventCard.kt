@@ -1,4 +1,3 @@
-// Lokasi: com.app.lokacara.ui.components.EventCard.kt
 package com.app.lokacara.ui.components
 
 import androidx.compose.foundation.Image
@@ -25,19 +24,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage // Jika menggunakan AsyncImage
+import coil.compose.AsyncImage
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
 @Composable
 fun EventCard(
     event: Event,
-    onBookmarkClick: () -> Unit = {}
+    onBookmarkClick: () -> Unit = {},
+    onClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .let { mod ->
+                if (onClick != null) mod.clickable { onClick() } else mod
+            },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)

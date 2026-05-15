@@ -16,7 +16,6 @@ class SettingsManager(private val context: Context) {
 
     val notificationsEnabled: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
-            // Default is true if not set
             preferences[NOTIFICATIONS_ENABLED] ?: true
         }
 

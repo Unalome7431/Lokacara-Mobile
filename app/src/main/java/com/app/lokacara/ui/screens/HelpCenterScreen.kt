@@ -42,7 +42,6 @@ fun HelpCenterScreen(navController: NavController) {
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,7 +74,6 @@ fun HelpCenterScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Illustration / Icon Header
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -103,7 +101,6 @@ fun HelpCenterScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -141,7 +138,6 @@ fun HelpCenterScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Contact Support
             Card(
                 colors = CardDefaults.cardColors(containerColor = Primary100),
                 shape = RoundedCornerShape(20.dp),
@@ -176,7 +172,7 @@ fun HelpCenterScreen(navController: NavController) {
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(
-                        onClick = { /* Contact Support */ },
+                        onClick = { },
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                         shape = RoundedCornerShape(28.dp),
                         modifier = Modifier.fillMaxWidth()

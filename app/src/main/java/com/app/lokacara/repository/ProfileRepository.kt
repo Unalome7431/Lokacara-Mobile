@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.flow
 
 class ProfileRepository {
     fun getMyEvents(): Flow<List<MyEventData>> = flow {
-        // Simulate network delay
         delay(500)
         emit(
             listOf(
@@ -20,7 +19,6 @@ class ProfileRepository {
     }
 
     fun getSavedEvents(): Flow<List<Event>> = flow {
-        // Simulate network delay
         delay(500)
         emit(
             listOf(
@@ -59,7 +57,6 @@ class ProfileRepository {
     }
 
     fun getCertificates(): Flow<List<CertificateData>> = flow {
-        // Simulate network delay
         delay(500)
         emit(
             listOf(

@@ -59,7 +59,6 @@ fun ChangePasswordScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,7 +91,6 @@ fun ChangePasswordScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Icon Header
             Box(
                 modifier = Modifier
                     .size(80.dp)

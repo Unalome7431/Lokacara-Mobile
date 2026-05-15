@@ -50,7 +50,6 @@ fun AboutScreen(navController: NavController) {
             .padding(horizontal = 24.dp)
             .verticalScroll(scrollState)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -76,7 +75,6 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // First Text Paragraph (Restored)
         Text(
             text = buildAnnotatedString {
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Gray900)) {
@@ -93,7 +91,6 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Carousel Section (No dots)
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
@@ -111,7 +108,6 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Second Text Paragraph
         Text(
             text = buildAnnotatedString {
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Gray900)) {
@@ -128,9 +124,8 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Contact Us Button
         Button(
-            onClick = { /* Contact Action */ },
+            onClick = { },
             modifier = Modifier.align(Alignment.CenterHorizontally),
             colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             shape = RoundedCornerShape(24.dp)

@@ -21,6 +21,7 @@ import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.HomeViewModel
 
 @Composable
@@ -63,6 +64,9 @@ fun HomeScreen(
                     event = event,
                     onBookmarkClick = {
                         viewModel.toggleBookmark(event.id)
+                    },
+                    onClick = {
+                        navController.navigate(Screen.EventDetail(event.id).route)
                     }
                 )
             }

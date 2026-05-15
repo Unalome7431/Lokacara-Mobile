@@ -18,7 +18,6 @@ class HomeViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Data Source Events
     private val _allNearbyEvents = MutableStateFlow<List<Event>>(emptyList())
 
     private val _popularEvents = MutableStateFlow<List<Event>>(emptyList())

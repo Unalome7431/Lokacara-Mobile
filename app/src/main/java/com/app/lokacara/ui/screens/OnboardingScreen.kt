@@ -17,25 +17,23 @@ import com.app.lokacara.R
 fun OnboardingScreen(onFinish: () -> Unit) {
     var splashPhase by remember { mutableIntStateOf(1) }
 
-    // Splash Effect: 3 Phases
     LaunchedEffect(key1 = true) {
-        kotlinx.coroutines.delay(1000) // Phase 1: Logo only
+        kotlinx.coroutines.delay(1000)
         splashPhase = 2
-        kotlinx.coroutines.delay(1000) // Phase 2: Gray Logo + Gray Text
+        kotlinx.coroutines.delay(1000)
         splashPhase = 3
-        kotlinx.coroutines.delay(1500) // Phase 3: Normal Logo + Normal Text
+        kotlinx.coroutines.delay(1500)
         onFinish()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAF8FF)), // Using the SvgBackground color
+            .background(Color(0xFFFAF8FF)),
         contentAlignment = Alignment.Center
     ) {
         when (splashPhase) {
             1 -> {
-                // Phase 1: lokacaralogo
                 Image(
                     painter = painterResource(id = R.drawable.lokacaralogo),
                     contentDescription = "Splash Logo",
@@ -44,7 +42,6 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 )
             }
             2 -> {
-                // Phase 2: lokacaralogogray and lokacaragray
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -65,7 +62,6 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 }
             }
             3 -> {
-                // Phase 3: lokacaralogo and lokacara
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center

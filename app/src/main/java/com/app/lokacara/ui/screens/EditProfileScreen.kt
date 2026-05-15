@@ -45,13 +45,11 @@ fun EditProfileScreen(
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
 
-    // Dialog state
     var showDialog by remember { mutableStateOf(false) }
     var editFieldLabel by remember { mutableStateOf("") }
     var editFieldValue by remember { mutableStateOf("") }
     var editKeyboardType by remember { mutableStateOf(KeyboardType.Text) }
 
-    // State for photo picker
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -78,7 +76,6 @@ fun EditProfileScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -111,7 +108,6 @@ fun EditProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Profile Picture with Camera Icon
             Box(contentAlignment = Alignment.BottomEnd) {
                 if (profileImageUri != null) {
                     AsyncImage(
@@ -160,7 +156,6 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Name with Edit Icon
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = userProfile.name,
@@ -187,7 +182,6 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Details Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp),
