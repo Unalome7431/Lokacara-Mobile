@@ -142,11 +142,14 @@ fun EmptyEventState(
 }
 
 @Composable
-fun MyEventCard(event: MyEventData) {
+fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .let { mod ->
+                if (onClick != null) mod.clickable { onClick() } else mod
+            },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)

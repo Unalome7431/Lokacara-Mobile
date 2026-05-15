@@ -83,7 +83,12 @@ fun MyEventsScreen(
                         }
                     } else {
                         items(myEvents) { event ->
-                            MyEventCard(event)
+                            MyEventCard(
+                                event,
+                                onClick = {
+                                    navController.navigate(Screen.EventDetail.route)
+                                }
+                            )
                         }
                     }
                 }
