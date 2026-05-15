@@ -78,7 +78,7 @@ fun HotLabelSection(selectedCategory: String, onCategorySelected: (String) -> Un
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Lagi Ramai🔥", style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500))
+        Text("Lagi Ramai", style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500))
 
         Box {
             IconButton(onClick = { showMenu = true }) {

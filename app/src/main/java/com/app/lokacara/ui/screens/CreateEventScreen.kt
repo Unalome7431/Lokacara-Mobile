@@ -24,10 +24,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 import com.app.lokacara.ui.theme.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.app.lokacara.viewmodel.CreateEventViewModel
@@ -49,7 +53,12 @@ fun CreateEventScreen(
     val alamat by viewModel.alamat.collectAsState()
     val deskripsi by viewModel.deskripsi.collectAsState()
     val kuota by viewModel.kuota.collectAsState()
+    val posterUri by viewModel.posterUri.collectAsState()
     val publishSuccess by viewModel.publishSuccess.collectAsState()
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { viewModel.posterUri.value = it } }
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     LaunchedEffect(publishSuccess) {
@@ -115,43 +124,54 @@ fun CreateEventScreen(
                     .fillMaxWidth()
                     .height(180.dp)
                     .background(Color.White, RoundedCornerShape(20.dp))
-                    .drawBehind {
-                        drawRoundRect(
-                            color = Color(0xFF666666),
-                            style = Stroke(
-                                width = 3f,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
-                            ),
-                            cornerRadius = CornerRadius(20.dp.toPx())
-                        )
-                    }
+                    .then(
+                        if (posterUri == null) Modifier.drawBehind {
+                            drawRoundRect(
+                                color = Color(0xFF666666),
+                                style = Stroke(
+                                    width = 3f,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
+                                ),
+                                cornerRadius = CornerRadius(20.dp.toPx())
+                            )
+                        } else Modifier
+                    )
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { },
+                    .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(
-                            imageVector = Icons.Outlined.PhotoCamera,
-                            contentDescription = "Camera",
-                            tint = primaryOrange,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Icon(
-                            imageVector = Icons.Outlined.AddCircleOutline,
-                            contentDescription = "Add",
-                            tint = primaryOrange,
-                            modifier = Modifier.size(32.dp)
+                if (posterUri != null) {
+                    AsyncImage(
+                        model = posterUri,
+                        contentDescription = "Poster",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                imageVector = Icons.Outlined.PhotoCamera,
+                                contentDescription = "Camera",
+                                tint = primaryOrange,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Outlined.AddCircleOutline,
+                                contentDescription = "Add",
+                                tint = primaryOrange,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Text(
+                            text = "Unggah Poster (16:9)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Gray800
                         )
                     }
-                    Text(
-                        text = "Unggah Poster (16:9)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Gray800
-                    )
                 }
             }
             Text(

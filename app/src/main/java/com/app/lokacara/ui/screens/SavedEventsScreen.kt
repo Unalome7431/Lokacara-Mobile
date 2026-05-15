@@ -83,7 +83,12 @@ fun SavedEventsScreen(
                         }
                     } else {
                         items(savedEvents) { event ->
-                            EventCard(event = event)
+                            EventCard(
+                                event = event,
+                                onClick = {
+                                    navController.navigate(Screen.EventDetail.route)
+                                }
+                            )
                         }
                     }
                 }

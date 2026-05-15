@@ -77,7 +77,16 @@ fun EventDetailScreen(
                 color = Gray900
             )
             Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
+            IconButton(
+                onClick = { showShareDialog = true },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = "Share",
+                    tint = Primary500
+                )
+            }
         }
 
         Column(
@@ -229,36 +238,22 @@ fun EventDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Row(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Button(
+                        onClick = { showJoinDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 24.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
                     ) {
-                        Button(
-                            onClick = { showJoinDialog = true },
-                            modifier = Modifier.weight(1f).height(56.dp),
-                            shape = RoundedCornerShape(28.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                        ) {
-                            Text(
-                                text = "Gabung Event",
-                                fontFamily = NunitoFont,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = { showShareDialog = true },
-                            modifier = Modifier.size(56.dp),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Share,
-                                contentDescription = "Share",
-                                tint = Primary500
-                            )
-                        }
+                        Text(
+                            text = "Gabung Event",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.White
+                        )
                     }
 
                     if (relatedEvents.isNotEmpty()) {

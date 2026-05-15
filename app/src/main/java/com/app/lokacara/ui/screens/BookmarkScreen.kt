@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.BookmarkViewModel
 
@@ -67,6 +68,9 @@ fun BookmarkScreen(
                     event = event,
                     onBookmarkClick = {
                         viewModel.toggleBookmark(event.id)
+                    },
+                    onClick = {
+                        navController.navigate(Screen.EventDetail.route)
                     }
                 )
             }

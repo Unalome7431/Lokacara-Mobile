@@ -2,6 +2,7 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ class CreateEventViewModel : ViewModel() {
     val alamat = MutableStateFlow("")
     val deskripsi = MutableStateFlow("")
     val kuota = MutableStateFlow(50)
+    val posterUri = MutableStateFlow<Uri?>(null)
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
