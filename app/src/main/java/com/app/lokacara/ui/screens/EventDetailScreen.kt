@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
 import com.app.lokacara.ui.components.DetailInfoRow
 import com.app.lokacara.ui.components.EventRelatedCard
 import com.app.lokacara.ui.navigation.Screen
@@ -82,7 +83,7 @@ fun EventDetailScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             when {
-                isLoading && event == null -> {
+                isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxWidth().height(400.dp),
                         contentAlignment = Alignment.Center
@@ -90,7 +91,7 @@ fun EventDetailScreen(
                         CircularProgressIndicator(color = Primary500)
                     }
                 }
-                error != null && event == null -> {
+                error != null -> {
                     Box(
                         modifier = Modifier.fillMaxWidth().height(400.dp),
                         contentAlignment = Alignment.Center
@@ -105,38 +106,36 @@ fun EventDetailScreen(
                         )
                     }
                 }
-                event != null -> {
-                    val ev = event!!
-
-                    AsyncImage(
-                        model = ev.imageRes,
+                else -> {
+                    Image(
+                        painter = painterResource(id = event.imageRes),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(220.dp)
-                            .clip(RoundedCornerShape(
-                                bottomStart = 24.dp,
-                                bottomEnd = 24.dp
-                            )),
+                            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
                         contentScale = ContentScale.Crop
                     )
 
                     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                         Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
-                            text = ev.title,
+                            text = event.title,
                             fontFamily = NunitoFont,
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 22.sp,
                             color = Gray900
                         )
+
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Surface(
                             color = Secondary500,
                             shape = RoundedCornerShape(100.dp)
                         ) {
                             Text(
-                                text = ev.category,
+                                text = event.category,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                                 fontFamily = PlusJakartaSansFont,
                                 fontWeight = FontWeight.Bold,
@@ -160,7 +159,7 @@ fun EventDetailScreen(
                             DetailInfoRow(
                                 icon = Icons.Outlined.CalendarToday,
                                 label = "Waktu & Tanggal",
-                                value = ev.date
+                                value = event.date
                             )
                             HorizontalDivider(
                                 color = Gray100,
@@ -170,7 +169,7 @@ fun EventDetailScreen(
                             DetailInfoRow(
                                 icon = Icons.Outlined.LocationOn,
                                 label = "Lokasi",
-                                value = ev.location
+                                value = event.location
                             )
                             HorizontalDivider(
                                 color = Gray100,
@@ -180,7 +179,7 @@ fun EventDetailScreen(
                             DetailInfoRow(
                                 icon = Icons.Outlined.Groups,
                                 label = "Penyelenggara",
-                                value = ev.penyelenggara.ifEmpty { "Tidak diketahui" }
+                                value = event.penyelenggara.ifEmpty { "Tidak diketahui" }
                             )
                         }
                     }
@@ -199,7 +198,7 @@ fun EventDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = ev.description,
+                        text = event.description,
                         fontFamily = NunitoFont,
                         fontSize = 14.sp,
                         color = Gray600,
@@ -243,16 +242,11 @@ fun EventDetailScreen(
                             contentPadding = PaddingValues(horizontal = 24.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(
-                                items = relatedEvents,
-                                key = { it.id }
-                            ) { relEvent ->
+                            items(relatedEvents, key = { it.id }) { relEvent ->
                                 EventRelatedCard(
                                     event = relEvent,
                                     onClick = {
-                                        navController.navigate(
-                                            Screen.EventDetail(relEvent.id).route
-                                        ) {
+                                        navController.navigate(Screen.EventDetail.route) {
                                             launchSingleTop = true
                                         }
                                     }
@@ -281,7 +275,7 @@ fun EventDetailScreen(
             },
             text = {
                 Text(
-                    text = "Kamu telah bergabung di event \"${event?.title ?: ""}\".\nTiket dapat dilihat di halaman Tiket.",
+                    text = "Kamu telah bergabung di event \"${event.title}\".\nTiket dapat dilihat di halaman Tiket.",
                     fontFamily = PlusJakartaSansFont,
                     fontSize = 14.sp,
                     color = Gray600,
@@ -310,7 +304,7 @@ fun EventDetailScreenPreview() {
     LokacaraMobileTheme {
         EventDetailScreen(
             navController = rememberNavController(),
-            viewModel = viewModel(factory = EventDetailViewModel.factory("1"))
+            viewModel = viewModel()
         )
     }
 }

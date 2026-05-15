@@ -91,7 +91,7 @@ fun ExploreScreen(
                         EventCard(
                             event = event,
                             onClick = {
-                                navController.navigate(Screen.EventDetail(event.id).route)
+                                navController.navigate(Screen.EventDetail.route)
                             }
                         )
                     }
