@@ -42,7 +42,12 @@ fun HomeScreen(
             }
 
             item(key = "popular_section") {
-                PopularEventSection(popularEvents = popularEvents)
+                PopularEventSection(
+                    popularEvents = popularEvents,
+                    onEventClick = { event ->
+                        navController.navigate(Screen.EventDetail(event.id).route)
+                    }
+                )
             }
 
             item(key = "nearby_header") {

@@ -22,5 +22,5 @@ sealed class Screen(val route: String) {
     object HelpCenter : Screen("help_center")
     object TermsConditions : Screen("terms_conditions")
     object PrivacyPolicy : Screen("privacy_policy")
-    data class EventDetail(val eventId: String) : Screen("event_detail/{eventId}")
+    data class EventDetail(val eventId: String) : Screen("event_detail/$eventId")
 }
