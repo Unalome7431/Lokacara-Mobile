@@ -62,7 +62,6 @@ fun BottomNavbar(navController: NavController) {
                     saveState = true
                 }
                 launchSingleTop = true
-                restoreState = true
             }
         }
     }
@@ -114,7 +113,7 @@ private fun RowScope.NavItem(
     val highlightColor = Secondary500.copy(alpha = 0.12f)
     val animatedBgColor by animateColorAsState(
         targetValue = if (isSelected) highlightColor else Color.Transparent,
-        animationSpec = tween(300),
+        animationSpec = tween(120),
         label = "bgTint"
     )
 

@@ -76,7 +76,7 @@ fun HomeHeader(navController: NavController) {
 }
 
 @Composable
-fun PopularEventSection(popularEvents: List<Event>) {
+fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
     val pageCount = Int.MAX_VALUE
@@ -120,6 +120,7 @@ fun PopularEventSection(popularEvents: List<Event>) {
                     .height(180.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
+                    .clickable { onEventClick(event) }
             ) {
                 AsyncImage(
                     model = event.imageRes,
