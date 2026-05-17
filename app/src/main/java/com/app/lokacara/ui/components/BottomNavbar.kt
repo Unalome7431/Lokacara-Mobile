@@ -45,7 +45,7 @@ fun BottomNavbar(navController: NavController) {
             NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Home"),
             NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Explore"),
             NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Create"),
-            NavigationItem("tickets", Icons.Outlined.ConfirmationNumber, "Tickets"),
+            NavigationItem(Screen.Tickets.route, Icons.Outlined.ConfirmationNumber, "Tickets"),
             NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profile")
         )
     }

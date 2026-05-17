@@ -70,12 +70,11 @@ fun CreateEventScreen(
 
     val lightBlueBg = Color(0xFFD6E4FF)
     val darkerBlueBg = Color(0xFFA1C1FF)
-    val primaryOrange = Color(0xFFFFAA00)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAF8FF))
+            .background(SvgBackground)
             .verticalScroll(rememberScrollState())
             .padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -106,7 +105,7 @@ fun CreateEventScreen(
                 style = MaterialTheme.typography.bodySmall,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = primaryOrange,
+                color = SvgOrange,
                 modifier = Modifier.clickable { }
             )
         }
@@ -156,13 +155,13 @@ fun CreateEventScreen(
                             Icon(
                                 imageVector = Icons.Outlined.PhotoCamera,
                                 contentDescription = "Camera",
-                                tint = primaryOrange,
+                                tint = SvgOrange,
                                 modifier = Modifier.size(32.dp)
                             )
                             Icon(
                                 imageVector = Icons.Outlined.AddCircleOutline,
                                 contentDescription = "Add",
-                                tint = primaryOrange,
+                                tint = SvgOrange,
                                 modifier = Modifier.size(32.dp)
                             )
                         }
@@ -214,7 +213,7 @@ fun CreateEventScreen(
                 Icon(
                     imageVector = Icons.Outlined.DateRange,
                     contentDescription = "Kalender",
-                    tint = primaryOrange,
+                    tint = SvgOrange,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -325,7 +324,7 @@ fun CreateEventScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D59F2)),
+            colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
             shape = RoundedCornerShape(28.dp)
         ) {
             Text(
@@ -459,7 +458,7 @@ fun CustomToggleSwitch(isOnline: Boolean, onToggle: (Boolean) -> Unit) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(if (isOnline) Color(0xFF0D59F2) else Color.Transparent)
+                .background(if (isOnline) SvgPrimaryBlue else Color.Transparent)
                 .clickable { onToggle(true) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
@@ -474,7 +473,7 @@ fun CustomToggleSwitch(isOnline: Boolean, onToggle: (Boolean) -> Unit) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(if (!isOnline) Color(0xFF0D59F2) else Color.Transparent)
+                .background(if (!isOnline) SvgPrimaryBlue else Color.Transparent)
                 .clickable { onToggle(false) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
@@ -501,7 +500,7 @@ fun Stepper(value: Int, onValueChange: (Int) -> Unit) {
         Box(
             modifier = Modifier
                 .size(28.dp)
-                .background(Color(0xFFFFAA00), CircleShape)
+                .background(SvgOrange, CircleShape)
                 .clickable { if (value > 0) onValueChange(value - 1) },
             contentAlignment = Alignment.Center
         ) {
@@ -517,7 +516,7 @@ fun Stepper(value: Int, onValueChange: (Int) -> Unit) {
         Box(
             modifier = Modifier
                 .size(28.dp)
-                .background(Color(0xFF0D59F2), CircleShape)
+                .background(SvgPrimaryBlue, CircleShape)
                 .clickable { onValueChange(value + 1) },
             contentAlignment = Alignment.Center
         ) {
