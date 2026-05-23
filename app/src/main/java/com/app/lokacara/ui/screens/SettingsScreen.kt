@@ -1,3 +1,9 @@
+
+
+
+
+
+
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
@@ -37,6 +43,20 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+
+    SettingsScreenContent(
+        navController = navController,
+        notificationsEnabled = notificationsEnabled,
+        onNotificationsToggle = { viewModel.setNotificationsEnabled(it) }
+    )
+}
+
+@Composable
+fun SettingsScreenContent(
+    navController: NavController,
+    notificationsEnabled: Boolean,
+    onNotificationsToggle: (Boolean) -> Unit
+) {
     val scrollState = rememberScrollState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -131,7 +151,7 @@ fun SettingsScreen(
                     title = "Notifikasi",
                     isChecked = notificationsEnabled,
                     onCheckedChange = { 
-                        viewModel.setNotificationsEnabled(it) 
+                        onNotificationsToggle(it) 
                     }
                 )
             }
@@ -325,6 +345,10 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
 @Composable
 fun SettingsScreenPreview() {
     LokacaraMobileTheme {
-        SettingsScreen(navController = rememberNavController())
+        SettingsScreenContent(
+            navController = rememberNavController(),
+            notificationsEnabled = true,
+            onNotificationsToggle = {}
+        )
     }
 }

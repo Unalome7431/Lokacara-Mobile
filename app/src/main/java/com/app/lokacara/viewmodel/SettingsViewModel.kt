@@ -21,7 +21,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            settingsManager.setNotificationsEnabled(enabled)
+            settingsManager.saveNotificationSetting(enabled)
         }
     }
 }
