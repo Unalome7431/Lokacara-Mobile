@@ -3,6 +3,7 @@ package com.app.lokacara.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.repository.AuthRepository
 import kotlinx.coroutines.delay
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AuthRepository()
     private val userSessionManager = UserSessionManager(application)
+    private val settingsManager = SettingsManager(application)
 
     val email = MutableStateFlow("")
     val password = MutableStateFlow("")
@@ -40,13 +42,22 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = false
             result.fold(
                 onSuccess = { profile ->
-                    userSessionManager.saveUserSession(
-                        name = profile.name,
-                        email = profile.email,
-                        phone = profile.phone,
-                        location = profile.location
-                    )
-                    _loginSuccess.value = true
+                    viewModelScope.launch {
+                        userSessionManager.saveUserSession(
+                            name = profile.name,
+                            email = profile.email,
+                            phone = profile.phone,
+                            location = profile.location
+                        )
+                        // Simpan session ke SettingsManager agar MainViewModel mengenali status login
+                        settingsManager.saveAuthSession(
+                            token = "dummy_token_123", // Ganti dengan token asli jika ada dari repository
+                            userId = 1,
+                            userName = profile.name
+                        )
+                        settingsManager.setOnboardingCompleted()
+                        _loginSuccess.value = true
+                    }
                 },
                 onFailure = { _errorMessage.value = it.message ?: "Gagal masuk" }
             )
@@ -62,13 +73,22 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = false
             result.fold(
                 onSuccess = { profile ->
-                    userSessionManager.saveUserSession(
-                        name = profile.name,
-                        email = profile.email,
-                        phone = profile.phone,
-                        location = profile.location
-                    )
-                    _registerSuccess.value = true
+                    viewModelScope.launch {
+                        userSessionManager.saveUserSession(
+                            name = profile.name,
+                            email = profile.email,
+                            phone = profile.phone,
+                            location = profile.location
+                        )
+                        // Simpan session ke SettingsManager agar MainViewModel mengenali status login
+                        settingsManager.saveAuthSession(
+                            token = "dummy_token_123", // Ganti dengan token asli jika ada dari repository
+                            userId = 1,
+                            userName = profile.name
+                        )
+                        settingsManager.setOnboardingCompleted()
+                        _registerSuccess.value = true
+                    }
                 },
                 onFailure = { _errorMessage.value = it.message ?: "Gagal mendaftar" }
             )

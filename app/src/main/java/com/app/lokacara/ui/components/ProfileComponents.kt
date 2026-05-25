@@ -237,7 +237,7 @@ fun CertificateCard(
             ) {
                 if (cert.filePath != null) {
                     AsyncImage(
-                        model = java.io.File(cert.filePath),
+                        model = cert.filePath,
                         contentDescription = "Full Certificate",
                         modifier = Modifier.fillMaxWidth(),
                         contentScale = ContentScale.FillWidth
@@ -267,7 +267,7 @@ fun CertificateCard(
         Column(modifier = Modifier.padding(16.dp)) {
             if (cert.filePath != null) {
                 AsyncImage(
-                    model = java.io.File(cert.filePath),
+                    model = cert.filePath,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
