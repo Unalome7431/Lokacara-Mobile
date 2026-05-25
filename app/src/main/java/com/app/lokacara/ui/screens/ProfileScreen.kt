@@ -149,7 +149,9 @@ fun ProfileScreen(
 
             Row(
                 modifier = Modifier
-                    .clickable { onLogout() }
+                    .clickable { 
+                        viewModel.logout { onLogout() }
+                    }
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
