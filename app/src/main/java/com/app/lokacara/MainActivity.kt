@@ -4,37 +4,31 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.Text
+import androidx.activity.viewModels
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.app.lokacara.ui.navigation.NavGraph
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = null)
+            val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState(initial = null)
+
             LokacaraMobileTheme {
-                NavGraph()
+                // Tunggu data dimuat, lalu panggil NavGraph
+                if (isLoggedIn != null && isOnboardingCompleted != null) {
+                    NavGraph(
+                        isLoggedIn = isLoggedIn == true,
+                        isOnboardingCompleted = isOnboardingCompleted == true
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LokacaraMobileTheme {
-        Greeting("Android")
     }
 }

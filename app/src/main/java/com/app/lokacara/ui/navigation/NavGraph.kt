@@ -17,13 +17,18 @@ import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
 
 @Composable
-fun NavGraph(startDestination: String = Screen.Onboarding.route) {
+fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
     val rootNavController = rememberNavController()
 
-    NavHost(navController = rootNavController, startDestination = startDestination) {
+    NavHost(navController = rootNavController, startDestination = Screen.Onboarding.route) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
-                rootNavController.navigate(Screen.Register.route) {
+                val nextRoute = when {
+                    isLoggedIn -> "main_container"
+                    isOnboardingCompleted -> Screen.Login.route
+                    else -> Screen.Register.route
+                }
+                rootNavController.navigate(nextRoute) {
                     popUpTo(Screen.Onboarding.route) { inclusive = true }
                 }
             })

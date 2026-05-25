@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.R
 import com.app.lokacara.data.FileStorageManager
+import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
@@ -22,6 +23,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository = ProfileRepository()
     private val userSessionManager = UserSessionManager(application)
+    private val settingsManager = SettingsManager(application)
     private val fileStorageManager = FileStorageManager(application)
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
@@ -128,6 +130,14 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 _certificates.value = certs
             }
             _isLoading.value = false
+        }
+    }
+
+    fun logout(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            userSessionManager.logout()
+            settingsManager.clearAuthSession()
+            onComplete()
         }
     }
 }
