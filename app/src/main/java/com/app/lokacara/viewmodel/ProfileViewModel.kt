@@ -18,11 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(
-    application: Application,
-    private val repository: ProfileRepository = ProfileRepository()
-) : AndroidViewModel(application) {
+class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val repository = ProfileRepository()
     private val userSessionManager = UserSessionManager(application)
     private val fileStorageManager = FileStorageManager(application)
 
@@ -86,6 +84,19 @@ class ProfileViewModel(
             if (path != null) {
                 userSessionManager.updateProfileImagePath(path)
                 _userProfile.value = _userProfile.value.copy(profileImageRes = null)
+            }
+        }
+    }
+
+    fun downloadCertificate(cert: CertificateData) {
+        viewModelScope.launch {
+            val fileName = "certificate_${cert.title.take(20).replace(" ", "_")}.png"
+            val path = fileStorageManager.saveCertificate(cert.imageRes, fileName)
+            if (path != null) {
+                _certificates.value = _certificates.value.map {
+                    if (it.title == cert.title && it.date == cert.date) it.copy(filePath = path)
+                    else it
+                }
             }
         }
     }

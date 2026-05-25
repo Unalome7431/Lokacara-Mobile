@@ -18,7 +18,8 @@ data class CertificateData(
     val time: String,
     val location: String,
     val category: String,
-    val imageRes: Int
+    val imageRes: Int,
+    val filePath: String? = null
 )
 
 @Immutable

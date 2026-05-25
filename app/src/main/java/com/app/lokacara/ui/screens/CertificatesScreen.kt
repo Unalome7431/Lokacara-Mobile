@@ -83,7 +83,10 @@ fun CertificatesScreen(
                         }
                     } else {
                         items(certificates) { cert ->
-                            CertificateCard(cert)
+                            CertificateCard(
+                                cert = cert,
+                                onDownload = { viewModel.downloadCertificate(it) }
+                            )
                         }
                     }
                 }
