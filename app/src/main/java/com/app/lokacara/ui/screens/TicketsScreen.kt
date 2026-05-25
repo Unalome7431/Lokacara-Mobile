@@ -84,7 +84,11 @@ fun TicketsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (selectedTab == 0) MendatangContent(upcomingEvents) else RiwayatContent(historyEvents)
+        if (selectedTab == 0) MendatangContent(upcomingEvents) else RiwayatContent(
+            historyEvents = historyEvents,
+            downloadedCertIds = viewModel.downloadedCertIds.collectAsState().value,
+            onDownloadCert = { viewModel.downloadCertificate(it) }
+        )
     }
 }
 
@@ -135,7 +139,11 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
 }
 
 @Composable
-fun RiwayatContent(historyEvents: List<HistoryEvent>) {
+fun RiwayatContent(
+    historyEvents: List<HistoryEvent>,
+    downloadedCertIds: Set<String> = emptySet(),
+    onDownloadCert: (HistoryEvent) -> Unit = {}
+) {
     var selectedEvent by remember { mutableStateOf<HistoryEvent?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)) {
         items(historyEvents) { event ->
@@ -144,7 +152,14 @@ fun RiwayatContent(historyEvents: List<HistoryEvent>) {
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
-    selectedEvent?.let { HistoryDetailDialog(it, onDismiss = { selectedEvent = null }) }
+    selectedEvent?.let {
+        HistoryDetailDialog(
+            event = it,
+            onDismiss = { selectedEvent = null },
+            onDownload = { onDownloadCert(it) },
+            isDownloaded = it.title in downloadedCertIds
+        )
+    }
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true)

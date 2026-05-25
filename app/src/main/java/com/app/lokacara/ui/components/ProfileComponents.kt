@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
@@ -215,11 +217,15 @@ fun MyEventDetailItem(icon: ImageVector, text: String) {
 }
 
 @Composable
-fun CertificateCard(cert: CertificateData) {
+fun CertificateCard(
+    cert: CertificateData,
+    onDownload: (CertificateData) -> Unit = {}
+) {
     val gradientBrush = Brush.linearGradient(
         colors = listOf(Primary300, Secondary400)
     )
     var showDialog by remember { mutableStateOf(false) }
+    val isDownloaded = cert.filePath != null
 
     if (showDialog) {
         Dialog(onDismissRequest = { showDialog = false }) {
@@ -229,12 +235,21 @@ fun CertificateCard(cert: CertificateData) {
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
             ) {
-                Image(
-                    painter = painterResource(id = cert.imageRes),
-                    contentDescription = "Full Certificate",
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.FillWidth
-                )
+                if (cert.filePath != null) {
+                    AsyncImage(
+                        model = java.io.File(cert.filePath),
+                        contentDescription = "Full Certificate",
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.FillWidth
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = cert.imageRes),
+                        contentDescription = "Full Certificate",
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.FillWidth
+                    )
+                }
             }
         }
     }
@@ -250,15 +265,27 @@ fun CertificateCard(cert: CertificateData) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Image(
-                painter = painterResource(id = cert.imageRes),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            if (cert.filePath != null) {
+                AsyncImage(
+                    model = java.io.File(cert.filePath),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = cert.imageRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -291,19 +318,33 @@ fun CertificateCard(cert: CertificateData) {
                     CertDetailItem(Icons.Outlined.LocationOn, cert.location)
                 }
 
-                Box(
-                    modifier = Modifier
-                        .background(Secondary500, RoundedCornerShape(16.dp))
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = cert.category,
-                        color = Color.White,
-                        fontFamily = PlusJakartaSansFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .background(Secondary500, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = cert.category,
+                            color = Color.White,
+                            fontFamily = PlusJakartaSansFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = { onDownload(cert) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Download,
+                            contentDescription = if (isDownloaded) "Sudah diunduh" else "Unduh sertifikat",
+                            tint = if (isDownloaded) Primary500 else Gray500,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
