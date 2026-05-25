@@ -186,7 +186,12 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
 }
 
 @Composable
-fun HistoryDetailDialog(event: HistoryEvent, onDismiss: () -> Unit) {
+fun HistoryDetailDialog(
+    event: HistoryEvent,
+    onDismiss: () -> Unit,
+    onDownload: () -> Unit = {},
+    isDownloaded: Boolean = false
+) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -199,8 +204,18 @@ fun HistoryDetailDialog(event: HistoryEvent, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = {}, modifier = Modifier.background(Primary500, CircleShape).size(36.dp)) {
-                        Icon(Icons.Default.Download, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    IconButton(
+                        onClick = onDownload,
+                        modifier = Modifier
+                            .background(if (isDownloaded) Secondary500 else Primary500, CircleShape)
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = if (isDownloaded) "Sudah diunduh" else "Unduh sertifikat",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
