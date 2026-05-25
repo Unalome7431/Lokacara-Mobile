@@ -52,11 +52,6 @@ fun TicketsScreen(
                 modifier = Modifier.height(34.dp),
                 contentScale = ContentScale.Fit
             )
-            Row {
-                Icon(Icons.Outlined.Notifications, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-                Spacer(modifier = Modifier.width(16.dp))
-                Icon(Icons.Outlined.FavoriteBorder, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-            }
         }
 
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {

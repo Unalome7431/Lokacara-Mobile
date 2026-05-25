@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -13,26 +15,31 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
+import kotlinx.coroutines.launch
 
 @Composable
-fun NavGraph(startDestination: String = Screen.Onboarding.route) {
+fun NavGraph(targetDestination: String = Screen.Login.route) {
     val rootNavController = rememberNavController()
 
-    NavHost(navController = rootNavController, startDestination = startDestination) {
+    NavHost(navController = rootNavController, startDestination = Screen.Onboarding.route) {
+
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
-                rootNavController.navigate(Screen.Register.route) {
+                rootNavController.navigate(targetDestination) {
                     popUpTo(Screen.Onboarding.route) { inclusive = true }
                 }
             })
         }
+
         composable(Screen.Register.route) {
             RegisterScreen(onNavigateToLogin = {
                 rootNavController.navigate(Screen.Login.route)
             })
         }
+
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToRegister = { rootNavController.navigate(Screen.Register.route) },
@@ -77,11 +84,18 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }
                 composable(Screen.Tickets.route) { TicketsScreen(navController = internalNavController) }
                 composable(Screen.Profile.route) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val settingsManager = remember { SettingsManager(context) }
+                    val coroutineScope = rememberCoroutineScope()
+
                     ProfileScreen(
                         navController = internalNavController,
                         onLogout = {
-                            rootNavController.navigate(Screen.Login.route) {
-                                popUpTo(0) { inclusive = true }
+                            coroutineScope.launch {
+                                settingsManager.clearSession()
+                                rootNavController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
                         }
                     )

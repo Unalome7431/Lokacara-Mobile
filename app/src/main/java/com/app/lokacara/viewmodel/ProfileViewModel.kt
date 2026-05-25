@@ -90,11 +90,11 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     fun downloadCertificate(cert: CertificateData) {
         viewModelScope.launch {
-            val fileName = "certificate_${cert.title.take(20).replace(" ", "_")}.png"
+            val fileName = "certificate_${cert.id}_${cert.title.take(10).replace(" ", "_")}.png"
             val path = fileStorageManager.saveCertificate(cert.imageRes, fileName)
             if (path != null) {
                 _certificates.value = _certificates.value.map {
-                    if (it.title == cert.title && it.date == cert.date) it.copy(filePath = path)
+                    if (it.id == cert.id) it.copy(filePath = path)
                     else it
                 }
             }

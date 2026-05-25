@@ -13,6 +13,7 @@ data class MyEventData(
 
 @Immutable
 data class CertificateData(
+    val id: String,
     val title: String,
     val date: String,
     val time: String,
