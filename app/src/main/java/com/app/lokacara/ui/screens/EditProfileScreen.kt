@@ -53,7 +53,12 @@ fun EditProfileScreen(
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> if (uri != null) profileImageUri = uri }
+        onResult = { uri ->
+            if (uri != null) {
+                profileImageUri = uri
+                viewModel.saveProfilePhoto(uri)
+            }
+        }
     )
 
     val scrollState = rememberScrollState()

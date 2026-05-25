@@ -1,7 +1,9 @@
 package com.app.lokacara.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.repository.AuthRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,8 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = AuthRepository()
+    private val userSessionManager = UserSessionManager(application)
 
     val email = MutableStateFlow("")
     val password = MutableStateFlow("")
@@ -36,7 +39,15 @@ class AuthViewModel : ViewModel() {
             val result = repository.login(email.value.trim(), password.value)
             _isLoading.value = false
             result.fold(
-                onSuccess = { _loginSuccess.value = true },
+                onSuccess = { profile ->
+                    userSessionManager.saveUserSession(
+                        name = profile.name,
+                        email = profile.email,
+                        phone = profile.phone,
+                        location = profile.location
+                    )
+                    _loginSuccess.value = true
+                },
                 onFailure = { _errorMessage.value = it.message ?: "Gagal masuk" }
             )
         }
@@ -50,7 +61,15 @@ class AuthViewModel : ViewModel() {
             val result = repository.register(email.value.trim(), password.value)
             _isLoading.value = false
             result.fold(
-                onSuccess = { _registerSuccess.value = true },
+                onSuccess = { profile ->
+                    userSessionManager.saveUserSession(
+                        name = profile.name,
+                        email = profile.email,
+                        phone = profile.phone,
+                        location = profile.location
+                    )
+                    _registerSuccess.value = true
+                },
                 onFailure = { _errorMessage.value = it.message ?: "Gagal mendaftar" }
             )
         }

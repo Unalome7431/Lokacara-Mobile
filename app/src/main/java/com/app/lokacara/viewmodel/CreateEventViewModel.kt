@@ -1,15 +1,20 @@
 package com.app.lokacara.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.app.Application
 import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.FileStorageManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-class CreateEventViewModel : ViewModel() {
+class CreateEventViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val fileStorageManager = FileStorageManager(application)
 
     val namaEvent = MutableStateFlow("")
     val kategori = MutableStateFlow("")
@@ -40,6 +45,13 @@ class CreateEventViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             delay(500)
+
+            val uri = posterUri.value
+            if (uri != null) {
+                val eventId = UUID.randomUUID().toString()
+                fileStorageManager.saveEventPoster(uri, eventId)
+            }
+
             _isLoading.value = false
             _publishSuccess.value = true
         }
