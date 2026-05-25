@@ -1,13 +1,17 @@
 package com.app.lokacara.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = HomeRepository()
+    private val bookmarkManager = BookmarkManager(application)
 
     val locations = repository.getLocations()
     val categories = repository.getCategories()
@@ -45,6 +49,20 @@ class HomeViewModel : ViewModel() {
         _popularEvents.value = repository.getPopularEvents()
         _allNearbyEvents.value = repository.getNearbyEvents()
         _isLoading.value = false
+        syncBookmarks()
+    }
+
+    private fun syncBookmarks() {
+        viewModelScope.launch {
+            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
+                _allNearbyEvents.value = _allNearbyEvents.value.map { event ->
+                    event.copy(isBookmarked = event.id in bookmarkedIds)
+                }
+                _popularEvents.value = _popularEvents.value.map { event ->
+                    event.copy(isBookmarked = event.id in bookmarkedIds)
+                }
+            }
+        }
     }
 
     fun updateLocation(location: String) {
@@ -56,13 +74,8 @@ class HomeViewModel : ViewModel() {
     }
 
     fun toggleBookmark(eventId: String) {
-        _allNearbyEvents.value = _allNearbyEvents.value.map { event ->
-            if (event.id == eventId) {
-                event.copy(isBookmarked = !event.isBookmarked)
-            } else {
-                event
-            }
+        viewModelScope.launch {
+            bookmarkManager.toggleBookmark(eventId)
         }
-
     }
 }

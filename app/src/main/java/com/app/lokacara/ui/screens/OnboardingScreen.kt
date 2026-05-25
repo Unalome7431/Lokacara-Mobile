@@ -8,13 +8,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.app.lokacara.R
+import com.app.lokacara.data.OnboardingManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
+    val context = LocalContext.current
+    val onboardingManager = remember { OnboardingManager(context) }
+    val scope = rememberCoroutineScope()
     var splashPhase by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(key1 = true) {
@@ -23,6 +29,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
         kotlinx.coroutines.delay(1000)
         splashPhase = 3
         kotlinx.coroutines.delay(1500)
+        scope.launch { onboardingManager.completeOnboarding() }
         onFinish()
     }
 
