@@ -1,8 +1,12 @@
 package com.app.lokacara.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.R
+import com.app.lokacara.data.FileStorageManager
+import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
 import com.app.lokacara.model.MyEventData
@@ -11,21 +15,18 @@ import com.app.lokacara.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
+    application: Application,
     private val repository: ProfileRepository = ProfileRepository()
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
-    private val _userProfile = MutableStateFlow(
-        UserProfile(
-            name = "Daffa Arrivo",
-            email = "daffarrivo@studenet.uns.ac.id",
-            phone = "+628788133233145",
-            location = "Surakarta, Jawa Tengah",
-            profileImageRes = R.drawable.profileicon
-        )
-    )
+    private val userSessionManager = UserSessionManager(application)
+    private val fileStorageManager = FileStorageManager(application)
+
+    private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
     private val _myEvents = MutableStateFlow<List<MyEventData>>(emptyList())
@@ -41,9 +42,28 @@ class ProfileViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
+        loadUserProfile()
         loadMyEvents()
         loadSavedEvents()
         loadCertificates()
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            val session = userSessionManager.userSession.first()
+            val profileImageRes = if (session.profileImagePath.isNotEmpty()) {
+                null
+            } else {
+                R.drawable.profileicon
+            }
+            _userProfile.value = UserProfile(
+                name = session.name.ifEmpty { "Daffa Arrivo" },
+                email = session.email.ifEmpty { "daffarrivo@studenet.uns.ac.id" },
+                phone = session.phone.ifEmpty { "+628788133233145" },
+                location = session.location.ifEmpty { "Surakarta, Jawa Tengah" },
+                profileImageRes = profileImageRes
+            )
+        }
     }
 
     fun updateProfileField(label: String, newValue: String) {
@@ -54,6 +74,19 @@ class ProfileViewModel(
             "Nomor" -> currentProfile.copy(phone = newValue)
             "Lokasi" -> currentProfile.copy(location = newValue)
             else -> currentProfile
+        }
+        viewModelScope.launch {
+            userSessionManager.updateField(label, newValue)
+        }
+    }
+
+    fun saveProfilePhoto(uri: Uri) {
+        viewModelScope.launch {
+            val path = fileStorageManager.saveProfilePhoto(uri)
+            if (path != null) {
+                userSessionManager.updateProfileImagePath(path)
+                _userProfile.value = _userProfile.value.copy(profileImageRes = null)
+            }
         }
     }
 
