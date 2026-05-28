@@ -21,7 +21,6 @@ class MainActivity : ComponentActivity() {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState(initial = null)
 
             LokacaraMobileTheme {
-                // Tunggu data dimuat, lalu panggil NavGraph
                 if (isLoggedIn != null && isOnboardingCompleted != null) {
                     NavGraph(
                         isLoggedIn = isLoggedIn == true,

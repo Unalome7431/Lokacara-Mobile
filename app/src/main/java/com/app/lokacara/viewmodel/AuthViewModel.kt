@@ -49,9 +49,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                             phone = profile.phone,
                             location = profile.location
                         )
-                        // Simpan session ke SettingsManager agar MainViewModel mengenali status login
                         settingsManager.saveAuthSession(
-                            token = "dummy_token_123", // Ganti dengan token asli jika ada dari repository
+                            token = "dummy_token_123",
                             userId = 1,
                             userName = profile.name
                         )
@@ -80,9 +79,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                             phone = profile.phone,
                             location = profile.location
                         )
-                        // Simpan session ke SettingsManager agar MainViewModel mengenali status login
                         settingsManager.saveAuthSession(
-                            token = "dummy_token_123", // Ganti dengan token asli jika ada dari repository
+                            token = "dummy_token_123",
                             userId = 1,
                             userName = profile.name
                         )
