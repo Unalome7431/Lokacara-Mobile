@@ -64,7 +64,7 @@ fun BottomNavbar(navController: NavController) {
     val indicatorShape = remember { RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp) }
     val highlightColor = remember { Secondary500.copy(alpha = 0.12f) }
 
-    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+    Column(modifier = Modifier.fillMaxWidth().background(Color.White).navigationBarsPadding()) {
         HorizontalDivider(thickness = 0.5.dp, color = Gray200)
 
         Row(
