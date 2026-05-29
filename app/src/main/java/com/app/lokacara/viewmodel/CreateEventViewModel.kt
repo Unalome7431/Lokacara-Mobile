@@ -5,16 +5,20 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.FileStorageManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
-class CreateEventViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val fileStorageManager = FileStorageManager(application)
+@HiltViewModel
+class CreateEventViewModel @Inject constructor(
+    application: Application,
+    private val fileStorageManager: FileStorageManager,
+) : AndroidViewModel(application) {
 
     val namaEvent = MutableStateFlow("")
     val kategori = MutableStateFlow("")

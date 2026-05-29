@@ -6,16 +6,21 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AuthViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = AuthRepository()
-    private val userSessionManager = UserSessionManager(application)
-    private val settingsManager = SettingsManager(application)
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    application: Application,
+    private val repository: AuthRepository,
+    private val userSessionManager: UserSessionManager,
+    private val settingsManager: SettingsManager,
+) : AndroidViewModel(application) {
 
     val email = MutableStateFlow("")
     val password = MutableStateFlow("")

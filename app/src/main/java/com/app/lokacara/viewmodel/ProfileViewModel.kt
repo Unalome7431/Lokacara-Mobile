@@ -13,18 +13,22 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ProfileViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repository = ProfileRepository()
-    private val userSessionManager = UserSessionManager(application)
-    private val settingsManager = SettingsManager(application)
-    private val fileStorageManager = FileStorageManager(application)
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    application: Application,
+    private val repository: ProfileRepository,
+    private val userSessionManager: UserSessionManager,
+    private val settingsManager: SettingsManager,
+    private val fileStorageManager: FileStorageManager,
+) : AndroidViewModel(application) {
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()

@@ -6,15 +6,20 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.BookmarkRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class BookmarkViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = BookmarkRepository()
-    private val bookmarkManager = BookmarkManager(application)
+@HiltViewModel
+class BookmarkViewModel @Inject constructor(
+    application: Application,
+    private val repository: BookmarkRepository,
+    private val bookmarkManager: BookmarkManager,
+) : AndroidViewModel(application) {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

@@ -3,8 +3,9 @@ package com.app.lokacara.repository
 import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
+import javax.inject.Inject
 
-class TicketsRepository {
+class TicketsRepository @Inject constructor() {
 
     fun getUpcomingEvents(): List<UpcomingEvent> {
         return listOf(

@@ -2,8 +2,9 @@ package com.app.lokacara.repository
 
 import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.model.NotificationType
+import javax.inject.Inject
 
-class NotificationRepository {
+class NotificationRepository @Inject constructor() {
     fun getNotifications(): List<NotificationItem> {
         return listOf(
             NotificationItem("1", "Velengio", "mengikuti Event mu", "Jumat, 15:00", "Hari ini", NotificationType.SOCIAL, false),

@@ -4,13 +4,17 @@ import androidx.lifecycle.ViewModel
 import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.model.NotificationType
 import com.app.lokacara.repository.NotificationRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class NotificationViewModel : ViewModel() {
-    private val repository = NotificationRepository()
+@HiltViewModel
+class NotificationViewModel @Inject constructor(
+    private val repository: NotificationRepository,
+) : ViewModel() {
     private val _notifications = MutableStateFlow(repository.getNotifications())
 
     private val _isLoading = MutableStateFlow(false)

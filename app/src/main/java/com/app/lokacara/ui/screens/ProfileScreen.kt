@@ -24,7 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileMenuItem
@@ -36,7 +36,7 @@ import com.app.lokacara.viewmodel.ProfileViewModel
 fun ProfileScreen(
     navController: NavController, 
     onLogout: () -> Unit,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
 

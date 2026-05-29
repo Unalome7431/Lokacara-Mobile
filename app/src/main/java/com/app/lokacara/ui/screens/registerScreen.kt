@@ -22,13 +22,13 @@ import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
-    viewModel: AuthViewModel = viewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
@@ -196,7 +196,7 @@ fun RegisterScreenPreview() {
     LokacaraMobileTheme {
         RegisterScreen(
             onNavigateToLogin = {},
-            viewModel = viewModel()
+            viewModel = hiltViewModel()
         )
     }
 }
