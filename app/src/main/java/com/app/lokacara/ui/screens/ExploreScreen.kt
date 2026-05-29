@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.theme.Gray100
@@ -19,7 +19,7 @@ import com.app.lokacara.viewmodel.ExploreViewModel
 @Composable
 fun ExploreScreen(
     navController: NavController,
-    viewModel: ExploreViewModel = viewModel()
+    viewModel: ExploreViewModel = hiltViewModel()
 ) {
     val isSearchExpanded by viewModel.isSearchExpanded.collectAsState()
     val eventName by viewModel.eventName.collectAsState()

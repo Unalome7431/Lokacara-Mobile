@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
@@ -28,7 +28,7 @@ import com.app.lokacara.viewmodel.BookmarkViewModel
 @Composable
 fun BookmarkScreen(
     navController: NavController,
-    viewModel: BookmarkViewModel = viewModel()
+    viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
 

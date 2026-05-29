@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.ui.components.NotificationCard
 import com.app.lokacara.ui.theme.*
@@ -26,7 +26,7 @@ import com.app.lokacara.viewmodel.NotificationViewModel
 @Composable
 fun NotificationScreen(
     navController: NavController,
-    viewModel: NotificationViewModel = viewModel()
+    viewModel: NotificationViewModel = hiltViewModel()
 ) {
     val selectedTab by viewModel.selectedTab.collectAsState()
     val notifications by viewModel.filteredNotifications.collectAsState(initial = emptyList())

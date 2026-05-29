@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.ExploreRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import javax.inject.Inject
 
-class ExploreViewModel : ViewModel() {
-    private val repository = ExploreRepository()
+@HiltViewModel
+class ExploreViewModel @Inject constructor(
+    private val repository: ExploreRepository,
+) : ViewModel() {
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
     val locationSuggestions = repository.getLocations()

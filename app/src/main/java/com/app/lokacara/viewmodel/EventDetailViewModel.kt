@@ -2,12 +2,15 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.app.lokacara.model.Event
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.app.lokacara.R
+import javax.inject.Inject
 
-class EventDetailViewModel : ViewModel() {
+@HiltViewModel
+class EventDetailViewModel @Inject constructor() : ViewModel() {
 
     private val ev = Event(
         id = "1",

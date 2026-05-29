@@ -27,13 +27,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.theme.*
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
 @Composable
 fun ChangePasswordScreen(
     navController: NavController,
-    viewModel: ChangePasswordViewModel = viewModel()
+    viewModel: ChangePasswordViewModel = hiltViewModel()
 ) {
     val oldPassword by viewModel.oldPassword.collectAsState()
     val newPassword by viewModel.newPassword.collectAsState()
@@ -291,7 +291,7 @@ fun ChangePasswordScreenPreview() {
     LokacaraMobileTheme {
         ChangePasswordScreen(
             navController = rememberNavController(),
-            viewModel = viewModel()
+            viewModel = hiltViewModel()
         )
     }
 }

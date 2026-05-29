@@ -1,8 +1,9 @@
 package com.app.lokacara.repository
 
 import com.app.lokacara.model.UserProfile
+import javax.inject.Inject
 
-class AuthRepository {
+class AuthRepository @Inject constructor() {
 
     fun login(email: String, password: String): Result<UserProfile> {
         return try {

@@ -7,16 +7,20 @@ import com.app.lokacara.data.FileStorageManager
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.repository.TicketsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TicketsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val repository = TicketsRepository()
-    private val fileStorageManager = FileStorageManager(application)
+@HiltViewModel
+class TicketsViewModel @Inject constructor(
+    application: Application,
+    private val repository: TicketsRepository,
+    private val fileStorageManager: FileStorageManager,
+) : AndroidViewModel(application) {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

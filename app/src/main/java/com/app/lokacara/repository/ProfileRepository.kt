@@ -7,8 +7,9 @@ import com.app.lokacara.model.MyEventData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 
-class ProfileRepository {
+class ProfileRepository @Inject constructor() {
     fun getMyEvents(): Flow<List<MyEventData>> = flow {
         delay(500)
         emit(

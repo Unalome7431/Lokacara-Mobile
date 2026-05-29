@@ -9,7 +9,9 @@ import androidx.compose.runtime.*
 import com.app.lokacara.ui.navigation.NavGraph
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.viewmodel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 

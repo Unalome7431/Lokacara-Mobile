@@ -25,7 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import com.app.lokacara.ui.theme.*
@@ -34,7 +34,7 @@ import com.app.lokacara.ui.navigation.Screen
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    viewModel: SettingsViewModel = viewModel()
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val scrollState = rememberScrollState()

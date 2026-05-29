@@ -33,7 +33,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
 import com.app.lokacara.ui.theme.*
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.CreateEventViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +41,7 @@ import com.app.lokacara.viewmodel.CreateEventViewModel
 fun CreateEventScreen(
     onBack: () -> Unit = {},
     onPublish: () -> Unit = {},
-    viewModel: CreateEventViewModel = viewModel()
+    viewModel: CreateEventViewModel = hiltViewModel()
 ) {
     val namaEvent by viewModel.namaEvent.collectAsState()
     val kategori by viewModel.kategori.collectAsState()
@@ -532,7 +532,7 @@ fun CreateEventScreenPreview() {
         CreateEventScreen(
             onBack = {},
             onPublish = {},
-            viewModel = viewModel()
+            viewModel = hiltViewModel()
         )
     }
 }

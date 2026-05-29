@@ -6,12 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
+import javax.inject.Inject
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = HomeRepository()
-    private val bookmarkManager = BookmarkManager(application)
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    application: Application,
+    private val repository: HomeRepository,
+    private val bookmarkManager: BookmarkManager,
+) : AndroidViewModel(application) {
 
     val locations = repository.getLocations()
     val categories = repository.getCategories()

@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
@@ -33,7 +33,7 @@ import com.app.lokacara.viewmodel.TicketsViewModel
 @Composable
 fun TicketsScreen(
     navController: NavController,
-    viewModel: TicketsViewModel = viewModel()
+    viewModel: TicketsViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Mendatang", "Riwayat")

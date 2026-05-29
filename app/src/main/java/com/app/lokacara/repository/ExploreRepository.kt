@@ -2,8 +2,9 @@ package com.app.lokacara.repository
 
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
+import javax.inject.Inject
 
-class ExploreRepository {
+class ExploreRepository @Inject constructor() {
     fun getEvents(): List<Event> {
         return listOf(
             Event("1", "Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar, "Teknologi", penyelenggara = "BEM Fasilkom UNS"),

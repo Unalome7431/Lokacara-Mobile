@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.DetailInfoRow
@@ -41,7 +41,7 @@ import com.app.lokacara.viewmodel.EventDetailViewModel
 @Composable
 fun EventDetailScreen(
     navController: NavController,
-    viewModel: EventDetailViewModel = viewModel()
+    viewModel: EventDetailViewModel = hiltViewModel()
 ) {
     val event by viewModel.event.collectAsState()
     val relatedEvents by viewModel.relatedEvents.collectAsState()
@@ -370,7 +370,7 @@ fun EventDetailScreenPreview() {
     LokacaraMobileTheme {
         EventDetailScreen(
             navController = rememberNavController(),
-            viewModel = viewModel()
+            viewModel = hiltViewModel()
         )
     }
 }

@@ -2,8 +2,9 @@ package com.app.lokacara.repository
 
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
+import javax.inject.Inject
 
-class HomeRepository {
+class HomeRepository @Inject constructor() {
 
     fun getLocations(): List<String> = listOf("Solo", "Yogyakarta", "Semarang", "Jakarta")
 

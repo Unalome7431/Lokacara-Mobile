@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.app.lokacara.R
@@ -31,7 +31,7 @@ import com.app.lokacara.ui.navigation.Screen
 @Composable
 fun MyEventsScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val myEvents by viewModel.myEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
