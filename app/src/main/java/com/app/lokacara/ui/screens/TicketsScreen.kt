@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
@@ -32,7 +32,7 @@ import com.app.lokacara.viewmodel.TicketsViewModel
 
 @Composable
 fun TicketsScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -112,7 +112,7 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
             Spacer(modifier = Modifier.height(24.dp))
             Text("Event Mendatang", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(bottom = 12.dp))
         }
-        items(upcomingEvents) { event ->
+        items(upcomingEvents, key = { "${it.title}_${it.date}" }) { event ->
             SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
             Spacer(modifier = Modifier.height(12.dp))
         }
@@ -146,7 +146,7 @@ fun RiwayatContent(
 ) {
     var selectedEvent by remember { mutableStateOf<HistoryEvent?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)) {
-        items(historyEvents) { event ->
+        items(historyEvents, key = { "${it.title}_${it.date}" }) { event ->
             HistoryItemCard(event, onClick = { selectedEvent = event })
             Spacer(modifier = Modifier.height(12.dp))
         }
@@ -166,6 +166,6 @@ fun RiwayatContent(
 @Composable
 fun TicketsScreenPreview() {
     com.app.lokacara.ui.theme.LokacaraMobileTheme {
-        TicketsScreen(navController = androidx.navigation.compose.rememberNavController())
+        TicketsScreen(navActions = NavigationActions(navigateTo = {}, goBack = {}))
     }
 }

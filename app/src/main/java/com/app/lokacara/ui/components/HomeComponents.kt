@@ -31,16 +31,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
-fun HomeHeader(navController: NavController) {
+fun HomeHeader(navActions: NavigationActions) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -56,7 +55,7 @@ fun HomeHeader(navController: NavController) {
         Row(verticalAlignment = Alignment.CenterVertically) {
 
             IconButton(
-                onClick = { navController.navigate(Screen.Notification.route) }
+                onClick = { navActions.navigateTo(Screen.Notification.route) }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Notifications,
@@ -67,7 +66,7 @@ fun HomeHeader(navController: NavController) {
             }
 
             IconButton(
-                onClick = { navController.navigate(Screen.Bookmark.route) }
+                onClick = { navActions.navigateTo(Screen.Bookmark.route) }
             ) {
                 Icon(
                     imageVector = Icons.Outlined.BookmarkBorder,
@@ -139,8 +138,8 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                         .shadow(elevation = 8.dp, shape = cardShape)
                         .clickable { onEventClick(event) }
                 ) {
-                    AsyncImage(
-                        model = event.imageRes,
+                    Image(
+                        painter = painterResource(id = event.imageRes),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

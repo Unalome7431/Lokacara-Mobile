@@ -22,9 +22,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 
@@ -36,10 +36,7 @@ data class NavigationItem(
 )
 
 @Composable
-fun BottomNavbar(navController: NavController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
+fun BottomNavbar(navActions: NavigationActions, currentRoute: String?) {
     val items = remember {
         listOf(
             NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Home"),
@@ -50,15 +47,8 @@ fun BottomNavbar(navController: NavController) {
         )
     }
 
-    val onNavigate: (String) -> Unit = remember(navController) {
-        { route ->
-            navController.navigate(route) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-            }
-        }
+    val onNavigate: (String) -> Unit = remember(navActions) {
+        { route -> navActions.navigateTo(route) }
     }
 
     val indicatorShape = remember { RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp) }
@@ -155,6 +145,9 @@ private fun CenterActionButton(onClick: () -> Unit) {
 @Composable
 fun LokacaraNavbarPreview() {
     LokacaraMobileTheme(darkTheme = false) {
-        BottomNavbar(navController = rememberNavController())
+        BottomNavbar(
+            navActions = NavigationActions(navigateTo = {}, goBack = {}),
+            currentRoute = Screen.Home.route
+        )
     }
 }

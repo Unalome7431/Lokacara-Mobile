@@ -18,8 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.ui.components.CertificateCard
 import com.app.lokacara.ui.components.EmptyEventState
@@ -29,7 +28,7 @@ import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
 fun CertificatesScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val certificates by viewModel.certificates.collectAsState()
@@ -49,7 +48,7 @@ fun CertificatesScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -78,11 +77,11 @@ fun CertificatesScreen(
                         item {
                             EmptyEventState(
                                 text = "Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya",
-                                onClick = { navController.navigate(Screen.Explore.route) }
+                                onClick = { navActions.navigateTo(Screen.Explore.route) }
                             )
                         }
                     } else {
-                        items(certificates) { cert ->
+                        items(certificates, key = { it.id }) { cert ->
                             CertificateCard(
                                 cert = cert,
                                 onDownload = { viewModel.downloadCertificate(it) }
@@ -99,6 +98,9 @@ fun CertificatesScreen(
 @Composable
 fun CertificatesScreenPreview() {
     LokacaraMobileTheme {
-        CertificatesScreen(navController = rememberNavController())
+        CertificatesScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }

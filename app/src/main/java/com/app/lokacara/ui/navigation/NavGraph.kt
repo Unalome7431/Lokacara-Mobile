@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -61,11 +62,26 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val navActions = remember(internalNavController) {
+        NavigationActions(
+            navigateTo = { route ->
+                internalNavController.navigate(route) {
+                    popUpTo(internalNavController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+            goBack = { internalNavController.popBackStack() }
+        )
+    }
+
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
             if (currentRoute != Screen.Notification.route && currentRoute != Screen.CreateEvent.route) {
-                BottomNavbar(navController = internalNavController)
+                BottomNavbar(navActions = navActions, currentRoute = currentRoute)
             }
         }
     ) { innerPadding ->
@@ -75,15 +91,15 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 startDestination = Screen.Home.route,
                 modifier = Modifier.fillMaxSize()
             ) {
-                composable(Screen.Home.route) { HomeScreen(navController = internalNavController) }
+                composable(Screen.Home.route) { HomeScreen(navActions = navActions) }
                 composable(Screen.EventDetail.route) {
-                    EventDetailScreen(navController = internalNavController)
+                    EventDetailScreen(navActions = navActions)
                 }
-                composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }
-                composable(Screen.Tickets.route) { TicketsScreen(navController = internalNavController) }
+                composable(Screen.Explore.route) { ExploreScreen(navActions = navActions) }
+                composable(Screen.Tickets.route) { TicketsScreen(navActions = navActions) }
                 composable(Screen.Profile.route) {
                     ProfileScreen(
-                        navController = internalNavController,
+                        navActions = navActions,
                         onLogout = {
                             rootNavController.navigate(Screen.Login.route) {
                                 popUpTo(0) { inclusive = true }
@@ -93,7 +109,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 }
                 composable(Screen.CreateEvent.route) {
                     CreateEventScreen(
-                        onBack = { internalNavController.popBackStack() },
+                        onBack = navActions.goBack,
                         onPublish = {
                             internalNavController.navigate(Screen.Home.route) {
                                 popUpTo(internalNavController.graph.findStartDestination().id) {
@@ -106,21 +122,21 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     )
                 }
                 composable(Screen.Notification.route) {
-                    NotificationScreen(navController = internalNavController)
+                    NotificationScreen(navActions = navActions)
                 }
-                composable(Screen.EditProfile.route) { EditProfileScreen(navController = internalNavController) }
-                composable(Screen.MyEvents.route) { MyEventsScreen(navController = internalNavController) }
-                composable(Screen.SavedEvents.route) { SavedEventsScreen(navController = internalNavController) }
-                composable(Screen.Certificates.route) { CertificatesScreen(navController = internalNavController) }
-                composable(Screen.Settings.route) { SettingsScreen(navController = internalNavController) }
-                composable(Screen.About.route) { AboutScreen(navController = internalNavController) }
+                composable(Screen.EditProfile.route) { EditProfileScreen(navActions = navActions) }
+                composable(Screen.MyEvents.route) { MyEventsScreen(navActions = navActions) }
+                composable(Screen.SavedEvents.route) { SavedEventsScreen(navActions = navActions) }
+                composable(Screen.Certificates.route) { CertificatesScreen(navActions = navActions) }
+                composable(Screen.Settings.route) { SettingsScreen(navActions = navActions) }
+                composable(Screen.About.route) { AboutScreen(navActions = navActions) }
                 composable(Screen.Bookmark.route) {
-                    BookmarkScreen(navController = internalNavController)
+                    BookmarkScreen(navActions = navActions)
                 }
-                composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController = internalNavController) }
-                composable(Screen.HelpCenter.route) { HelpCenterScreen(navController = internalNavController) }
-                composable(Screen.TermsConditions.route) { TermsConditionsScreen(navController = internalNavController) }
-                composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController = internalNavController) }
+                composable(Screen.ChangePassword.route) { ChangePasswordScreen(navActions = navActions) }
+                composable(Screen.HelpCenter.route) { HelpCenterScreen(navActions = navActions) }
+                composable(Screen.TermsConditions.route) { TermsConditionsScreen(navActions = navActions) }
+                composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navActions = navActions) }
             }
         }
     }

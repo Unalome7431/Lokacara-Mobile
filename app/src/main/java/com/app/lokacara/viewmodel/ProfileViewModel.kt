@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.R
 import com.app.lokacara.data.FileStorageManager
-import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
@@ -26,7 +25,6 @@ class ProfileViewModel @Inject constructor(
     application: Application,
     private val repository: ProfileRepository,
     private val userSessionManager: UserSessionManager,
-    private val settingsManager: SettingsManager,
     private val fileStorageManager: FileStorageManager,
 ) : AndroidViewModel(application) {
 
@@ -140,7 +138,6 @@ class ProfileViewModel @Inject constructor(
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
             userSessionManager.logout()
-            settingsManager.clearAuthSession()
             onComplete()
         }
     }

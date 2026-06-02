@@ -30,17 +30,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.DetailInfoRow
 import com.app.lokacara.ui.components.EventRelatedCard
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.EventDetailViewModel
 
 @Composable
 fun EventDetailScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: EventDetailViewModel = hiltViewModel()
 ) {
     val event by viewModel.event.collectAsState()
@@ -66,7 +66,7 @@ fun EventDetailScreen(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(20.dp)
-                    .clickable { navController.popBackStack() }
+                    .clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -276,9 +276,7 @@ fun EventDetailScreen(
                                 EventRelatedCard(
                                     event = relEvent,
                                     onClick = {
-                                        navController.navigate(Screen.EventDetail.route) {
-                                            launchSingleTop = true
-                                        }
+                                        navActions.navigateTo(Screen.EventDetail.route)
                                     }
                                 )
                             }
@@ -368,8 +366,12 @@ fun EventDetailScreen(
 @Composable
 fun EventDetailScreenPreview() {
     LokacaraMobileTheme {
+        val dummyNavController = rememberNavController()
         EventDetailScreen(
-            navController = rememberNavController(),
+            navActions = NavigationActions(
+                navigateTo = { dummyNavController.navigate(it) },
+                goBack = { dummyNavController.popBackStack() }
+            ),
             viewModel = hiltViewModel()
         )
     }

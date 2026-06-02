@@ -31,16 +31,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
 fun EditProfileScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
@@ -90,7 +89,7 @@ fun EditProfileScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -324,6 +323,9 @@ fun EditFieldDialog(
 @Composable
 fun EditProfileScreenPreview() {
     LokacaraMobileTheme {
-        EditProfileScreen(navController = rememberNavController())
+        EditProfileScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }

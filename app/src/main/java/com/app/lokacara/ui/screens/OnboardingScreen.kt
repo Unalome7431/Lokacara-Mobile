@@ -13,13 +13,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.app.lokacara.R
-import com.app.lokacara.data.OnboardingManager
+import com.app.lokacara.data.SettingsManager
 import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
     val context = LocalContext.current
-    val onboardingManager = remember { OnboardingManager(context) }
+    val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
     var splashPhase by remember { mutableIntStateOf(1) }
 
@@ -29,7 +29,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
         kotlinx.coroutines.delay(1000)
         splashPhase = 3
         kotlinx.coroutines.delay(1500)
-        scope.launch { onboardingManager.completeOnboarding() }
+        scope.launch { settingsManager.setOnboardingCompleted() }
         onFinish()
     }
 

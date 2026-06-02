@@ -18,16 +18,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.BookmarkViewModel
 
 @Composable
 fun BookmarkScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
@@ -40,7 +40,7 @@ fun BookmarkScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 30.dp)
         ) {
             IconButton(
-                onClick = { navController.popBackStack() },
+                onClick = { navActions.goBack() },
                 modifier = Modifier.align(Alignment.CenterStart).size(28.dp)
             ) {
                 Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = "Kembali", tint = Gray900)
@@ -70,7 +70,7 @@ fun BookmarkScreen(
                         viewModel.toggleBookmark(event.id)
                     },
                     onClick = {
-                        navController.navigate(Screen.EventDetail.route)
+                        navActions.navigateTo(Screen.EventDetail.route)
                     }
                 )
             }
@@ -82,6 +82,10 @@ fun BookmarkScreen(
 @Composable
 fun BookmarkScreenPreview() {
     LokacaraMobileTheme {
-        BookmarkScreen(navController = rememberNavController())
+        val dummyNavController = rememberNavController()
+        BookmarkScreen(navActions = NavigationActions(
+            navigateTo = { dummyNavController.navigate(it) },
+            goBack = { dummyNavController.popBackStack() }
+        ))
     }
 }

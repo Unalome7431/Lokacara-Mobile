@@ -45,26 +45,19 @@ class AuthViewModel @Inject constructor(
             delay(500)
             val result = repository.login(email.value.trim(), password.value)
             _isLoading.value = false
-            result.fold(
-                onSuccess = { profile ->
-                    viewModelScope.launch {
-                        userSessionManager.saveUserSession(
-                            name = profile.name,
-                            email = profile.email,
-                            phone = profile.phone,
-                            location = profile.location
-                        )
-                        settingsManager.saveAuthSession(
-                            token = "dummy_token_123",
-                            userId = 1,
-                            userName = profile.name
-                        )
-                        settingsManager.setOnboardingCompleted()
-                        _loginSuccess.value = true
-                    }
-                },
-                onFailure = { _errorMessage.value = it.message ?: "Gagal masuk" }
-            )
+            val profile = result.getOrNull()
+            if (profile != null) {
+                userSessionManager.saveUserSession(
+                    name = profile.name,
+                    email = profile.email,
+                    phone = profile.phone,
+                    location = profile.location
+                )
+                settingsManager.setOnboardingCompleted()
+                _loginSuccess.value = true
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Gagal masuk"
+            }
         }
     }
 
@@ -75,26 +68,19 @@ class AuthViewModel @Inject constructor(
             delay(500)
             val result = repository.register(email.value.trim(), password.value)
             _isLoading.value = false
-            result.fold(
-                onSuccess = { profile ->
-                    viewModelScope.launch {
-                        userSessionManager.saveUserSession(
-                            name = profile.name,
-                            email = profile.email,
-                            phone = profile.phone,
-                            location = profile.location
-                        )
-                        settingsManager.saveAuthSession(
-                            token = "dummy_token_123",
-                            userId = 1,
-                            userName = profile.name
-                        )
-                        settingsManager.setOnboardingCompleted()
-                        _registerSuccess.value = true
-                    }
-                },
-                onFailure = { _errorMessage.value = it.message ?: "Gagal mendaftar" }
-            )
+            val profile = result.getOrNull()
+            if (profile != null) {
+                userSessionManager.saveUserSession(
+                    name = profile.name,
+                    email = profile.email,
+                    phone = profile.phone,
+                    location = profile.location
+                )
+                settingsManager.setOnboardingCompleted()
+                _registerSuccess.value = true
+            } else {
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Gagal mendaftar"
+            }
         }
     }
 

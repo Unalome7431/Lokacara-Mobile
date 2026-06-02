@@ -14,20 +14,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.HomeHeader
 import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
-import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val selectedLocation by viewModel.selectedLocation.collectAsState()
@@ -35,8 +33,8 @@ fun HomeScreen(
     val filteredEvents by viewModel.filteredEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
 
-    val onEventClick = remember {
-        { navController.navigate(Screen.EventDetail.route) }
+    val onEventClick = remember(navActions) {
+        { navActions.navigateTo(Screen.EventDetail.route) }
     }
     val onBookmarkClick: (String) -> Unit = remember {
         { eventId -> viewModel.toggleBookmark(eventId) }
@@ -46,7 +44,7 @@ fun HomeScreen(
         LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             item(key = "header") {
-                HomeHeader(navController = navController)
+                HomeHeader(navActions = navActions)
             }
 
             item(key = "popular_section") {
@@ -87,6 +85,10 @@ fun HomeScreen(
 @Composable
 fun HomeScreenPreview() {
     LokacaraMobileTheme {
-        HomeScreen(navController = rememberNavController())
+        val navController = androidx.navigation.compose.rememberNavController()
+        HomeScreen(navActions = NavigationActions(
+            navigateTo = { navController.navigate(it) },
+            goBack = { navController.popBackStack() }
+        ))
     }
 }

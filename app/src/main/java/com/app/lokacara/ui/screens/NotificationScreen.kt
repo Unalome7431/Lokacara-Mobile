@@ -18,18 +18,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.components.NotificationCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.NotificationViewModel
 
 @Composable
 fun NotificationScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: NotificationViewModel = hiltViewModel()
 ) {
     val selectedTab by viewModel.selectedTab.collectAsState()
-    val notifications by viewModel.filteredNotifications.collectAsState(initial = emptyList())
+    val grouped by viewModel.groupedNotifications.collectAsState()
     val tabs = listOf("Aktivitas", "Informasi")
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
@@ -41,7 +41,7 @@ fun NotificationScreen(
         ) {
 
             IconButton(
-                onClick = { navController.popBackStack() },
+                onClick = { navActions.goBack() },
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .size(24.dp)
@@ -65,7 +65,7 @@ fun NotificationScreen(
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, title ->
                 Column(
-                    modifier = Modifier.weight(1f).clickable { viewModel.selectedTab.value = index },
+                    modifier = Modifier.weight(1f).clickable { viewModel.onTabSelected(index) },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(title, color = if (selectedTab == index) Primary500 else Gray500, fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -80,9 +80,8 @@ fun NotificationScreen(
             contentPadding = PaddingValues(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            val grouped = notifications.groupBy { it.dateGroup }
             grouped.forEach { (dateGroup, items) ->
-                item {
+                item(key = "date_$dateGroup") {
                     Text(dateGroup, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
                 }
                 items(items) { notification -> NotificationCard(notification) }
@@ -96,7 +95,10 @@ fun NotificationScreen(
 fun NotificationScreenPreview() {
     com.app.lokacara.ui.theme.LokacaraMobileTheme {
         NotificationScreen(
-            navController = androidx.navigation.compose.rememberNavController()
+            navActions = NavigationActions(
+                navigateTo = { },
+                goBack = { }
+            )
         )
     }
 }

@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileMenuItem
 import com.app.lokacara.ui.navigation.Screen
@@ -34,7 +33,7 @@ import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
-    navController: NavController, 
+    navActions: NavigationActions, 
     onLogout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
@@ -99,25 +98,25 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Rounded.Event,
                         title = "Event Saya",
-                        onClick = { navController.navigate(Screen.MyEvents.route) }
+                        onClick = { navActions.navigateTo(Screen.MyEvents.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Person,
                         title = "Edit Profil",
-                        onClick = { navController.navigate(Screen.EditProfile.route) }
+                        onClick = { navActions.navigateTo(Screen.EditProfile.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Bookmark,
                         title = "Event Tersimpan",
-                        onClick = { navController.navigate(Screen.SavedEvents.route) }
+                        onClick = { navActions.navigateTo(Screen.SavedEvents.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.WorkspacePremium,
                         title = "Sertifikat",
-                        onClick = { navController.navigate(Screen.Certificates.route) }
+                        onClick = { navActions.navigateTo(Screen.Certificates.route) }
                     )
                 }
             }
@@ -134,13 +133,13 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Rounded.Tune,
                         title = "Pengaturan",
-                        onClick = { navController.navigate(Screen.Settings.route) }
+                        onClick = { navActions.navigateTo(Screen.Settings.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Info,
                         title = "Tentang Lokacara",
-                        onClick = { navController.navigate(Screen.About.route) }
+                        onClick = { navActions.navigateTo(Screen.About.route) }
                     )
                 }
             }
@@ -181,6 +180,6 @@ fun ProfileScreen(
 @Composable
 fun ProfileScreenPreview() {
     LokacaraMobileTheme {
-        ProfileScreen(navController = rememberNavController(), onLogout = {})
+        ProfileScreen(navActions = NavigationActions(navigateTo = {}, goBack = {}), onLogout = {})
     }
 }

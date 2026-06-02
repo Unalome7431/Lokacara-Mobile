@@ -10,7 +10,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,9 +35,10 @@ class BookmarkViewModel @Inject constructor(
 
     private fun syncBookmarks() {
         viewModelScope.launch {
-            val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            _savedEvents.value = _savedEvents.value.map { event ->
-                event.copy(isBookmarked = event.id in bookmarkedIds)
+            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
+                _savedEvents.value = _savedEvents.value.map { event ->
+                    event.copy(isBookmarked = event.id in bookmarkedIds)
+                }
             }
         }
     }
@@ -46,14 +46,6 @@ class BookmarkViewModel @Inject constructor(
     fun toggleBookmark(eventId: String) {
         viewModelScope.launch {
             bookmarkManager.toggleBookmark(eventId)
-            val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            _savedEvents.value = _savedEvents.value.map { event ->
-                if (event.id == eventId) {
-                    event.copy(isBookmarked = event.id in bookmarkedIds)
-                } else {
-                    event
-                }
-            }
         }
     }
 }

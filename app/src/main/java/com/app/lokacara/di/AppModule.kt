@@ -33,12 +33,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOnboardingManager(@ApplicationContext context: Context): OnboardingManager {
-        return OnboardingManager(context)
-    }
-
-    @Provides
-    @Singleton
     fun provideFileStorageManager(@ApplicationContext context: Context): FileStorageManager {
         return FileStorageManager(context)
     }

@@ -10,13 +10,12 @@ import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,7 +29,7 @@ import com.app.lokacara.ui.navigation.Screen
 
 @Composable
 fun MyEventsScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val myEvents by viewModel.myEvents.collectAsState()
@@ -50,7 +49,7 @@ fun MyEventsScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -78,15 +77,15 @@ fun MyEventsScreen(
                     if (myEvents.isEmpty()) {
                         item {
                             EmptyEventState(
-                                onClick = { navController.navigate(Screen.CreateEvent.route) }
+                                onClick = { navActions.navigateTo(Screen.CreateEvent.route) }
                             )
                         }
                     } else {
-                        items(myEvents) { event ->
+                        items(myEvents, key = { "${it.title}_${it.date}" }) { event ->
                             MyEventCard(
                                 event,
                                 onClick = {
-                                    navController.navigate(Screen.EventDetail.route)
+                                    navActions.navigateTo(Screen.EventDetail.route)
                                 }
                             )
                         }
@@ -101,6 +100,9 @@ fun MyEventsScreen(
 @Composable
 fun MyEventsScreenPreview() {
     LokacaraMobileTheme {
-        MyEventsScreen(navController = rememberNavController())
+        MyEventsScreen(navActions = NavigationActions(
+        navigateTo = { },
+        goBack = { }
+    ))
     }
 }

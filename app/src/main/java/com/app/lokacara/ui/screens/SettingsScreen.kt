@@ -20,8 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -33,7 +32,7 @@ import com.app.lokacara.ui.navigation.Screen
 
 @Composable
 fun SettingsScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
@@ -102,7 +101,7 @@ fun SettingsScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -143,7 +142,7 @@ fun SettingsScreen(
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
                     title = "Ubah Kata Sandi", 
-                    onClick = { navController.navigate(Screen.ChangePassword.route) }
+                        onClick = { navActions.navigateTo(Screen.ChangePassword.route) }
                 )
             }
 
@@ -154,19 +153,19 @@ fun SettingsScreen(
                 SettingsActionRow(
                     icon = Icons.Rounded.HelpOutline,
                     title = "Pusat Bantuan", 
-                    onClick = { navController.navigate(Screen.HelpCenter.route) }
+                        onClick = { navActions.navigateTo(Screen.HelpCenter.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.Article,
                     title = "Syarat & Ketentuan", 
-                    onClick = { navController.navigate(Screen.TermsConditions.route) }
+                        onClick = { navActions.navigateTo(Screen.TermsConditions.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
                     title = "Kebijakan Privasi", 
-                    onClick = { navController.navigate(Screen.PrivacyPolicy.route) }
+                        onClick = { navActions.navigateTo(Screen.PrivacyPolicy.route) }
                 )
             }
 
@@ -325,6 +324,9 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
 @Composable
 fun SettingsScreenPreview() {
     LokacaraMobileTheme {
-        SettingsScreen(navController = rememberNavController())
+        SettingsScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }

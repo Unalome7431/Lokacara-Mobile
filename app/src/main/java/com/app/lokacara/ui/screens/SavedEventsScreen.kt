@@ -18,8 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
@@ -29,7 +28,7 @@ import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
 fun SavedEventsScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
@@ -49,7 +48,7 @@ fun SavedEventsScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -78,15 +77,15 @@ fun SavedEventsScreen(
                         item {
                             EmptyEventState(
                                 text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                                onClick = { navController.navigate(Screen.Explore.route) }
+                                onClick = { navActions.navigateTo(Screen.Explore.route) }
                             )
                         }
                     } else {
-                        items(savedEvents) { event ->
+                        items(savedEvents, key = { it.id }) { event ->
                             EventCard(
                                 event = event,
                                 onClick = {
-                                    navController.navigate(Screen.EventDetail.route)
+                                    navActions.navigateTo(Screen.EventDetail.route)
                                 }
                             )
                         }
@@ -101,6 +100,9 @@ fun SavedEventsScreen(
 @Composable
 fun SavedEventsScreenPreview() {
     LokacaraMobileTheme {
-        SavedEventsScreen(navController = rememberNavController())
+        SavedEventsScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }

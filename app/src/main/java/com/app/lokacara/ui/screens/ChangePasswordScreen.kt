@@ -24,15 +24,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
 @Composable
 fun ChangePasswordScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ChangePasswordViewModel = hiltViewModel()
 ) {
     val oldPassword by viewModel.oldPassword.collectAsState()
@@ -48,7 +47,7 @@ fun ChangePasswordScreen(
     LaunchedEffect(changeSuccess) {
         if (changeSuccess) {
             viewModel.resetChangeSuccess()
-            navController.popBackStack()
+            navActions.goBack()
         }
     }
 
@@ -68,7 +67,7 @@ fun ChangePasswordScreen(
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -290,7 +289,10 @@ fun ChangePasswordScreen(
 fun ChangePasswordScreenPreview() {
     LokacaraMobileTheme {
         ChangePasswordScreen(
-            navController = rememberNavController(),
+            navActions = NavigationActions(
+                navigateTo = { },
+                goBack = { }
+            ),
             viewModel = hiltViewModel()
         )
     }

@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.theme.Gray100
 import com.app.lokacara.ui.navigation.Screen
@@ -18,7 +18,7 @@ import com.app.lokacara.viewmodel.ExploreViewModel
 
 @Composable
 fun ExploreScreen(
-    navController: NavController,
+    navActions: NavigationActions,
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
     val isSearchExpanded by viewModel.isSearchExpanded.collectAsState()
@@ -91,7 +91,7 @@ fun ExploreScreen(
                         EventCard(
                             event = event,
                             onClick = {
-                                navController.navigate(Screen.EventDetail.route)
+                                navActions.navigateTo(Screen.EventDetail.route)
                             }
                         )
                     }
@@ -109,6 +109,9 @@ fun ExploreScreen(
 fun ExploreScreenPreview() {
     com.app.lokacara.ui.theme.LokacaraMobileTheme {
         val dummyNavController = androidx.navigation.compose.rememberNavController()
-        ExploreScreen(navController = dummyNavController)
+        ExploreScreen(navActions = NavigationActions(
+            navigateTo = { dummyNavController.navigate(it) },
+            goBack = { dummyNavController.popBackStack() }
+        ))
     }
 }

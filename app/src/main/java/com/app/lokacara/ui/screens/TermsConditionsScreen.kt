@@ -20,12 +20,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.ui.theme.*
 
 @Composable
-fun TermsConditionsScreen(navController: NavController) {
+fun TermsConditionsScreen(navActions: NavigationActions) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -42,7 +41,7 @@ fun TermsConditionsScreen(navController: NavController) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -171,6 +170,9 @@ fun TermsSection(title: String, content: String) {
 @Composable
 fun TermsConditionsScreenPreview() {
     LokacaraMobileTheme {
-        TermsConditionsScreen(navController = rememberNavController())
+        TermsConditionsScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }

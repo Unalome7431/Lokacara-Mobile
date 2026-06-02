@@ -14,7 +14,6 @@ import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,12 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import com.app.lokacara.ui.navigation.NavigationActions
 import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
 
 @Composable
-fun AboutScreen(navController: NavController) {
+fun AboutScreen(navActions: NavigationActions) {
     val scrollState = rememberScrollState()
     
     val carouselImages = listOf(
@@ -59,7 +58,7 @@ fun AboutScreen(navController: NavController) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(20.dp).clickable { navActions.goBack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -148,6 +147,9 @@ fun AboutScreen(navController: NavController) {
 @Composable
 fun AboutScreenPreview() {
     LokacaraMobileTheme {
-        AboutScreen(navController = rememberNavController())
+        AboutScreen(navActions = NavigationActions(
+            navigateTo = { },
+            goBack = { }
+        ))
     }
 }
