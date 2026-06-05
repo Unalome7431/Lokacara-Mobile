@@ -24,6 +24,7 @@ import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -62,9 +63,16 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        val scope = rememberCoroutineScope()
+        val snackbarHostState = remember { SnackbarHostState() }
+
         GoogleButton(
             text = "Daftar dengan Google",
-            onClick = { }
+            onClick = {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Google Sign-In belum tersedia")
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
