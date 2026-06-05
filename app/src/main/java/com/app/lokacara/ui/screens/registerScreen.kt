@@ -31,6 +31,7 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val name by viewModel.name.collectAsState()
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
     val isChecked by viewModel.isChecked.collectAsState()
@@ -89,6 +90,14 @@ fun RegisterScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        LokacaraTextField(
+            value = name,
+            onValueChange = { viewModel.name.value = it },
+            placeholder = "Nama Lengkap"
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         LokacaraTextField(
             value = email,
