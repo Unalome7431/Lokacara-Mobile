@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Download
@@ -132,8 +133,8 @@ fun SmallUpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = event.imageRes),
+            AsyncImage(
+                model = event.imageUrl ?: R.drawable.candi,
                 contentDescription = null,
                 modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
@@ -195,8 +196,8 @@ fun HistoryDetailDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Image(
-                    painter = painterResource(id = event.imageRes),
+                AsyncImage(
+                    model = event.imageUrl ?: R.drawable.candi,
                     contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop

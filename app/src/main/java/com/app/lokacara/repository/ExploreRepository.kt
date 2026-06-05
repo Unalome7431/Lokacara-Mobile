@@ -1,17 +1,23 @@
 package com.app.lokacara.repository
 
-import com.app.lokacara.R
-import com.app.lokacara.model.Event
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.dto.PaginatedEventsResponse
+import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
 
-class ExploreRepository @Inject constructor() {
-    fun getEvents(): List<Event> {
-        return listOf(
-            Event("1", "Seminar Ai di Kota Surakarta", "Acara ini dibuat untuk memenuhi tugas mata kuliah...", "25 April 2026", "Pura Mangkunegaran", "Gratis", R.drawable.seminar, "Teknologi", penyelenggara = "BEM Fasilkom UNS"),
-            Event("2", "Sound of Solo Festival", "Konser musik tahunan...", "2 Mei 2026", "Benteng Vastenburg", "Rp 50.000", R.drawable.seminar_2, "Musik", penyelenggara = "Dinas Pariwisata Solo"),
-            Event("3", "Fullstack Workshop 2026", "Belajar membangun aplikasi modern...", "10 Mei 2026", "Solo Techno Park", "Gratis", R.drawable.seminar_3, "Teknologi", penyelenggara = "Solo Techno Park Academy"),
-            Event("4", "Cosplay Anime Matsuri", "Festival jejepangan terbesar...", "15 Mei 2026", "The Park Mall", "Rp 35.000", R.drawable.seminar, "Anime", penyelenggara = "Komunitas Developer Indonesia")
-        )
+class ExploreRepository @Inject constructor(
+    private val apiService: ApiService
+) {
+
+    suspend fun searchEvents(
+        keyword: String? = null,
+        categoryId: Int? = null,
+        page: Int = 1
+    ): ApiResult<PaginatedEventsResponse> {
+        return safeApiCall {
+            apiService.searchEvents(keyword = keyword, categoryId = categoryId, page = page)
+        }
     }
 
     fun getLocations() = listOf("Surabaya", "Surakarta", "Jakarta", "Semarang", "Yogyakarta")

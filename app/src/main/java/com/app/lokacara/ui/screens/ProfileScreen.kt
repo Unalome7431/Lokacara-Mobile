@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileMenuItem
 import com.app.lokacara.ui.navigation.Screen
+import coil.compose.AsyncImage
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
 
@@ -68,13 +69,15 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
+            AsyncImage(
+                model = userProfile.profileImageUrl,
                 contentDescription = "Profile Picture",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                placeholder = painterResource(id = R.drawable.profileicon),
+                error = painterResource(id = R.drawable.profileicon)
             )
 
             Spacer(modifier = Modifier.height(16.dp))

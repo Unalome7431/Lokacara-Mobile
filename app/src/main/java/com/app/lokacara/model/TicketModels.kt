@@ -9,7 +9,7 @@ data class UpcomingEvent(
     val time: String,
     val location: String,
     val type: String,
-    val imageRes: Int
+    val imageUrl: String? = null
 )
 
 @Immutable
@@ -20,5 +20,5 @@ data class HistoryEvent(
     val location: String,
     val category: String,
     val isBlueBg: Boolean,
-    val imageRes: Int
+    val imageUrl: String? = null
 )

@@ -1,6 +1,5 @@
 package com.app.lokacara.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,6 +33,8 @@ import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.DetailInfoRow
 import com.app.lokacara.ui.components.EventRelatedCard
 import com.app.lokacara.ui.navigation.Screen
+import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.EventDetailViewModel
 
@@ -125,8 +125,8 @@ fun EventDetailScreen(
                             .height(260.dp)
                             .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
                     ) {
-                        Image(
-                            painter = painterResource(id = event.imageRes),
+                        AsyncImage(
+                            model = event.imageUrl,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop

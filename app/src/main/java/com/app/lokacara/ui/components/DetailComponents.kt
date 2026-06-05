@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
@@ -75,7 +76,7 @@ fun EventRelatedCard(
     ) {
         Column {
             AsyncImage(
-                model = event.imageRes,
+                model = event.imageUrl ?: R.drawable.candi,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()

@@ -20,10 +20,9 @@ import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.app.lokacara.R
-import com.app.lokacara.model.MyEventData
+import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
-import com.app.lokacara.ui.components.MyEventCard
+import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
 import com.app.lokacara.ui.navigation.Screen
@@ -83,8 +82,8 @@ fun MyEventsScreen(
                         }
                     } else {
                         items(myEvents) { event ->
-                            MyEventCard(
-                                event,
+                            EventCard(
+                                event = event,
                                 onClick = {
                                     navController.navigate(Screen.EventDetail.route)
                                 }

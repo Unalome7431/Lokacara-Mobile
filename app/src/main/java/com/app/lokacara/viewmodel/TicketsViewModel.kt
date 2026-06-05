@@ -3,12 +3,14 @@ package com.app.lokacara.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.lokacara.data.FileStorageManager
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.toHistoryEvent
+import com.app.lokacara.data.remote.toUpcomingEvent
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.repository.TicketsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +21,7 @@ import javax.inject.Inject
 class TicketsViewModel @Inject constructor(
     application: Application,
     private val repository: TicketsRepository,
-    private val fileStorageManager: FileStorageManager,
+    private val imageUrlProvider: ImageUrlProvider
 ) : AndroidViewModel(application) {
 
     private val _isLoading = MutableStateFlow(false)
@@ -38,31 +40,49 @@ class TicketsViewModel @Inject constructor(
     val downloadedCertIds: StateFlow<Set<String>> = _downloadedCertIds.asStateFlow()
 
     init {
-        loadEvents()
+        loadDashboard()
     }
 
-    private fun loadEvents() {
-        _isLoading.value = true
-        _upcomingEvents.value = repository.getUpcomingEvents()
-        _historyEvents.value = repository.getHistoryEvents()
-        _isLoading.value = false
+    fun loadDashboard() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            when (val result = repository.getDashboard()) {
+                is ApiResult.Success -> {
+                    val dashboard = result.data
+                    val now = java.time.LocalDateTime.now().toString().take(10)
+
+                    val upcoming = mutableListOf<UpcomingEvent>()
+                    val history = mutableListOf<HistoryEvent>()
+
+                    dashboard.joined_events.forEach { reg ->
+                        val e = reg.event ?: return@forEach
+                        val eventDate = e.start_datetime.take(10)
+                        if (eventDate >= now) {
+                            reg.toUpcomingEvent(imageUrlProvider)?.let { upcoming.add(it) }
+                        } else {
+                            reg.toHistoryEvent(imageUrlProvider)?.let { history.add(it) }
+                        }
+                    }
+
+                    _upcomingEvents.value = upcoming
+                    _historyEvents.value = history
+                }
+                is ApiResult.Error -> {
+                    _error.value = result.message
+                }
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun markDownloaded(eventTitle: String) {
+        _downloadedCertIds.value = _downloadedCertIds.value + eventTitle
     }
 
     fun downloadCertificate(event: HistoryEvent) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // Gunakan nama file yang lebih aman (menghapus karakter aneh)
-                val safeTitle = event.title.take(15).replace(Regex("[^a-zA-Z0-9]"), "_")
-                val fileName = "cert_${safeTitle}_${System.currentTimeMillis()}.png"
-                
-                val path = fileStorageManager.saveCertificate(event.imageRes, fileName)
-                
-                if (path != null) {
-                    _downloadedCertIds.value = _downloadedCertIds.value + event.title
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        markDownloaded(event.title)
     }
 }

@@ -10,7 +10,7 @@ data class Event(
     val date: String,
     val location: String,
     val price: String,
-    val imageRes: Int,
+    val imageUrl: String? = null,
     val category: String,
     val isBookmarked: Boolean = false,
     val penyelenggara: String = ""

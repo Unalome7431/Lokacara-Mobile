@@ -5,9 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +22,7 @@ class AuthViewModel @Inject constructor(
     private val settingsManager: SettingsManager,
 ) : AndroidViewModel(application) {
 
+    val name = MutableStateFlow("")
     val email = MutableStateFlow("")
     val password = MutableStateFlow("")
     val isChecked = MutableStateFlow(false)
@@ -42,29 +43,29 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
-            delay(500)
-            val result = repository.login(email.value.trim(), password.value)
+            when (val result = repository.login(email.value.trim(), password.value)) {
+                is ApiResult.Success -> {
+                    val auth = result.data
+                    userSessionManager.saveAuth(
+                        token = auth.token,
+                        userId = auth.user.id.toInt(),
+                        name = auth.user.name,
+                        email = auth.user.email,
+                        role = auth.user.role
+                    )
+                    settingsManager.saveAuthSession(
+                        token = auth.token,
+                        userId = auth.user.id.toInt(),
+                        userName = auth.user.name
+                    )
+                    settingsManager.setOnboardingCompleted()
+                    _loginSuccess.value = true
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                }
+            }
             _isLoading.value = false
-            result.fold(
-                onSuccess = { profile ->
-                    viewModelScope.launch {
-                        userSessionManager.saveUserSession(
-                            name = profile.name,
-                            email = profile.email,
-                            phone = profile.phone,
-                            location = profile.location
-                        )
-                        settingsManager.saveAuthSession(
-                            token = "dummy_token_123",
-                            userId = 1,
-                            userName = profile.name
-                        )
-                        settingsManager.setOnboardingCompleted()
-                        _loginSuccess.value = true
-                    }
-                },
-                onFailure = { _errorMessage.value = it.message ?: "Gagal masuk" }
-            )
         }
     }
 
@@ -72,29 +73,29 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
-            delay(500)
-            val result = repository.register(email.value.trim(), password.value)
+            when (val result = repository.register(name.value.trim(), email.value.trim(), password.value)) {
+                is ApiResult.Success -> {
+                    val auth = result.data
+                    userSessionManager.saveAuth(
+                        token = auth.token,
+                        userId = auth.user.id.toInt(),
+                        name = auth.user.name,
+                        email = auth.user.email,
+                        role = auth.user.role
+                    )
+                    settingsManager.saveAuthSession(
+                        token = auth.token,
+                        userId = auth.user.id.toInt(),
+                        userName = auth.user.name
+                    )
+                    settingsManager.setOnboardingCompleted()
+                    _registerSuccess.value = true
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                }
+            }
             _isLoading.value = false
-            result.fold(
-                onSuccess = { profile ->
-                    viewModelScope.launch {
-                        userSessionManager.saveUserSession(
-                            name = profile.name,
-                            email = profile.email,
-                            phone = profile.phone,
-                            location = profile.location
-                        )
-                        settingsManager.saveAuthSession(
-                            token = "dummy_token_123",
-                            userId = 1,
-                            userName = profile.name
-                        )
-                        settingsManager.setOnboardingCompleted()
-                        _registerSuccess.value = true
-                    }
-                },
-                onFailure = { _errorMessage.value = it.message ?: "Gagal mendaftar" }
-            )
         }
     }
 

@@ -1,6 +1,5 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
@@ -46,8 +46,8 @@ fun EventCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Image(
-                painter = painterResource(id = event.imageRes),
+            AsyncImage(
+                model = event.imageUrl,
                 contentDescription = null,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop

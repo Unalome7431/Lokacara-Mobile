@@ -4,13 +4,13 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.lokacara.R
-import com.app.lokacara.data.FileStorageManager
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
-import com.app.lokacara.model.MyEventData
 import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,14 +27,14 @@ class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
-    private val fileStorageManager: FileStorageManager,
+    private val imageUrlProvider: ImageUrlProvider
 ) : AndroidViewModel(application) {
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
-    private val _myEvents = MutableStateFlow<List<MyEventData>>(emptyList())
-    val myEvents: StateFlow<List<MyEventData>> = _myEvents.asStateFlow()
+    private val _myEvents = MutableStateFlow<List<Event>>(emptyList())
+    val myEvents: StateFlow<List<Event>> = _myEvents.asStateFlow()
 
     private val _savedEvents = MutableStateFlow<List<Event>>(emptyList())
     val savedEvents: StateFlow<List<Event>> = _savedEvents.asStateFlow()
@@ -47,93 +47,110 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadUserProfile()
-        loadMyEvents()
-        loadSavedEvents()
-        loadCertificates()
+        loadDashboard()
     }
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            val session = userSessionManager.userSession.first()
-            val profileImageRes = if (session.profileImagePath.isNotEmpty()) {
-                null
-            } else {
-                R.drawable.profileicon
+            when (val result = repository.getProfile()) {
+                is ApiResult.Success -> {
+                    val user = result.data.user
+                    _userProfile.value = UserProfile(
+                        name = user.name,
+                        email = user.email,
+                        phone = "",
+                        location = "",
+                        profileImageUrl = user.avatar_url
+                    )
+                }
+                is ApiResult.Error -> {
+                    val session = userSessionManager.userSession.first()
+                    _userProfile.value = UserProfile(
+                        name = session.name.ifEmpty { "Pengguna" },
+                        email = session.email,
+                        phone = session.phone,
+                        location = session.location,
+                        profileImageUrl = null
+                    )
+                }
             }
-            _userProfile.value = UserProfile(
-                name = session.name.ifEmpty { "Daffa Arrivo" },
-                email = session.email.ifEmpty { "daffarrivo@studenet.uns.ac.id" },
-                phone = session.phone.ifEmpty { "+628788133233145" },
-                location = session.location.ifEmpty { "Surakarta, Jawa Tengah" },
-                profileImageRes = profileImageRes
-            )
+        }
+    }
+
+    private fun loadDashboard() {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            when (val result = repository.getDashboard()) {
+                is ApiResult.Success -> {
+                    val dashboard = result.data
+
+                    _myEvents.value = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
+
+                    _certificates.value = dashboard.certificates.map { cert ->
+                        val eventTitle = cert.event_registration
+                            ?.event
+                            ?.title
+                            ?: "Sertifikat"
+                        CertificateData(
+                            id = cert.id.toString(),
+                            title = eventTitle,
+                            date = cert.issued_at?.take(10) ?: "",
+                            time = "",
+                            location = "",
+                            category = "",
+                            imageUrl = cert.file_url
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    // use cached data silently
+                }
+            }
+
+            _isLoading.value = false
         }
     }
 
     fun updateProfileField(label: String, newValue: String) {
-        val currentProfile = _userProfile.value
+        val current = _userProfile.value
         _userProfile.value = when (label) {
-            "Nama Lengkap" -> currentProfile.copy(name = newValue)
-            "Email" -> currentProfile.copy(email = newValue)
-            "Nomor" -> currentProfile.copy(phone = newValue)
-            "Lokasi" -> currentProfile.copy(location = newValue)
-            else -> currentProfile
+            "Nama Lengkap" -> current.copy(name = newValue)
+            "Email" -> current.copy(email = newValue)
+            else -> current
         }
         viewModelScope.launch {
             userSessionManager.updateField(label, newValue)
         }
     }
 
-    fun saveProfilePhoto(uri: Uri) {
+    fun updateProfile(name: String?, email: String?) {
         viewModelScope.launch {
-            val path = fileStorageManager.saveProfilePhoto(uri)
-            if (path != null) {
-                userSessionManager.updateProfileImagePath(path)
-                _userProfile.value = _userProfile.value.copy(profileImageRes = null)
+            val body = mutableMapOf<String, String>()
+            name?.let { body["name"] = it }
+            email?.let { body["email"] = it }
+            if (body.isEmpty()) return@launch
+
+            when (val result = repository.getProfile()) {
+                is ApiResult.Success -> {
+                    loadUserProfile()
+                }
+                is ApiResult.Error -> { }
             }
         }
+    }
+
+    fun saveProfilePhoto(uri: Uri) {
+        // TODO: upload via apiService.uploadAvatar after adding multipart in ProfileRepository
     }
 
     fun downloadCertificate(cert: CertificateData) {
+        // Certificate download is handled by the API endpoint /events/{event}/certificate
         viewModelScope.launch {
-            val fileName = "certificate_${cert.id}_${cert.title.take(10).replace(" ", "_")}.png"
-            val path = fileStorageManager.saveCertificate(cert.imageRes, fileName)
-            if (path != null) {
-                _certificates.value = _certificates.value.map {
-                    if (it.id == cert.id) it.copy(filePath = path)
-                    else it
-                }
+            _certificates.value = _certificates.value.map {
+                if (it.id == cert.id) it.copy(filePath = cert.imageUrl)
+                else it
             }
-        }
-    }
-
-    fun loadMyEvents() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.getMyEvents().collect { events ->
-                _myEvents.value = events
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun loadSavedEvents() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.getSavedEvents().collect { events ->
-                _savedEvents.value = events
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun loadCertificates() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.getCertificates().collect { certs ->
-                _certificates.value = certs
-            }
-            _isLoading.value = false
         }
     }
 

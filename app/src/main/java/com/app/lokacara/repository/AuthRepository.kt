@@ -1,47 +1,28 @@
 package com.app.lokacara.repository
 
-import com.app.lokacara.model.UserProfile
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.dto.AuthResponse
+import com.app.lokacara.data.remote.dto.LoginRequest
+import com.app.lokacara.data.remote.dto.RegisterRequest
+import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
 
-class AuthRepository @Inject constructor() {
+class AuthRepository @Inject constructor(
+    private val apiService: ApiService
+) {
 
-    fun login(email: String, password: String): Result<UserProfile> {
-        return try {
-            if (email.isBlank() || password.isBlank()) {
-                Result.failure(Exception("Email dan password harus diisi"))
-            } else {
-                Result.success(
-                    UserProfile(
-                        name = "Daffa Arrivo",
-                        email = email,
-                        phone = "+628788133233145",
-                        location = "Surakarta, Jawa Tengah"
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    suspend fun login(email: String, password: String): ApiResult<AuthResponse> {
+        return safeApiCall {
+            apiService.login(LoginRequest(email.trim(), password))
         }
     }
 
-    fun register(email: String, password: String): Result<UserProfile> {
-        return try {
-            if (email.isBlank() || password.isBlank()) {
-                Result.failure(Exception("Email dan password harus diisi"))
-            } else if (password.length < 6) {
-                Result.failure(Exception("Kata sandi minimal 6 karakter"))
-            } else {
-                Result.success(
-                    UserProfile(
-                        name = "Pengguna Baru",
-                        email = email,
-                        phone = "",
-                        location = "Indonesia"
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    suspend fun register(name: String, email: String, password: String): ApiResult<AuthResponse> {
+        return safeApiCall {
+            apiService.register(
+                RegisterRequest(name.trim(), email.trim(), password, password)
+            )
         }
     }
 }

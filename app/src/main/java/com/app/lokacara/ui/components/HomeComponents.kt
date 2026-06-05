@@ -140,7 +140,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                         .clickable { onEventClick(event) }
                 ) {
                     AsyncImage(
-                        model = event.imageRes,
+                        model = event.imageUrl ?: R.drawable.candi,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

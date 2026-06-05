@@ -3,6 +3,7 @@ package com.app.lokacara.data
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +18,10 @@ data class UserSession(
     val email: String = "",
     val phone: String = "",
     val location: String = "",
-    val profileImagePath: String = ""
+    val profileImagePath: String = "",
+    val accessToken: String = "",
+    val userId: Int = 0,
+    val userRole: String = ""
 )
 
 class UserSessionManager(private val context: Context) {
@@ -28,6 +32,9 @@ class UserSessionManager(private val context: Context) {
         val PHONE = stringPreferencesKey("phone")
         val LOCATION = stringPreferencesKey("location")
         val PROFILE_IMAGE_PATH = stringPreferencesKey("profile_image_path")
+        val ACCESS_TOKEN = stringPreferencesKey("access_token")
+        val USER_ID = intPreferencesKey("user_id")
+        val USER_ROLE = stringPreferencesKey("user_role")
     }
 
     val userSession: Flow<UserSession> = context.userDataStore.data.map { prefs ->
@@ -37,7 +44,10 @@ class UserSessionManager(private val context: Context) {
             email = prefs[EMAIL] ?: "",
             phone = prefs[PHONE] ?: "",
             location = prefs[LOCATION] ?: "",
-            profileImagePath = prefs[PROFILE_IMAGE_PATH] ?: ""
+            profileImagePath = prefs[PROFILE_IMAGE_PATH] ?: "",
+            accessToken = prefs[ACCESS_TOKEN] ?: "",
+            userId = prefs[USER_ID] ?: 0,
+            userRole = prefs[USER_ROLE] ?: ""
         )
     }
 
@@ -49,6 +59,21 @@ class UserSessionManager(private val context: Context) {
             prefs[PHONE] = phone
             prefs[LOCATION] = location
         }
+    }
+
+    suspend fun saveAuth(token: String, userId: Int, name: String, email: String, role: String) {
+        context.userDataStore.edit { prefs ->
+            prefs[IS_LOGGED_IN] = true
+            prefs[ACCESS_TOKEN] = token
+            prefs[USER_ID] = userId
+            prefs[NAME] = name
+            prefs[EMAIL] = email
+            prefs[USER_ROLE] = role
+        }
+    }
+
+    suspend fun getAccessToken(): String {
+        return context.userDataStore.data.first()[ACCESS_TOKEN] ?: ""
     }
 
     suspend fun updateField(key: String, value: String) {

@@ -127,8 +127,8 @@ fun EditProfileScreen(
                             }
                     )
                 } else {
-                    Image(
-                        painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
+                    AsyncImage(
+                        model = userProfile.profileImageUrl,
                         contentDescription = "Profile Picture",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -136,7 +136,9 @@ fun EditProfileScreen(
                             .clip(CircleShape)
                             .clickable {
                                 photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }
+                            },
+                        placeholder = painterResource(id = R.drawable.profileicon),
+                        error = painterResource(id = R.drawable.profileicon)
                     )
                 }
                 

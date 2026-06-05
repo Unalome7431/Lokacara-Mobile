@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
@@ -157,8 +158,8 @@ fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Image(
-                painter = painterResource(id = event.imageRes),
+            AsyncImage(
+                model = event.imageUrl ?: R.drawable.candi,
                 contentDescription = null,
                 modifier = Modifier
                     .size(110.dp)
@@ -235,21 +236,13 @@ fun CertificateCard(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
             ) {
-                if (cert.filePath != null) {
-                    AsyncImage(
-                        model = cert.filePath,
-                        contentDescription = "Full Certificate",
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = cert.imageRes),
-                        contentDescription = "Full Certificate",
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth
-                    )
-                }
+                val model = cert.imageUrl ?: cert.filePath ?: R.drawable.sertifcontoh
+                AsyncImage(
+                    model = model,
+                    contentDescription = "Full Certificate",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
+                )
             }
         }
     }
@@ -265,27 +258,16 @@ fun CertificateCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            if (cert.filePath != null) {
-                AsyncImage(
-                    model = cert.filePath,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = cert.imageRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            val model = cert.imageUrl ?: cert.filePath ?: R.drawable.sertifcontoh
+            AsyncImage(
+                model = model,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
 
