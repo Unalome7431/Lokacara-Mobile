@@ -31,7 +31,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.DetailInfoRow
-import com.app.lokacara.ui.components.EventRelatedCard
 import com.app.lokacara.ui.navigation.Screen
 import coil.compose.AsyncImage
 import com.app.lokacara.R
@@ -41,14 +40,21 @@ import com.app.lokacara.viewmodel.EventDetailViewModel
 @Composable
 fun EventDetailScreen(
     navController: NavController,
+    eventId: Long = 0L,
     viewModel: EventDetailViewModel = hiltViewModel()
 ) {
     val event by viewModel.event.collectAsState()
-    val relatedEvents by viewModel.relatedEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isRegistered by viewModel.isRegistered.collectAsState()
+    val isHost by viewModel.isHost.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
     var showJoinDialog by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(eventId) {
+        if (eventId > 0L) viewModel.loadEvent(eventId)
+    }
 
     Column(
         modifier = Modifier
@@ -238,50 +244,41 @@ fun EventDetailScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    Button(
-                        onClick = { showJoinDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(horizontal = 24.dp),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                    ) {
-                        Text(
-                            text = "Gabung Event",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Color.White
+                    if (isHost) {
+                        HostManagementButtons(
+                            eventId = event.id.toLongOrNull() ?: 0L,
+                            navController = navController,
+                            viewModel = viewModel
                         )
-                    }
-
-                    if (relatedEvents.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text(
-                            text = "Event Terkait",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp,
-                            color = Gray900,
-                            modifier = Modifier.padding(start = 24.dp, bottom = 12.dp)
-                        )
-
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    } else if (isRegistered) {
+                        Button(
+                            onClick = { viewModel.leaveEvent() },
+                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SemanticErrorBase)
                         ) {
-                            items(relatedEvents, key = { it.id }) { relEvent ->
-                                EventRelatedCard(
-                                    event = relEvent,
-                                    onClick = {
-                                        navController.navigate(Screen.EventDetail.route) {
-                                            launchSingleTop = true
-                                        }
-                                    }
-                                )
-                            }
+                            Text(
+                                text = "Batalkan Pendaftaran",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = { viewModel.joinEvent() },
+                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                        ) {
+                            Text(
+                                text = "Gabung Event",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
                         }
                     }
 
@@ -361,6 +358,43 @@ fun EventDetailScreen(
             shape = RoundedCornerShape(20.dp),
             containerColor = Color.White
         )
+    }
+}
+
+@Composable
+private fun HostManagementButtons(
+    eventId: Long,
+    navController: NavController,
+    viewModel: EventDetailViewModel
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = { navController.navigate(Screen.Attendees.createRoute(eventId)) },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+        ) {
+            Text("Lihat Peserta", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Button(
+            onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Secondary500)
+        ) {
+            Text("Scan QR", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Button(
+            onClick = { viewModel.sendReminders() },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Gray700)
+        ) {
+            Text("Kirim Pengingat", fontWeight = FontWeight.Bold, color = Color.White)
+        }
     }
 }
 

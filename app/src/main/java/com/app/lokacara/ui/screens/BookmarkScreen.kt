@@ -70,7 +70,7 @@ fun BookmarkScreen(
                         viewModel.toggleBookmark(event.id)
                     },
                     onClick = {
-                        navController.navigate(Screen.EventDetail.route)
+                        navController.navigate(Screen.EventDetail.createRoute(event.id.toLongOrNull() ?: 0L))
                     }
                 )
             }

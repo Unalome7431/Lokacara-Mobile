@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.HomeHeader
 import com.app.lokacara.ui.components.PopularEventSection
@@ -36,7 +37,7 @@ fun HomeScreen(
     val popularEvents by viewModel.popularEvents.collectAsState()
 
     val onEventClick = remember {
-        { navController.navigate(Screen.EventDetail.route) }
+        { event: Event -> navController.navigate(Screen.EventDetail.createRoute(event.id.toLongOrNull() ?: 0L)) }
     }
     val onBookmarkClick: (String) -> Unit = remember {
         { eventId -> viewModel.toggleBookmark(eventId) }
@@ -52,7 +53,7 @@ fun HomeScreen(
             item(key = "popular_section") {
                 PopularEventSection(
                     popularEvents = popularEvents,
-                    onEventClick = { onEventClick() }
+                    onEventClick = { onEventClick(it) }
                 )
             }
 
@@ -74,7 +75,7 @@ fun HomeScreen(
                 EventCard(
                     event = event,
                     onBookmarkClick = { onBookmarkClick(event.id) },
-                    onClick = onEventClick
+                    onClick = { onEventClick(event) }
                 )
             }
 

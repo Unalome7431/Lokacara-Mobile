@@ -30,6 +30,7 @@ fun RegistrationDto.toUpcomingEvent(imageUrlProvider: ImageUrlProvider): Upcomin
     val e = event ?: return null
     val location = e.location_name ?: e.platform_name ?: ""
     return UpcomingEvent(
+        id = e.id,
         title = e.title,
         date = e.start_datetime.take(10),
         time = e.start_datetime.substringAfter("T").take(8),
@@ -43,6 +44,7 @@ fun RegistrationDto.toHistoryEvent(imageUrlProvider: ImageUrlProvider): HistoryE
     val e = event ?: return null
     val location = e.location_name ?: e.platform_name ?: ""
     return HistoryEvent(
+        id = e.id,
         title = e.title,
         date = e.start_datetime.take(10),
         time = e.start_datetime.substringAfter("T").take(8),

@@ -141,7 +141,7 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
 @Composable
 fun RiwayatContent(
     historyEvents: List<HistoryEvent>,
-    downloadedCertIds: Set<String> = emptySet(),
+    downloadedCertIds: Set<Long> = emptySet(),
     onDownloadCert: (HistoryEvent) -> Unit = {}
 ) {
     var selectedEvent by remember { mutableStateOf<HistoryEvent?>(null) }
@@ -157,7 +157,7 @@ fun RiwayatContent(
             event = it,
             onDismiss = { selectedEvent = null },
             onDownload = { onDownloadCert(it) },
-            isDownloaded = it.title in downloadedCertIds
+            isDownloaded = it.id in downloadedCertIds
         )
     }
 }

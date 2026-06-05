@@ -4,20 +4,25 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.lokacara.data.FileStorageManager
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
 class CreateEventViewModel @Inject constructor(
     application: Application,
-    private val fileStorageManager: FileStorageManager,
+    private val apiService: ApiService
 ) : AndroidViewModel(application) {
 
     val namaEvent = MutableStateFlow("")
@@ -42,23 +47,86 @@ class CreateEventViewModel @Inject constructor(
     val publishSuccess: StateFlow<Boolean> = _publishSuccess.asStateFlow()
 
     fun publish() {
-        if (namaEvent.value.isBlank()) {
+        val title = namaEvent.value.trim()
+        if (title.isBlank()) {
             _errorMessage.value = "Nama event harus diisi"
             return
         }
+        val desc = deskripsi.value.trim()
+        if (desc.isBlank()) {
+            _errorMessage.value = "Deskripsi event harus diisi"
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
-            delay(500)
+            _errorMessage.value = null
 
-            val uri = posterUri.value
-            if (uri != null) {
-                val eventId = UUID.randomUUID().toString()
-                fileStorageManager.saveEventPoster(uri, eventId)
+            val startDt = formatToApiDatetime(waktuMulai.value)
+            val endDt = formatToApiDatetime(waktuSelesai.value)
+            val type = if (isOnline.value) "online" else "offline"
+
+            val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
+            val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
+            val typePart = type.toRequestBody("text/plain".toMediaTypeOrNull())
+            val startPart = startDt.toRequestBody("text/plain".toMediaTypeOrNull())
+            val endPart = endDt.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val catPart = kategori.value.trim().ifBlank { null }
+                ?.let { it.toRequestBody("text/plain".toMediaTypeOrNull()) }
+            val locPart = if (!isOnline.value && aplikasiTempat.value.isNotBlank())
+                aplikasiTempat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val addrPart = if (!isOnline.value && alamat.value.isNotBlank())
+                alamat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val platPart = if (isOnline.value && aplikasiTempat.value.isNotBlank())
+                aplikasiTempat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val linkPart = if (isOnline.value && alamat.value.isNotBlank())
+                alamat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val capPart = kuota.value.takeIf { it > 0 }
+                ?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val posterBody = posterUri.value?.let { uri ->
+                val ctx = getApplication<Application>()
+                val inputStream = ctx.contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes() ?: return@let null
+                inputStream.close()
+                val fileName = "poster_${System.currentTimeMillis()}.jpg"
+                val mediaType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
+                MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(mediaType.toMediaTypeOrNull()))
+            }
+
+            try {
+                val response = apiService.createEvent(
+                    title = titlePart,
+                    categoryId = catPart,
+                    description = descPart,
+                    type = typePart,
+                    locationName = locPart,
+                    address = addrPart,
+                    latitude = null,
+                    longitude = null,
+                    platformName = platPart,
+                    link = linkPart,
+                    startDatetime = startPart,
+                    endDatetime = endPart,
+                    capacity = capPart,
+                    poster = posterBody ?: MultipartBody.Part.createFormData("poster", "")
+                )
+                _publishSuccess.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Gagal membuat event"
             }
 
             _isLoading.value = false
-            _publishSuccess.value = true
         }
+    }
+
+    private fun formatToApiDatetime(input: String): String {
+        if (input.isBlank()) {
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            return sdf.format(Date())
+        }
+        return input
     }
 
     fun resetPublishSuccess() { _publishSuccess.value = false }

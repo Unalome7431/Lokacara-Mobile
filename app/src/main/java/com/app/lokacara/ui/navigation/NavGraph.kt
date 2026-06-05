@@ -9,10 +9,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
 
@@ -76,8 +78,12 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 composable(Screen.Home.route) { HomeScreen(navController = internalNavController) }
-                composable(Screen.EventDetail.route) {
-                    EventDetailScreen(navController = internalNavController)
+                composable(
+                    Screen.EventDetail.route,
+                    arguments = listOf(navArgument("eventId") { type = NavType.LongType; defaultValue = 0L })
+                ) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
+                    EventDetailScreen(navController = internalNavController, eventId = eventId)
                 }
                 composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }
                 composable(Screen.Tickets.route) { TicketsScreen(navController = internalNavController) }
@@ -121,6 +127,15 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.HelpCenter.route) { HelpCenterScreen(navController = internalNavController) }
                 composable(Screen.TermsConditions.route) { TermsConditionsScreen(navController = internalNavController) }
                 composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController = internalNavController) }
+
+                composable(Screen.Attendees.route) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getString("eventId")?.toLongOrNull() ?: return@composable
+                    AttendeesScreen(navController = internalNavController, eventId = eventId)
+                }
+                composable(Screen.QrScan.route) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getString("eventId")?.toLongOrNull() ?: return@composable
+                    QrScanScreen(navController = internalNavController, eventId = eventId)
+                }
             }
         }
     }

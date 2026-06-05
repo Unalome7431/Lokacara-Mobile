@@ -25,12 +25,12 @@ import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
-import com.app.lokacara.viewmodel.ProfileViewModel
+import com.app.lokacara.viewmodel.BookmarkViewModel
 
 @Composable
 fun SavedEventsScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -83,12 +83,12 @@ fun SavedEventsScreen(
                         }
                     } else {
                         items(savedEvents) { event ->
-                            EventCard(
-                                event = event,
-                                onClick = {
-                                    navController.navigate(Screen.EventDetail.route)
-                                }
-                            )
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id.toLongOrNull() ?: 0L))
+                                    }
+                                )
                         }
                     }
                 }

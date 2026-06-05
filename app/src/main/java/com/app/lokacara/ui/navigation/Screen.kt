@@ -22,5 +22,13 @@ sealed class Screen(val route: String) {
     object HelpCenter : Screen("help_center")
     object TermsConditions : Screen("terms_conditions")
     object PrivacyPolicy : Screen("privacy_policy")
-    object EventDetail : Screen("event_detail")
+    object EventDetail : Screen("event_detail?eventId={eventId}") {
+        fun createRoute(eventId: Long) = "event_detail?eventId=$eventId"
+    }
+    object Attendees : Screen("attendees/{eventId}") {
+        fun createRoute(eventId: Long) = "attendees/$eventId"
+    }
+    object QrScan : Screen("qr_scan/{eventId}") {
+        fun createRoute(eventId: Long) = "qr_scan/$eventId"
+    }
 }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class UpcomingEvent(
+    val id: Long = 0,
     val title: String,
     val date: String,
     val time: String,
@@ -14,6 +15,7 @@ data class UpcomingEvent(
 
 @Immutable
 data class HistoryEvent(
+    val id: Long = 0,
     val title: String,
     val date: String,
     val time: String,
