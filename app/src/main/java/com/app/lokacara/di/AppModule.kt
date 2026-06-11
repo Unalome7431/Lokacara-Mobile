@@ -52,6 +52,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideDraftManager(@ApplicationContext context: Context): DraftManager {
+        return DraftManager(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideFileStorageManager(@ApplicationContext context: Context): FileStorageManager {
         return FileStorageManager(context)
     }

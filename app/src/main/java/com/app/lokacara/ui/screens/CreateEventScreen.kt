@@ -46,6 +46,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -119,6 +120,7 @@ fun CreateEventScreen(
     val publishSuccess by viewModel.publishSuccess.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val hasDraft by viewModel.hasDraft.collectAsState()
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -277,8 +279,48 @@ fun CreateEventScreen(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = SvgOrange,
-                modifier = Modifier.clickable { }
+                modifier = Modifier.clickable { viewModel.saveDraft() }
             )
+        }
+
+        if (hasDraft) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = SvgOrange.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Ada draf tersimpan",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = SvgOrange
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Lanjutkan",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = SvgPrimaryBlue,
+                            modifier = Modifier.clickable { viewModel.loadDraft() }
+                        )
+                        Text(
+                            text = "Hapus",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = SemanticErrorBase,
+                            modifier = Modifier.clickable { viewModel.deleteDraft() }
+                        )
+                    }
+                }
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

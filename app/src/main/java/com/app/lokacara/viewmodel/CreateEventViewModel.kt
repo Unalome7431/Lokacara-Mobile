@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.data.DraftManager
+import com.app.lokacara.data.EventDraft
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.CategoryDto
@@ -35,7 +37,8 @@ class CreateEventViewModel @Inject constructor(
     application: Application,
     private val apiService: ApiService,
     private val exploreRepository: ExploreRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val draftManager: DraftManager
 ) : AndroidViewModel(application) {
 
     val namaEvent = MutableStateFlow("")
@@ -67,9 +70,77 @@ class CreateEventViewModel @Inject constructor(
     private val _publishSuccess = MutableStateFlow(false)
     val publishSuccess: StateFlow<Boolean> = _publishSuccess.asStateFlow()
 
+    private val _hasDraft = MutableStateFlow(false)
+    val hasDraft: StateFlow<Boolean> = _hasDraft.asStateFlow()
+
     init {
         loadCategories()
         autoFillOrganizer()
+        checkDraft()
+    }
+
+    private fun checkDraft() {
+        viewModelScope.launch {
+            draftManager.hasDraft.collect { _hasDraft.value = it }
+        }
+    }
+
+    fun loadDraft() {
+        viewModelScope.launch {
+            val draft = draftManager.loadDraft() ?: return@launch
+            namaEvent.value = draft.namaEvent
+            penyelenggara.value = draft.penyelenggara
+            waktuMulai.value = draft.waktuMulai
+            waktuSelesai.value = draft.waktuSelesai
+            isOnline.value = draft.isOnline
+            aplikasiTempat.value = draft.aplikasiTempat
+            alamat.value = draft.alamat
+            deskripsi.value = draft.deskripsi
+            kuota.value = draft.kuota
+            selectedCategoryId.value = draft.selectedCategoryId
+            latitude.value = draft.latitude
+            longitude.value = draft.longitude
+            SnackbarManager.show("Draf dimuat")
+        }
+    }
+
+    fun saveDraft() {
+        viewModelScope.launch {
+            draftManager.saveDraft(
+                EventDraft(
+                    namaEvent = namaEvent.value,
+                    penyelenggara = penyelenggara.value,
+                    waktuMulai = waktuMulai.value,
+                    waktuSelesai = waktuSelesai.value,
+                    isOnline = isOnline.value,
+                    aplikasiTempat = aplikasiTempat.value,
+                    alamat = alamat.value,
+                    deskripsi = deskripsi.value,
+                    kuota = kuota.value,
+                    selectedCategoryId = selectedCategoryId.value,
+                    latitude = latitude.value,
+                    longitude = longitude.value
+                )
+            )
+            _hasDraft.value = true
+            SnackbarManager.show("Draf tersimpan")
+        }
+    }
+
+    fun clearDraft() {
+        viewModelScope.launch {
+            draftManager.deleteDraft()
+            _hasDraft.value = false
+        }
+    }
+
+    fun deleteDraft() {
+        viewModelScope.launch {
+            draftManager.deleteDraft()
+            _hasDraft.value = false
+            resetForm()
+            SnackbarManager.show("Draf dihapus")
+        }
     }
 
     private fun loadCategories() {
@@ -185,6 +256,7 @@ class CreateEventViewModel @Inject constructor(
             }) {
                 is ApiResult.Success -> {
                     resetForm()
+                    clearDraft()
                     _publishSuccess.value = true
                     SnackbarManager.show("Event berhasil diterbitkan")
                 }
