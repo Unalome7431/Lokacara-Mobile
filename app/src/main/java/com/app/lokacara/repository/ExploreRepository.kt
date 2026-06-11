@@ -24,7 +24,7 @@ class ExploreRepository @Inject constructor(
     }
 
     suspend fun getCategories(): ApiResult<List<CategoryDto>> {
-        return safeApiCall { apiService.getCategories() }
+        return safeApiCall { apiService.getCategories().data }
     }
 
     suspend fun getLocations(): ApiResult<LocationListResponse> {

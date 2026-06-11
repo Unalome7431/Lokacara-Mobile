@@ -46,7 +46,7 @@ interface ApiService {
     suspend fun getEventDetail(@Path("event") eventId: Long): EventDetailResponse
 
     @GET("api/categories")
-    suspend fun getCategories(): List<CategoryDto>
+    suspend fun getCategories(): CategoryListResponse
 
     @GET("api/locations")
     suspend fun getLocations(): LocationListResponse
