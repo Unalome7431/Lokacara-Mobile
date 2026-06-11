@@ -33,7 +33,8 @@ import com.app.lokacara.ui.theme.*
 fun EventCard(
     event: Event,
     onBookmarkClick: () -> Unit = {},
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    showBookmark: Boolean = true
 ) {
     Surface(
         modifier = Modifier
@@ -72,16 +73,18 @@ fun EventCard(
                         Text(event.price, color = Secondary500, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, fontSize = 14.sp))
                     }
 
-                    val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
+                    if (showBookmark) {
+                        val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
 
-                    Icon(
-                        imageVector = bookmarkIcon,
-                        contentDescription = "Bookmark",
-                        tint = Gray900,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onBookmarkClick() }
-                    )
+                        Icon(
+                            imageVector = bookmarkIcon,
+                            contentDescription = "Bookmark",
+                            tint = Gray900,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable { onBookmarkClick() }
+                        )
+                    }
                 }
             }
         }

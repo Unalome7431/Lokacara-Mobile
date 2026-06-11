@@ -95,7 +95,8 @@ fun ExploreScreen(
                 item {
                     ExploreCategories(
                         selectedCategory = selectedCategoryChip,
-                        onCategorySelected = { viewModel.selectedCategoryChip.value = it }
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it },
+                        allCategories = categorySuggestions
                     )
                 }
 
@@ -107,7 +108,8 @@ fun ExploreScreen(
                             event = event,
                             onClick = {
                                 navController.navigate(Screen.EventDetail.createRoute(event.id))
-                            }
+                            },
+                            onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
                         )
                     }
                 }

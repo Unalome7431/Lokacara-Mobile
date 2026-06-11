@@ -2,6 +2,7 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.dto.CategoryDto
@@ -19,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
     private val repository: ExploreRepository,
-    private val imageUrlProvider: ImageUrlProvider
+    private val imageUrlProvider: ImageUrlProvider,
+    private val bookmarkManager: BookmarkManager
 ) : ViewModel() {
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
@@ -93,6 +95,7 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(keyword = query.ifBlank { null })) {
                 is ApiResult.Success -> {
                     _allEvents.value = result.data.data.map { it.toEvent(imageUrlProvider) }
+                    syncBookmarks()
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
@@ -103,6 +106,26 @@ class ExploreViewModel @Inject constructor(
             }
 
             _isLoading.value = false
+        }
+    }
+
+    fun toggleBookmark(eventId: String) {
+        viewModelScope.launch {
+            bookmarkManager.toggleBookmark(eventId)
+        }
+    }
+
+    private var bookmarkJob: Job? = null
+
+    private fun syncBookmarks() {
+        bookmarkJob?.cancel()
+        bookmarkJob = viewModelScope.launch {
+            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
+                _allEvents.value = _allEvents.value.map { event ->
+                    val bookmarked = event.id.toString() in bookmarkedIds
+                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
+                }
+            }
         }
     }
 

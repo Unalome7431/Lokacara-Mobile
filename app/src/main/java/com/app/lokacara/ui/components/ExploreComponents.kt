@@ -172,27 +172,10 @@ fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholde
 }
 
 @Composable
-fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit) {
-    val row1 = listOf(
-        stringResource(R.string.category_all),
-        stringResource(R.string.category_music),
-        stringResource(R.string.category_technology),
-        stringResource(R.string.category_anime),
-        stringResource(R.string.category_hobby)
-    )
-    val row2 = listOf(
-        stringResource(R.string.category_sports),
-        stringResource(R.string.category_business),
-        stringResource(R.string.category_art),
-        stringResource(R.string.category_webinar)
-    )
-    Column(modifier = Modifier.padding(bottom = 12.dp)) {
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-            items(row1) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
-        }
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(row2) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
-        }
+fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit, allCategories: List<String>) {
+    val categories = listOf("Semua") + allCategories
+    LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+        items(categories) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
     }
 }
 

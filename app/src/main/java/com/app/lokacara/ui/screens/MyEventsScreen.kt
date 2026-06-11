@@ -86,7 +86,8 @@ fun MyEventsScreen(
                                 event = event,
                                 onClick = {
                                     navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                }
+                                },
+                                showBookmark = false
                             )
                         }
                     }

@@ -345,40 +345,22 @@ fun EventDetailScreen(
         )
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     if (showShareDialog) {
-        AlertDialog(
-            onDismissRequest = { showShareDialog = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.event_detail_share_title),
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Primary500
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.event_detail_share_detail, event.title),
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 14.sp,
-                    color = Gray600,
-                    lineHeight = 20.sp
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showShareDialog = false }) {
-                    Text(
-                        text = stringResource(R.string.ok),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary500
-                    )
-                }
-            },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = Color.White
-        )
+        val shareUrl = "https://lokacara.my.id/events/${event.id}"
+        val shareText = "${event.title} - Lokacara\n$shareUrl"
+
+        LaunchedEffect(showShareDialog) {
+            showShareDialog = false
+            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+            }
+            val chooser = android.content.Intent.createChooser(shareIntent, context.getString(R.string.event_detail_share_title))
+            context.startActivity(chooser)
+            android.widget.Toast.makeText(context, "Link berhasil disalin", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 }
 

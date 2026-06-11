@@ -87,7 +87,8 @@ fun SavedEventsScreen(
                                     event = event,
                                     onClick = {
                                         navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                    }
+                                    },
+                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
                                 )
                         }
                     }
