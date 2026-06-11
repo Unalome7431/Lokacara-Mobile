@@ -65,7 +65,7 @@ Content-Type: application/json
 }
 ```
 
-### Invalid Token (422)
+### Invalid Token (401)
 
 ```json
 {
@@ -103,12 +103,18 @@ Content-Type: application/json
 ### 1. Route — `routes/api.php`
 
 ```php
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\AuthController;
 
-Route::post('auth/google', [AuthController::class, 'googleLogin']);
+// Inside guest middleware group:
+Route::middleware('guest')->group(function () {
+    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/google', [AuthController::class, 'googleLogin']);
+    // ...
+});
 ```
 
-### 2. Controller — `app/Http/Controllers/AuthController.php`
+### 2. Controller — `app/Http/Controllers/Api/AuthController.php`
 
 ```php
 use Laravel\Socialite\Facades\Socialite;
@@ -126,47 +132,51 @@ public function googleLogin(Request $request)
     } catch (\Exception $e) {
         return response()->json([
             'message' => 'Invalid Google token'
-        ], 422);
+        ], 401);
     }
 
-    $user = User::where('email', $googleUser->getEmail())->first();
+    $user = User::updateOrCreate(
+        ['email' => $googleUser->getEmail()],
+        [
+            'name'              => $googleUser->getName() ?? $googleUser->getEmail(),
+            'password'          => bcrypt(Str::random(32)),
+            'email_verified_at' => now(),
+            'role'              => 'user',
+            'provider'          => 'google',
+            'provider_id'       => $googleUser->getId(),
+            'avatar_url'        => $googleUser->getAvatar(),
+        ]
+    );
 
-    // Cek suspended
-    if ($user && $user->suspended_at) {
+    if ($user->suspended_at) {
         return response()->json([
             'message' => 'Your account has been suspended. Please contact support.'
         ], 403);
     }
 
-    // Find or create user
-    if (!$user) {
-        $user = User::create([
-            'name'              => $googleUser->getName(),
-            'email'             => $googleUser->getEmail(),
-            'email_verified_at' => now(),
-            'provider'          => 'google',
-            'password'          => bcrypt(Str::random(32)),
-        ]);
-    }
-
-    // Hapus token lama user (optional — biar gak numpuk)
-    // $user->tokens()->delete();
-
-    $token = $user->createToken('mobile')->plainTextToken;
+    $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
         'message' => 'Login successful',
         'user'    => $user->fresh(),
         'token'   => $token,
-    ]);
+    ], 200);
 }
 ```
 
-### 3. Pastikan `provider` field ada di migration `users`
+**Catatan:**
+- `updateOrCreate` digunakan agar user yang sudah ada (dari register biasa) tidak dibuat duplikat — langsung login dengan akun yang sudah ada.
+- Jika user sudah ada dengan `provider` berbeda (misalnya `email`), provider-nya **akan di-overwrite menjadi `google`**. Jika tidak ingin overwrite, gunakan `first()` + `create()` terpisah dengan pengecekan.
+- `avatar_url` diambil dari Google profile (`$googleUser->getAvatar()`) — ini URL publik Google, jadi tidak perlu upload ulang.
+- Token name menggunakan `auth_token` — konsisten dengan endpoint `login` dan `register`.
+
+### 3. Pastikan field berikut ada di migration `users`
 
 ```php
 // database/migrations/xxxx_create_users_table.php
-$table->string('provider')->nullable()->after('remember_token');
+$table->string('avatar_url')->nullable();
+$table->string('provider_id')->nullable();
+$table->string('provider')->nullable();
 ```
 
 ### 4. Pastikan Google credentials di `config/services.php`
@@ -179,12 +189,29 @@ $table->string('provider')->nullable()->after('remember_token');
 ],
 ```
 
+> **Catatan:** `redirect` **tidak dipakai** di flow ini (server-side token verification). Nilainya boleh dummy/placeholder — hanya diperlukan untuk OAuth redirect flow di web browser.
+
 ---
 
 ## Catatan
 
+### Google Cloud Console
 - **Google Cloud Console** harus punya credential dengan tipe **Web application** (bukan Android) — karena verifikasi dilakukan di server.
 - **Client ID & Client Secret** di `.env` adalah milik server, bukan milik app Android.
 - Di Android, `requestIdToken()` pakai **Web Client ID** (server-side OAuth), bukan Android Client ID.
+
+### API Usage
 - Endpoint ini **tidak pakai Sanctum middleware** (tidak butuh `auth:sanctum`) karena user belum login.
 - Response format SAMA dengan `POST /api/auth/login` dan `POST /api/auth/register` — frontend bisa pakai logic yang sama.
+- Setelah dapat token, semua request selanjutnya sertakan header:
+  ```
+  Authorization: Bearer 1|abc123...
+  ```
+
+### Security
+- **Rate limiting** direkomendasikan pada endpoint ini karena memanggil Google API eksternal. Contoh di `routes/api.php`:
+  ```php
+  Route::post('/auth/google', [AuthController::class, 'googleLogin'])
+      ->middleware('throttle:10,1'); // max 10 request per menit
+  ```
+- **Handle multi-provider**: Jika user dengan email yang sama sudah terdaftar lewat provider berbeda (misal email/password), `updateOrCreate` akan **meng-overwrite** provider lama. Jika ingin mencegah ini, gunakan `first()` + `create()` terpisah dan tolak jika provider berbeda.

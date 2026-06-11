@@ -91,6 +91,8 @@ import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.ui.theme.SvgOrange
 import com.app.lokacara.ui.theme.SvgPrimaryBlue
+import com.app.lokacara.ui.components.MapSearchPicker
+import com.app.lokacara.ui.components.MapLocation
 import com.app.lokacara.viewmodel.CreateEventViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -117,8 +119,6 @@ fun CreateEventScreen(
     val publishSuccess by viewModel.publishSuccess.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    val latitude by viewModel.latitude.collectAsState()
-    val longitude by viewModel.longitude.collectAsState()
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -141,14 +141,6 @@ fun CreateEventScreen(
     var showEndDatePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var tempEndDateMillis by remember { mutableLongStateOf(0L) }
-
-    val context = LocalContext.current
-
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) fetchCurrentLocation(context, viewModel)
-    }
 
     if (showStartDatePicker) {
         val datePickerState = rememberDatePickerState()
@@ -421,78 +413,29 @@ fun CreateEventScreen(
                     CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.isOnline.value = it })
                 }
             ) {
-                CreateEventTextField(
-                    value = aplikasiTempat,
-                    onValueChange = { viewModel.aplikasiTempat.value = it },
-                    label = if (isOnline) "Aplikasi" else "Tempat",
-                    placeholder = if (isOnline) "nama aplikasi" else "nama tempat",
-                    containerColor = Color.White,
-                    labelSize = 14.sp
-                )
-                CreateEventTextField(
-                    value = alamat,
-                    onValueChange = { viewModel.alamat.value = it },
-                    label = "Alamat/Link",
-                    placeholder = "uns.id/ivogamteng",
-                    containerColor = Color.White,
-                    labelSize = 14.sp
-                )
-
-                if (!isOnline) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        CreateEventTextField(
-                            value = latitude,
-                            onValueChange = { viewModel.latitude.value = it },
-                            label = "Latitude",
-                            placeholder = "-6.1754",
-                            containerColor = Color.White,
-                            labelSize = 14.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        CreateEventTextField(
-                            value = longitude,
-                            onValueChange = { viewModel.longitude.value = it },
-                            label = "Longitude",
-                            placeholder = "106.8272",
-                            containerColor = Color.White,
-                            labelSize = 14.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                                == PackageManager.PERMISSION_GRANTED
-                            ) {
-                                fetchCurrentLocation(context, viewModel)
-                            } else {
-                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SvgOrange),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.MyLocation,
-                            contentDescription = "Lokasi",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Gunakan Lokasi Saat Ini",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = Color.White
-                        )
-                    }
+                if (isOnline) {
+                    CreateEventTextField(
+                        value = aplikasiTempat,
+                        onValueChange = { viewModel.aplikasiTempat.value = it },
+                        label = "Aplikasi",
+                        placeholder = "nama aplikasi",
+                        containerColor = Color.White,
+                        labelSize = 14.sp
+                    )
+                    CreateEventTextField(
+                        value = alamat,
+                        onValueChange = { viewModel.alamat.value = it },
+                        label = "Link",
+                        placeholder = "uns.id/ivogamteng",
+                        containerColor = Color.White,
+                        labelSize = 14.sp
+                    )
+                } else {
+                    MapSearchPicker(
+                        onLocationSelected = { location ->
+                            viewModel.setLocationFromMap(location)
+                        }
+                    )
                 }
             }
 
@@ -596,26 +539,6 @@ fun CreateEventScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-@SuppressLint("MissingPermission")
-private fun fetchCurrentLocation(context: Context, viewModel: CreateEventViewModel) {
-    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-        && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-    ) return
-
-    val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-        ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-        ?: runCatching { locationManager.getProviders(true) }.getOrNull()
-            ?.firstNotNullOfOrNull { provider ->
-                locationManager.getLastKnownLocation(provider)
-            }
-
-    location?.let {
-        viewModel.latitude.value = it.latitude.toString()
-        viewModel.longitude.value = it.longitude.toString()
     }
 }
 

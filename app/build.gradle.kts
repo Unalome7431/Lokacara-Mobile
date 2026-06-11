@@ -65,6 +65,11 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
 
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+    implementation(libs.places)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

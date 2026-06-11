@@ -10,6 +10,7 @@ import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.repository.ExploreRepository
+import com.app.lokacara.ui.components.MapLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -204,6 +205,13 @@ class CreateEventViewModel @Inject constructor(
 
     val latitude = MutableStateFlow("")
     val longitude = MutableStateFlow("")
+
+    fun setLocationFromMap(location: MapLocation) {
+        aplikasiTempat.value = location.name
+        alamat.value = location.address
+        latitude.value = location.latitude.toString()
+        longitude.value = location.longitude.toString()
+    }
 
     fun setDateTime(isStart: Boolean, date: String, time: String) {
         val formatted = "$date $time"
