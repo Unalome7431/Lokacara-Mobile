@@ -3,7 +3,9 @@ package com.app.lokacara.repository
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.dto.EventListResponse
+import com.app.lokacara.data.remote.dto.LocationListResponse
 import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
 
@@ -16,6 +18,11 @@ class HomeRepository @Inject constructor(
         return safeApiCall { apiService.getFeedEvents() }
     }
 
-    fun getLocations(): List<String> = listOf("Solo", "Yogyakarta", "Semarang", "Jakarta")
-    fun getCategories(): List<String> = listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi")
+    suspend fun getCategories(): ApiResult<List<CategoryDto>> {
+        return safeApiCall { apiService.getCategories() }
+    }
+
+    suspend fun getLocations(): ApiResult<LocationListResponse> {
+        return safeApiCall { apiService.getLocations() }
+    }
 }

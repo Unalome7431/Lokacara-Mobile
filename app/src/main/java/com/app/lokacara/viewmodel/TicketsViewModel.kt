@@ -1,6 +1,7 @@
 package com.app.lokacara.viewmodel
 
 import android.app.Application
+import android.os.Build
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -95,9 +96,14 @@ class TicketsViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val body = res.data
                         val fileName = "certificate_${event.title.take(20).replace(Regex("[^a-zA-Z0-9]"), "_")}.jpg"
-                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                        downloadsDir.mkdirs()
-                        val file = File(downloadsDir, fileName)
+                        val file = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            val downloadsDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                            downloadsDir?.let { File(it, fileName) }
+                        } else {
+                            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                            downloadsDir.mkdirs()
+                            File(downloadsDir, fileName)
+                        } ?: return@launch
                         FileOutputStream(file).use { outputStream ->
                             body.byteStream().use { inputStream ->
                                 inputStream.copyTo(outputStream)

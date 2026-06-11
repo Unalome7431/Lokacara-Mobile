@@ -45,6 +45,9 @@ class ProfileViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
     init {
         loadUserProfile()
         loadDashboard()
@@ -52,100 +55,115 @@ class ProfileViewModel @Inject constructor(
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            when (val result = repository.getProfile()) {
-                is ApiResult.Success -> {
-                    val user = result.data.user
-                    _userProfile.value = UserProfile(
-                        name = user.name,
-                        email = user.email,
-                        phone = "",
-                        location = "",
-                        profileImageUrl = user.avatar_url
-                    )
+            try {
+                when (val result = repository.getProfile()) {
+                    is ApiResult.Success -> {
+                        val user = result.data.user
+                        if (user != null) {
+                            _userProfile.value = UserProfile(
+                                name = user.name,
+                                email = user.email,
+                                phone = user.phone ?: "",
+                                location = user.location ?: "",
+                                profileImageUrl = user.avatar_url
+                            )
+                        } else {
+                            loadFallbackProfile()
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        loadFallbackProfile()
+                    }
                 }
-                is ApiResult.Error -> {
-                    val session = userSessionManager.userSession.first()
-                    _userProfile.value = UserProfile(
-                        name = session.name.ifEmpty { "Pengguna" },
-                        email = session.email,
-                        phone = session.phone,
-                        location = session.location,
-                        profileImageUrl = null
-                    )
-                }
+            } catch (e: Exception) {
+                loadFallbackProfile()
             }
         }
+    }
+
+    private suspend fun loadFallbackProfile() {
+        val session = userSessionManager.userSession.first()
+        _userProfile.value = UserProfile(
+            name = session.name.ifEmpty { "Pengguna" },
+            email = session.email,
+            phone = session.phone,
+            location = session.location,
+            profileImageUrl = null
+        )
     }
 
     private fun loadDashboard() {
         viewModelScope.launch {
             _isLoading.value = true
-
-            when (val result = repository.getDashboard()) {
-                is ApiResult.Success -> {
-                    val dashboard = result.data
-
-                    _myEvents.value = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
-
-                    _certificates.value = dashboard.certificates.map { cert ->
-                        val eventTitle = cert.event_registration
-                            ?.event
-                            ?.title
-                            ?: "Sertifikat"
-                        CertificateData(
-                            id = cert.id.toString(),
-                            title = eventTitle,
-                            date = cert.issued_at?.take(10) ?: "",
-                            time = "",
-                            location = "",
-                            category = "",
-                            imageUrl = cert.file_url
-                        )
+            try {
+                when (val result = repository.getDashboard()) {
+                    is ApiResult.Success -> {
+                        val dashboard = result.data
+                        _myEvents.value = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
+                        _certificates.value = dashboard.certificates.map { cert ->
+                            val eventTitle = cert.event_registration?.event?.title ?: "Sertifikat"
+                            CertificateData(
+                                id = cert.id.toString(),
+                                title = eventTitle,
+                                date = cert.issued_at?.take(10) ?: "",
+                                time = "",
+                                location = "",
+                                category = "",
+                                imageUrl = imageUrlProvider.certificateUrl(cert.file_url)
+                            )
+                        }
                     }
+                    is ApiResult.Error -> { }
                 }
-                is ApiResult.Error -> {
-                    // use cached data silently
-                }
-            }
-
+            } catch (_: Exception) { }
             _isLoading.value = false
         }
     }
 
-    fun updateProfileField(label: String, newValue: String) {
+    fun updateProfileField(field: UserSessionManager.Field, newValue: String) {
         val current = _userProfile.value
-        _userProfile.value = when (label) {
-            "Nama Lengkap" -> current.copy(name = newValue)
-            "Email" -> current.copy(email = newValue)
-            else -> current
+        _userProfile.value = when (field) {
+            UserSessionManager.Field.NAME -> current.copy(name = newValue)
+            UserSessionManager.Field.EMAIL -> current.copy(email = newValue)
+            UserSessionManager.Field.PHONE -> current.copy(phone = newValue)
+            UserSessionManager.Field.LOCATION -> current.copy(location = newValue)
         }
         viewModelScope.launch {
-            userSessionManager.updateField(label, newValue)
+            userSessionManager.updateField(field, newValue)
+            updateProfile(_userProfile.value.name, _userProfile.value.email)
         }
     }
 
     fun updateProfile(name: String?, email: String?) {
         viewModelScope.launch {
-            val body = mutableMapOf<String, String>()
-            name?.let { body["name"] = it }
-            email?.let { body["email"] = it }
-            if (body.isEmpty()) return@launch
-
-            when (val result = repository.getProfile()) {
-                is ApiResult.Success -> {
-                    loadUserProfile()
+            try {
+                val body = mutableMapOf<String, String>()
+                name?.let { body["name"] = it }
+                email?.let { body["email"] = it }
+                val profile = _userProfile.value
+                if (profile.phone.isNotBlank()) body["phone"] = profile.phone
+                if (profile.location.isNotBlank()) body["location"] = profile.location
+                if (body.isEmpty()) return@launch
+                when (val result = repository.updateProfile(body)) {
+                    is ApiResult.Success -> { loadUserProfile() }
+                    is ApiResult.Error -> { }
                 }
-                is ApiResult.Error -> { }
-            }
+            } catch (_: Exception) { }
         }
     }
 
     fun saveProfilePhoto(uri: Uri) {
-        // TODO: upload via apiService.uploadAvatar after adding multipart in ProfileRepository
+        viewModelScope.launch {
+            _errorMessage.value = null
+            val context = getApplication<Application>()
+            when (val result = repository.uploadAvatar(context, uri)) {
+                is ApiResult.Success -> { loadUserProfile() }
+                is ApiResult.Error -> { _errorMessage.value = result.message }
+            }
+        }
     }
 
     fun downloadCertificate(cert: CertificateData) {
-        // Certificate download is handled by the API endpoint /events/{event}/certificate
         viewModelScope.launch {
             _certificates.value = _certificates.value.map {
                 if (it.id == cert.id) it.copy(filePath = cert.imageUrl)
@@ -157,7 +175,6 @@ class ProfileViewModel @Inject constructor(
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
             userSessionManager.logout()
-            settingsManager.clearAuthSession()
             onComplete()
         }
     }

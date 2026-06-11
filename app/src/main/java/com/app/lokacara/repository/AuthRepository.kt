@@ -4,6 +4,7 @@ import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AuthResponse
 import com.app.lokacara.data.remote.dto.LoginRequest
+import com.app.lokacara.data.remote.dto.MessageResponse
 import com.app.lokacara.data.remote.dto.RegisterRequest
 import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
@@ -22,6 +23,22 @@ class AuthRepository @Inject constructor(
         return safeApiCall {
             apiService.register(
                 RegisterRequest(name.trim(), email.trim(), password, password)
+            )
+        }
+    }
+
+    suspend fun changePassword(
+        oldPassword: String,
+        newPassword: String,
+        newPasswordConfirmation: String
+    ): ApiResult<MessageResponse> {
+        return safeApiCall {
+            apiService.changePassword(
+                mapOf(
+                    "old_password" to oldPassword,
+                    "new_password" to newPassword,
+                    "new_password_confirmation" to newPasswordConfirmation
+                )
             )
         }
     }

@@ -45,19 +45,14 @@ class BookmarkViewModel @Inject constructor(
             _error.value = null
 
             val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            if (bookmarkedIds.isEmpty()) {
-                _savedEvents.value = emptyList()
-                _isLoading.value = false
-                return@launch
-            }
 
-            safeApiCall { apiService.getFeedEvents() }.let { result ->
+            safeApiCall { apiService.getBookmarks() }.let { result ->
                 when (result) {
                     is ApiResult.Success -> {
-                        val allEvents = result.data.data
-                        _savedEvents.value = allEvents
-                            .filter { it.id.toString() in bookmarkedIds }
-                            .map { it.toEvent(imageUrlProvider) }
+                        val bookmarkedEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
+                        _savedEvents.value = bookmarkedEvents.map { event ->
+                            event.copy(isBookmarked = event.id.toString() in bookmarkedIds)
+                        }
                     }
                     is ApiResult.Error -> {
                         _error.value = result.message
@@ -71,10 +66,15 @@ class BookmarkViewModel @Inject constructor(
 
     fun toggleBookmark(eventId: String) {
         viewModelScope.launch {
-            bookmarkManager.toggleBookmark(eventId)
-            _savedEvents.value = _savedEvents.value.filter {
-                bookmarkManager.bookmarkedIds.first().contains(it.id)
+            val currentlyBookmarked = _savedEvents.value.any { it.id.toString() == eventId }
+            if (currentlyBookmarked) {
+                _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
             }
+            bookmarkManager.toggleBookmark(eventId)
         }
+    }
+
+    fun refresh() {
+        loadBookmarkedEvents()
     }
 }

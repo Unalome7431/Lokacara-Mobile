@@ -19,6 +19,12 @@ interface ApiService {
     @POST("api/auth/logout")
     suspend fun logout(): MessageResponse
 
+    @POST("api/auth/refresh")
+    suspend fun refreshToken(): RefreshTokenResponse
+
+    @POST("api/auth/password/change")
+    suspend fun changePassword(@Body body: Map<String, String>): MessageResponse
+
     @POST("api/auth/password/email")
     suspend fun forgotPassword(@Body body: Map<String, String>): MessageResponse
 
@@ -39,9 +45,18 @@ interface ApiService {
     @GET("api/events/{event}")
     suspend fun getEventDetail(@Path("event") eventId: Long): EventDetailResponse
 
+    @GET("api/categories")
+    suspend fun getCategories(): List<CategoryDto>
+
+    @GET("api/locations")
+    suspend fun getLocations(): LocationListResponse
+
     // ── Profile ──
     @GET("api/user")
     suspend fun getCurrentUser(): UserDto
+
+    @DELETE("api/user")
+    suspend fun deleteAccount(): MessageResponse
 
     @GET("api/profile")
     suspend fun getProfile(): ProfileResponse
@@ -76,6 +91,18 @@ interface ApiService {
     @Streaming
     suspend fun downloadCertificate(@Path("event") eventId: Long): ResponseBody
 
+    // ── Notifications ──
+    @GET("api/notifications")
+    suspend fun getNotifications(): NotificationListResponse
+
+    // ── Bookmarks ──
+    @GET("api/bookmarks")
+    suspend fun getBookmarks(): BookmarkListResponse
+
+    // ── Config ──
+    @GET("api/config/tabs")
+    suspend fun getConfigTabs(): ConfigTabsResponse
+
     // ── Organizer ──
     @GET("api/organizer/events")
     suspend fun getMyEvents(@Query("page") page: Int = 1): PaginatedEventsResponse
@@ -96,7 +123,7 @@ interface ApiService {
         @Part("start_datetime") startDatetime: RequestBody,
         @Part("end_datetime") endDatetime: RequestBody,
         @Part("capacity") capacity: RequestBody?,
-        @Part poster: MultipartBody.Part
+        @Part poster: MultipartBody.Part?
     ): CreateEventResponse
 
     @Multipart

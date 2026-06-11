@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.data.remote.dto.LocationDto
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.ExploreRepository
@@ -21,8 +23,16 @@ class ExploreViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
-    val locationSuggestions = repository.getLocations()
-    val categorySuggestions = repository.getCategories()
+
+    private val _locationSuggestions = MutableStateFlow<List<String>>(
+        listOf("Surabaya", "Surakarta", "Jakarta", "Semarang", "Yogyakarta")
+    )
+    val locationSuggestions: StateFlow<List<String>> = _locationSuggestions.asStateFlow()
+
+    private val _categorySuggestions = MutableStateFlow<List<String>>(
+        listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik", "Teknologi")
+    )
+    val categorySuggestions: StateFlow<List<String>> = _categorySuggestions.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -52,6 +62,26 @@ class ExploreViewModel @Inject constructor(
 
     init {
         searchEvents("")
+        loadFilterData()
+    }
+
+    private fun loadFilterData() {
+        viewModelScope.launch {
+            when (val result = repository.getCategories()) {
+                is ApiResult.Success -> {
+                    _categorySuggestions.value = result.data.map { it.name }
+                }
+                else -> {}
+            }
+        }
+        viewModelScope.launch {
+            when (val result = repository.getLocations()) {
+                is ApiResult.Success -> {
+                    _locationSuggestions.value = result.data.data.map { it.name }
+                }
+                else -> {}
+            }
+        }
     }
 
     fun searchEvents(query: String) {
@@ -90,5 +120,10 @@ class ExploreViewModel @Inject constructor(
         eventCategory.value = ""
         selectedCategoryChip.value = "Semua"
         searchEvents("")
+    }
+
+    fun refresh() {
+        searchEvents(eventName.value)
+        loadFilterData()
     }
 }

@@ -20,6 +20,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.app.lokacara.R
 import com.app.lokacara.viewmodel.QrScanViewModel
 
 @Composable
@@ -54,7 +56,7 @@ fun QrScanScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Scan QR Peserta",
+                text = stringResource(R.string.qr_scan_title),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -67,7 +69,7 @@ fun QrScanScreen(
         Spacer(modifier = Modifier.height(40.dp))
 
         Text(
-            text = "Masukkan Token QR",
+            text = stringResource(R.string.qr_token_label),
             fontFamily = NunitoFont,
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
@@ -79,7 +81,7 @@ fun QrScanScreen(
         LokacaraTextField(
             value = qrToken,
             onValueChange = { viewModel.qrToken.value = it },
-            placeholder = "Tempel kode QR di sini"
+            placeholder = stringResource(R.string.qr_token_placeholder)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -98,9 +100,9 @@ fun QrScanScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Icon(Icons.Default.QrCodeScanner, null, modifier = Modifier.size(24.dp))
+                Icon(Icons.Default.QrCodeScanner, "QR Code", modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Verifikasi QR", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.qr_verify_button), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -113,7 +115,7 @@ fun QrScanScreen(
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Icon(Icons.Default.CheckCircle, null, tint = Secondary500, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.CheckCircle, "Berhasil", tint = Secondary500, modifier = Modifier.size(32.dp))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         scan.message,

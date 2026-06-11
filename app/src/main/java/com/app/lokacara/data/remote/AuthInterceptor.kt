@@ -9,7 +9,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthInterceptor @Inject constructor(
-    private val sessionManager: UserSessionManager
+    private val sessionManager: UserSessionManager,
+    private val tokenRefreshHelper: TokenRefreshHelper
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -22,6 +23,22 @@ class AuthInterceptor @Inject constructor(
             request.header("Authorization", "Bearer $token")
         }
 
-        return chain.proceed(request.build())
+        val response = chain.proceed(request.build())
+
+        if (response.code == 401 && token.isNotEmpty()) {
+            val newToken = tokenRefreshHelper.refreshToken()
+
+            if (newToken != null) {
+                response.close()
+
+                val retryRequest = chain.request().newBuilder()
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer $newToken")
+                    .build()
+                return chain.proceed(retryRequest)
+            }
+        }
+
+        return response
     }
 }

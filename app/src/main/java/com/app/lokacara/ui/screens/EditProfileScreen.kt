@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,8 +33,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
@@ -46,31 +45,40 @@ fun EditProfileScreen(
     val userProfile by viewModel.userProfile.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
-    var editFieldLabel by remember { mutableStateOf("") }
+    var editField by remember { mutableStateOf<UserSessionManager.Field?>(null) }
     var editFieldValue by remember { mutableStateOf("") }
     var editKeyboardType by remember { mutableStateOf(KeyboardType.Text) }
 
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var previousProfileUrl by remember { mutableStateOf<String?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
                 profileImageUri = uri
+                previousProfileUrl = userProfile.profileImageUrl
                 viewModel.saveProfilePhoto(uri)
             }
         }
     )
 
+    LaunchedEffect(userProfile.profileImageUrl) {
+        if (profileImageUri != null && userProfile.profileImageUrl != null &&
+            userProfile.profileImageUrl != previousProfileUrl) {
+            profileImageUri = null
+        }
+    }
+
     val scrollState = rememberScrollState()
 
     if (showDialog) {
         EditFieldDialog(
-            label = editFieldLabel,
+            label = editField?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "",
             initialValue = editFieldValue,
             keyboardType = editKeyboardType,
             onDismiss = { showDialog = false },
-            onSave = { newValue ->
-                viewModel.updateProfileField(editFieldLabel, newValue)
+                    onSave = { newValue ->
+                editField?.let { field -> viewModel.updateProfileField(field, newValue) }
                 showDialog = false
             }
         )
@@ -136,9 +144,7 @@ fun EditProfileScreen(
                             .clip(CircleShape)
                             .clickable {
                                 photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
-                        placeholder = painterResource(id = R.drawable.profileicon),
-                        error = painterResource(id = R.drawable.profileicon)
+                            }
                     )
                 }
                 
@@ -179,7 +185,7 @@ fun EditProfileScreen(
                     modifier = Modifier
                         .size(18.dp)
                         .clickable {
-                            editFieldLabel = "Nama Lengkap"
+                            editField = UserSessionManager.Field.NAME
                             editFieldValue = userProfile.name
                             editKeyboardType = KeyboardType.Text
                             showDialog = true
@@ -199,21 +205,21 @@ fun EditProfileScreen(
                     modifier = Modifier.padding(vertical = 8.dp)
                 ) {
                     ProfileDetailRow(label = "Email", value = userProfile.email, onClick = {
-                        editFieldLabel = "Email"
+                        editField = UserSessionManager.Field.EMAIL
                         editFieldValue = userProfile.email
                         editKeyboardType = KeyboardType.Email
                         showDialog = true
                     })
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileDetailRow(label = "Nomor", value = userProfile.phone, onClick = {
-                        editFieldLabel = "Nomor"
+                        editField = UserSessionManager.Field.PHONE
                         editFieldValue = userProfile.phone
                         editKeyboardType = KeyboardType.Phone
                         showDialog = true
                     })
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileDetailRow(label = "Lokasi", value = userProfile.location, onClick = {
-                        editFieldLabel = "Lokasi"
+                        editField = UserSessionManager.Field.LOCATION
                         editFieldValue = userProfile.location
                         editKeyboardType = KeyboardType.Text
                         showDialog = true

@@ -14,8 +14,8 @@ data class RegisterRequest(
 
 data class AuthResponse(
     val message: String,
-    val user: UserDto,
-    val token: String
+    val user: UserDto? = null,
+    val token: String? = null
 )
 
 data class UserDto(
@@ -23,6 +23,8 @@ data class UserDto(
     val name: String,
     val email: String,
     val role: String = "user",
+    val phone: String? = null,
+    val location: String? = null,
     val avatar_url: String? = null,
     val suspended_at: String? = null,
     val created_at: String? = null,
@@ -34,5 +36,9 @@ data class MessageResponse(
 )
 
 data class ProfileResponse(
-    val user: UserDto
+    val user: UserDto? = null
+)
+
+data class RefreshTokenResponse(
+    val token: String
 )

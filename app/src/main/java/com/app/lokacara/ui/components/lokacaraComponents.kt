@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,10 +52,9 @@ fun LokacaraTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         trailingIcon = {
             if (isPassword) {
-                val icon = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
-                        painter = painterResource(id = icon),
+                        imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = null,
                         tint = Gray500,
                         modifier = Modifier.size(24.dp)

@@ -4,11 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,8 +23,10 @@ import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.HomeHeader
 import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
-import com.app.lokacara.ui.components.BottomNavbar
+import com.app.lokacara.ui.components.EmptyStateView
+import com.app.lokacara.ui.components.ErrorStateView
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.theme.Primary500
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.HomeViewModel
 
@@ -35,16 +39,25 @@ fun HomeScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val filteredEvents by viewModel.filteredEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
+    val locationNames by viewModel.locationNames.collectAsState()
+    val categoryNames by viewModel.categoryNames.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     val onEventClick = remember {
-        { event: Event -> navController.navigate(Screen.EventDetail.createRoute(event.id.toLongOrNull() ?: 0L)) }
+        { event: Event -> navController.navigate(Screen.EventDetail.createRoute(event.id)) }
     }
     val onBookmarkClick: (String) -> Unit = remember {
         { eventId -> viewModel.toggleBookmark(eventId) }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        when {
+            isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Primary500)
+            }
+            error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
+            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             item(key = "header") {
                 HomeHeader(navController = navController)
@@ -61,8 +74,8 @@ fun HomeScreen(
                 NearbyEventsHeader(
                     currentLocation = selectedLocation,
                     selectedCategory = selectedCategory,
-                    locations = viewModel.locations,
-                    categories = viewModel.categories,
+                    locations = locationNames,
+                    categories = categoryNames,
                     onLocationChange = { viewModel.updateLocation(it) },
                     onCategoryChange = { viewModel.updateCategory(it) }
                 )
@@ -74,12 +87,13 @@ fun HomeScreen(
             ) { event ->
                 EventCard(
                     event = event,
-                    onBookmarkClick = { onBookmarkClick(event.id) },
+                    onBookmarkClick = { onBookmarkClick(event.id.toString()) },
                     onClick = { onEventClick(event) }
                 )
             }
 
             item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
+        }
         }
     }
 }

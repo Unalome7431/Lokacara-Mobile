@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,53 +32,92 @@ import com.app.lokacara.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.ui.navigation.Screen
+import androidx.compose.ui.res.stringResource
+import com.app.lokacara.R
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
+    rootNavController: NavController? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val isDeleting by viewModel.isDeleting.collectAsState()
+    val deleteError by viewModel.deleteError.collectAsState()
+    val deleteSuccess by viewModel.deleteSuccess.collectAsState()
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(deleteSuccess) {
+        if (deleteSuccess) {
+            viewModel.resetDeleteSuccess()
+            scope.launch {
+                viewModel.logout()
+                (rootNavController ?: navController).navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = {
                 Text(
-                    text = "Hapus Akun",
+                    text = stringResource(R.string.settings_delete_account),
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )
             },
             text = {
-                Text(
-                    text = "Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.",
-                    fontFamily = NunitoFont,
-                    fontSize = 14.sp
-                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.confirm_delete_account),
+                        fontFamily = NunitoFont,
+                        fontSize = 14.sp
+                    )
+                    if (deleteError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = deleteError!!,
+                            fontFamily = NunitoFont,
+                            fontSize = 13.sp,
+                            color = SemanticErrorBase
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteDialog = false
-                    }
+                        viewModel.deleteAccount()
+                    },
+                    enabled = !isDeleting
                 ) {
-                    Text(
-                        text = "Hapus",
-                        color = SemanticErrorBase,
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = SemanticErrorBase
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.delete),
+                            color = SemanticErrorBase,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { showDeleteDialog = false; viewModel.clearDeleteError() }) {
                     Text(
-                        text = "Batal",
+                        text = stringResource(R.string.cancel),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         color = Gray500
@@ -105,10 +146,10 @@ fun SettingsScreen(
                 modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
             )
             Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Pengaturan",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
+                Text(
+                    text = "Pengaturan",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 color = Gray900
             )
@@ -124,11 +165,11 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsSectionTitle(title = "Preferensi")
+            SettingsSectionTitle(title = stringResource(R.string.settings_preferences))
             SettingsCard {
                 SettingsToggleRow(
                     icon = Icons.Rounded.Notifications,
-                    title = "Notifikasi",
+                    title = stringResource(R.string.settings_notifications),
                     isChecked = notificationsEnabled,
                     onCheckedChange = { 
                         viewModel.setNotificationsEnabled(it) 
@@ -138,41 +179,41 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionTitle(title = "Keamanan")
+            SettingsSectionTitle(title = stringResource(R.string.settings_security))
             SettingsCard {
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
-                    title = "Ubah Kata Sandi", 
+                    title = stringResource(R.string.settings_change_password), 
                     onClick = { navController.navigate(Screen.ChangePassword.route) }
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionTitle(title = "Bantuan & Informasi")
+            SettingsSectionTitle(title = stringResource(R.string.settings_help_info))
             SettingsCard {
                 SettingsActionRow(
-                    icon = Icons.Rounded.HelpOutline,
-                    title = "Pusat Bantuan", 
+                    icon = Icons.AutoMirrored.Rounded.HelpOutline,
+                    title = stringResource(R.string.settings_help_center), 
                     onClick = { navController.navigate(Screen.HelpCenter.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
-                    icon = Icons.Rounded.Article,
-                    title = "Syarat & Ketentuan", 
+                    icon = Icons.AutoMirrored.Rounded.Article,
+                    title = stringResource(R.string.settings_terms_conditions), 
                     onClick = { navController.navigate(Screen.TermsConditions.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
-                    title = "Kebijakan Privasi", 
+                    title = stringResource(R.string.settings_privacy_policy), 
                     onClick = { navController.navigate(Screen.PrivacyPolicy.route) }
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionTitle(title = "Lainnya")
+            SettingsSectionTitle(title = stringResource(R.string.settings_others))
             SettingsCard {
                 Row(
                     modifier = Modifier
@@ -189,14 +230,14 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = null,
+                            contentDescription = "Hapus Akun",
                             tint = SemanticErrorBase,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Hapus Akun",
+                    text = "Keluar dari Akun",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
@@ -252,7 +293,7 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = title,
                     tint = Primary500,
                     modifier = Modifier.size(20.dp)
                 )
@@ -298,7 +339,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = title,
                     tint = Primary500, 
                     modifier = Modifier.size(20.dp)
                 )
@@ -314,7 +355,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
         }
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = null,
+            contentDescription = "Navigasi",
             tint = Gray400,
             modifier = Modifier.size(20.dp)
         )

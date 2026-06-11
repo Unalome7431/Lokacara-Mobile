@@ -23,16 +23,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
@@ -84,12 +84,9 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val virtualPageCount = popularEvents.size * 1000
-    val initialPage = virtualPageCount / 2
-    val pagerState = rememberPagerState(
-        initialPage = initialPage,
-        pageCount = { virtualPageCount }
-    )
+    val pageCount = popularEvents.size * 400
+    val initialPage = pageCount / 2
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pageCount })
 
     val cardShape = remember { RoundedCornerShape(24.dp) }
     val gradientBrush = remember {
@@ -98,20 +95,18 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             startY = 0f
         )
     }
+    val context = LocalContext.current
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                delay(4000)
-                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-            }
+    LaunchedEffect(pagerState.currentPage) {
+        delay(4000)
+        if (pageCount > 1) {
+            pagerState.animateScrollToPage(pagerState.currentPage + 1)
         }
     }
 
     Column {
         Text(
-            text = "Event Populer",
+            text = stringResource(R.string.home_popular_events),
             style = TextStyle(
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.ExtraBold,
@@ -131,36 +126,45 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             key(page) {
                 val event = popularEvents[page % popularEvents.size]
 
-                Box(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
-                        .clip(cardShape)
-                        .shadow(elevation = 8.dp, shape = cardShape)
-                        .clickable { onEventClick(event) }
+                        .clickable { onEventClick(event) },
+                    shape = cardShape,
+                    color = Color.Transparent,
+                    shadowElevation = 8.dp
                 ) {
-                    AsyncImage(
-                        model = event.imageUrl ?: R.drawable.candi,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
-
-                    Text(
-                        text = event.title,
-                        color = Color.White,
-                        style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                        modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
-                    )
-
-                    Column(
-                        modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
-                        horizontalAlignment = Alignment.End
+                    Box(
+                        modifier = Modifier.fillMaxSize().clip(cardShape)
                     ) {
-                        Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
-                        Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(event.imageUrl)
+                                .size(400)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = event.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
+
+                        Text(
+                            text = event.title,
+                            color = Color.White,
+                            style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                            modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
+                        )
+
+                        Column(
+                            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
+                            Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                        }
                     }
                 }
             }
@@ -181,12 +185,12 @@ fun NearbyEventsHeader(
 
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Row(modifier = Modifier.padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Event Terdekat di", style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black))
+            Text(stringResource(R.string.home_nearby_events), style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black))
             Spacer(modifier = Modifier.width(6.dp))
 
             Box {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { expanded = true }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Secondary500, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = Secondary500, modifier = Modifier.size(24.dp))
                     Text(currentLocation, style = TextStyle(fontFamily = PlusJakartaSansFont, color = Secondary500, fontSize = 16.sp, fontWeight = FontWeight.Bold))
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {

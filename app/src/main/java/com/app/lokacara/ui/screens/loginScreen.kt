@@ -4,7 +4,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
@@ -46,13 +49,14 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(150.dp))
 
         Text(
-            text = "Masuk",
+            text = stringResource(R.string.auth_login),
             style = MaterialTheme.typography.displaySmall,
             color = Primary500,
             modifier = Modifier.fillMaxWidth()
@@ -64,7 +68,7 @@ fun LoginScreen(
         val snackbarHostState = remember { SnackbarHostState() }
 
         GoogleButton(
-            text = "Masuk dengan Google",
+            text = stringResource(R.string.auth_login_google),
             onClick = {
                 scope.launch {
                     snackbarHostState.showSnackbar("Google Sign-In belum tersedia")
@@ -90,7 +94,7 @@ fun LoginScreen(
         LokacaraTextField(
             value = email,
             onValueChange = { viewModel.email.value = it },
-            placeholder = "Email / Nomor Telepon"
+            placeholder = stringResource(R.string.auth_email_placeholder)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -98,14 +102,14 @@ fun LoginScreen(
         LokacaraTextField(
             value = password,
             onValueChange = { viewModel.password.value = it },
-            placeholder = "Kata Sandi",
+            placeholder = stringResource(R.string.auth_password_placeholder),
             isPassword = true
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Lupa Kata Sandi?",
+            text = "Lupa Kata Sandi?", // TODO: move to string resources if needed
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
             color = Gray500,
             modifier = Modifier
@@ -132,7 +136,7 @@ fun LoginScreen(
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
             } else {
-                Text("Masuk", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.auth_login), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -156,7 +160,7 @@ fun LoginScreen(
         ) {
             Text("Belum memiliki akun? ", style = MaterialTheme.typography.labelSmall, color = Gray500)
             Text(
-                text = "Daftar",
+                text = stringResource(R.string.auth_register),
                 style = MaterialTheme.typography.labelSmall,
                 color = Primary500,
                 fontWeight = FontWeight.Bold,

@@ -40,23 +40,22 @@ class AuthViewModel @Inject constructor(
     val registerSuccess: StateFlow<Boolean> = _registerSuccess.asStateFlow()
 
     fun login() {
+        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
+        if (password.value.isBlank()) { _errorMessage.value = "Kata sandi harus diisi"; return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
             when (val result = repository.login(email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
                     val auth = result.data
+                    val user = auth.user
+                    val userId = user?.id ?: 0L
                     userSessionManager.saveAuth(
-                        token = auth.token,
-                        userId = auth.user.id.toInt(),
-                        name = auth.user.name,
-                        email = auth.user.email,
-                        role = auth.user.role
-                    )
-                    settingsManager.saveAuthSession(
-                        token = auth.token,
-                        userId = auth.user.id.toInt(),
-                        userName = auth.user.name
+                        token = auth.token ?: "",
+                        userId = userId,
+                        name = user?.name ?: "",
+                        email = user?.email ?: "",
+                        role = user?.role ?: ""
                     )
                     settingsManager.setOnboardingCompleted()
                     _loginSuccess.value = true
@@ -70,23 +69,24 @@ class AuthViewModel @Inject constructor(
     }
 
     fun register() {
+        if (name.value.isBlank()) { _errorMessage.value = "Nama harus diisi"; return }
+        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
+        if (password.value.length < 6) { _errorMessage.value = "Kata sandi minimal 6 karakter"; return }
+        if (!isChecked.value) { _errorMessage.value = "Anda harus menyetujui syarat & ketentuan"; return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
             when (val result = repository.register(name.value.trim(), email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
                     val auth = result.data
+                    val user = auth.user
+                    val userId = user?.id ?: 0L
                     userSessionManager.saveAuth(
-                        token = auth.token,
-                        userId = auth.user.id.toInt(),
-                        name = auth.user.name,
-                        email = auth.user.email,
-                        role = auth.user.role
-                    )
-                    settingsManager.saveAuthSession(
-                        token = auth.token,
-                        userId = auth.user.id.toInt(),
-                        userName = auth.user.name
+                        token = auth.token ?: "",
+                        userId = userId,
+                        name = user?.name ?: "",
+                        email = user?.email ?: "",
+                        role = user?.role ?: ""
                     )
                     settingsManager.setOnboardingCompleted()
                     _registerSuccess.value = true

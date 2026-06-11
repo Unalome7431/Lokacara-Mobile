@@ -25,6 +25,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.data.remote.dto.AttendeeDto
 import com.app.lokacara.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.app.lokacara.R
 import com.app.lokacara.viewmodel.AttendeesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,16 +49,16 @@ fun AttendeesScreen(
     if (showReminderConfirm) {
         AlertDialog(
             onDismissRequest = { showReminderConfirm = false },
-            title = { Text("Kirim Pengingat") },
-            text = { Text("Kirim email pengingat ke semua peserta?") },
+            title = { Text(stringResource(R.string.attendees_send_reminder)) },
+            text = { Text(stringResource(R.string.attendees_reminder_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.sendReminders()
                     showReminderConfirm = false
-                }) { Text("Kirim") }
+                }) { Text(stringResource(R.string.attendees_send)) }
             },
             dismissButton = {
-                TextButton(onClick = { showReminderConfirm = false }) { Text("Batal") }
+                TextButton(onClick = { showReminderConfirm = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -75,7 +77,7 @@ fun AttendeesScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Peserta",
+                text = stringResource(R.string.attendees_title),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -92,7 +94,7 @@ fun AttendeesScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Primary500)
             } else if (attendees.isEmpty()) {
                 Text(
-                    text = "Belum ada peserta",
+                    text = stringResource(R.string.attendees_empty),
                     modifier = Modifier.align(Alignment.Center),
                     fontFamily = NunitoFont,
                     color = Gray500
@@ -133,7 +135,7 @@ private fun AttendeeCard(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Person, null, tint = if (isCheckedIn) Secondary500 else Gray400, modifier = Modifier.size(40.dp))
+            Icon(Icons.Outlined.Person, "Peserta", tint = if (isCheckedIn) Secondary500 else Gray400, modifier = Modifier.size(40.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -144,7 +146,7 @@ private fun AttendeeCard(
                     color = Gray900
                 )
                 Text(
-                    text = if (isCheckedIn) "Hadir" else "Belum check-in",
+                    text = if (isCheckedIn) stringResource(R.string.attendees_present) else stringResource(R.string.attendees_not_checked_in),
                     fontSize = 12.sp,
                     color = if (isCheckedIn) Secondary500 else Gray500
                 )

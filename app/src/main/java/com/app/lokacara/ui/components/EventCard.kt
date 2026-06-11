@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,14 +18,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.app.lokacara.R
+import coil.request.ImageRequest
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
@@ -34,7 +35,7 @@ fun EventCard(
     onBookmarkClick: () -> Unit = {},
     onClick: (() -> Unit)? = null
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 10.dp)
@@ -42,13 +43,17 @@ fun EventCard(
                 if (onClick != null) mod.clickable { onClick() } else mod
             },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        color = Color.White,
+        shadowElevation = 2.dp
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             AsyncImage(
-                model = event.imageUrl,
-                contentDescription = null,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(event.imageUrl)
+                    .size(110)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = event.title,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -62,7 +67,7 @@ fun EventCard(
 
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.ConfirmationNumber, contentDescription = null, tint = Secondary500, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Outlined.ConfirmationNumber, contentDescription = "Tiket", tint = Secondary500, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(event.price, color = Secondary500, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, fontSize = 14.sp))
                     }
@@ -71,7 +76,7 @@ fun EventCard(
 
                     Icon(
                         imageVector = bookmarkIcon,
-                        contentDescription = "Simpan Event",
+                        contentDescription = "Bookmark",
                         tint = Gray900,
                         modifier = Modifier
                             .size(24.dp)
@@ -86,8 +91,21 @@ fun EventCard(
 @Composable
 private fun DetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(13.dp))
+        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(text, color = Gray600, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun EventCardPreview() {
+    LokacaraMobileTheme {
+        EventCard(
+            event = Event(
+                id = 1L, title = "Test Event", description = "Desc", date = "12 Jun 2026",
+                location = "Surakarta", price = "Gratis", imageUrl = null, category = "Teknologi"
+            )
+        )
     }
 }

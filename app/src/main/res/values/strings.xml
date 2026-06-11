@@ -1,3 +1,215 @@
 <resources>
     <string name="app_name">Lokacara-Mobile</string>
+
+    <!-- Tab Labels -->
+    <string name="tab_tickets_upcoming">Mendatang</string>
+    <string name="tab_tickets_history">Riwayat</string>
+    <string name="tab_notifications_activity">Aktivitas</string>
+    <string name="tab_notifications_info">Informasi</string>
+
+    <!-- Explore Categories (temporary, will be replaced by API endpoint) -->
+    <string name="category_all">Semua</string>
+    <string name="category_music">Musik</string>
+    <string name="category_technology">Teknologi</string>
+    <string name="category_anime">Anime</string>
+    <string name="category_hobby">Hobi</string>
+    <string name="category_sports">Olahraga</string>
+    <string name="category_business">Bisnis</string>
+    <string name="category_art">Seni</string>
+    <string name="category_webinar">Webinar</string>
+
+    <!-- Settings Section Titles -->
+    <string name="settings_preferences">Preferensi</string>
+    <string name="settings_security">Keamanan</string>
+    <string name="settings_help_info">Bantuan &amp; Informasi</string>
+    <string name="settings_others">Lainnya</string>
+
+    <!-- Settings Menu Items -->
+    <string name="settings_notifications">Notifikasi</string>
+    <string name="settings_change_password">Ubah Kata Sandi</string>
+    <string name="settings_help_center">Pusat Bantuan</string>
+    <string name="settings_terms_conditions">Syarat &amp; Ketentuan</string>
+    <string name="settings_privacy_policy">Kebijakan Privasi</string>
+    <string name="settings_delete_account">Keluar dari Akun</string>
+
+    <!-- Profile Menu Items -->
+    <string name="profile_my_events">Event Saya</string>
+    <string name="profile_edit_profile">Edit Profil</string>
+    <string name="profile_saved_events">Event Tersimpan</string>
+    <string name="profile_certificates">Sertifikat</string>
+    <string name="profile_settings">Pengaturan</string>
+    <string name="profile_about">Tentang Lokacara</string>
+    <string name="profile_title">Profil Saya</string>
+    <string name="profile_logout">Keluar</string>
+
+    <!-- General UI -->
+    <string name="back">Kembali</string>
+    <string name="ok">OK</string>
+    <string name="error_occurred">Terjadi kesalahan</string>
+    <string name="save">Simpan</string>
+    <string name="cancel">Batal</string>
+    <string name="delete">Hapus</string>
+    <string name="confirm_delete_account">Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.</string>
+
+    <!-- Event Detail -->
+    <string name="event_detail_title">Detail Event</string>
+    <string name="event_detail_date_label">Waktu &amp; Tanggal</string>
+    <string name="event_detail_location_label">Lokasi</string>
+    <string name="event_detail_organizer_label">Penyelenggara</string>
+    <string name="event_detail_unknown_organizer">Tidak diketahui</string>
+    <string name="event_detail_description_title">Deskripsi Acara</string>
+    <string name="event_detail_cancel_registration">Batalkan Pendaftaran</string>
+    <string name="event_detail_join_event">Gabung Event</string>
+    <string name="event_detail_join_success">Berhasil Bergabung!</string>
+    <string name="event_detail_join_success_detail">Kamu telah bergabung di event \"%s\".\nTiket dapat dilihat di halaman Tiket.</string>
+    <string name="event_detail_share_title">Bagikan Event</string>
+    <string name="event_detail_share_detail">Link event \"%s\" telah disalin ke clipboard.</string>
+    <string name="event_detail_view_attendees">Lihat Peserta</string>
+    <string name="event_detail_scan_qr">Scan QR</string>
+    <string name="event_detail_send_reminder">Kirim Pengingat</string>
+
+    <!-- Create Event -->
+    <string name="create_event_title">Buat Event Baru</string>
+    <string name="create_event_save_draft">Simpan Draf</string>
+    <string name="create_event_poster">Poster Event</string>
+    <string name="create_event_name_label">Nama Event</string>
+    <string name="create_event_category_label">Kategori</string>
+    <string name="create_event_organizer_label">Penyelenggara</string>
+    <string name="create_event_datetime_title">Waktu dan Tanggal</string>
+    <string name="create_event_start_label">Mulai</string>
+    <string name="create_event_end_label">Selesai</string>
+    <string name="create_event_detail_title">Detail Event</string>
+    <string name="create_event_online_label">Aplikasi</string>
+    <string name="create_event_offline_label">Tempat</string>
+    <string name="create_event_address_link_label">Alamat/Link</string>
+    <string name="create_event_name_placeholder">Nama Event</string>
+    <string name="create_event_organizer_placeholder">Nama organisasi / EO</string>
+    <string name="create_event_online_placeholder">nama aplikasi</string>
+    <string name="create_event_offline_placeholder">nama tempat</string>
+
+    <!-- My Events -->
+    <string name="my_events_title">Event Saya</string>
+    <string name="saved_events_title">Event Tersimpan</string>
+
+    <!-- Tickets -->
+    <string name="tickets_today_event">Event Hari Ini</string>
+    <string name="tickets_upcoming_event">Event Mendatang</string>
+    <string name="tickets_tanggal">Tanggal</string>
+    <string name="tickets_jam">Jam</string>
+    <string name="tickets_tempat">Tempat</string>
+    <string name="tickets_kode_unik">Kode Unik</string>
+    <string name="tickets_nama">Nama</string>
+
+    <!-- Notification -->
+    <string name="notification_title">Notifikasi</string>
+
+    <!-- About -->
+    <string name="about_title">Tentang Lokacara</string>
+    <string name="about_contact_us">Contact Us</string>
+
+    <!-- QR Scanner -->
+    <string name="qr_scan_title">Scan QR Peserta</string>
+    <string name="qr_token_label">Masukkan Token QR</string>
+    <string name="qr_token_placeholder">Tempel kode QR di sini</string>
+    <string name="qr_verify_button">Verifikasi QR</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+
+    <!-- Auth -->
+    <string name="auth_register">Daftar</string>
+    <string name="auth_login">Masuk</string>
+    <string name="auth_register_google">Daftar dengan Google</string>
+    <string name="auth_login_google">Masuk dengan Google</string>
+    <string name="auth_name_placeholder">Nama Lengkap</string>
+    <string name="auth_email_placeholder">Email / Nomor Telepon</string>
+    <string name="auth_password_placeholder">Kata Sandi</string>
+    <string name="auth_agree_terms">Saya setuju dengan </string>
+
+    <!-- General Actions -->
+    <string name="retry">Coba Lagi</string>
+    <string name="no_data">Tidak ada data</string>
+
+    <!-- Change Password -->
+    <string name="change_password_title">Ubah Kata Sandi</string>
+    <string name="change_password_old_label">Kata Sandi Lama</string>
+    <string name="change_password_new_label">Kata Sandi Baru</string>
+    <string name="change_password_confirm_label">Konfirmasi Kata Sandi</string>
+    <string name="change_password_old_placeholder">Masukkan kata sandi lama</string>
+    <string name="change_password_new_placeholder">Masukkan kata sandi baru</string>
+    <string name="change_password_confirm_placeholder">Ulangi kata sandi baru</string>
+    <string name="change_password_button">Ubah Kata Sandi</string>
+
+    <!-- Attendees -->
+    <string name="attendees_title">Peserta</string>
+    <string name="attendees_empty">Belum ada peserta</string>
+    <string name="attendees_present">Hadir</string>
+    <string name="attendees_not_checked_in">Belum check-in</string>
+    <string name="attendees_send_reminder">Kirim Pengingat</string>
+    <string name="attendees_reminder_confirm">Kirim email pengingat ke semua peserta?</string>
+    <string name="attendees_send">Kirim</string>
+
+    <!-- Help Center -->
+    <string name="help_center_title">Pusat Bantuan</string>
+    <string name="help_center_greeting">Halo, ada yang bisa kami bantu?</string>
+    <string name="help_center_search_placeholder">Cari topik bantuan...</string>
+    <string name="help_center_faq_title">Pertanyaan Sering Diajukan</string>
+    <string name="help_center_contact_title">Masih butuh bantuan?</string>
+    <string name="help_center_contact_subtitle">Tim dukungan kami siap membantu Anda 24/7.</string>
+    <string name="help_center_contact_button">Hubungi Kami</string>
+
+    <!-- Certificates -->
+    <string name="certificates_title">Sertifikat</string>
+    <string name="certificates_empty">Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya</string>
+
+    <!-- Edit Profile -->
+    <string name="edit_profile_title">Edit Profil</string>
+    <string name="edit_profile_name">Nama Lengkap</string>
+    <string name="edit_profile_email">Email</string>
+    <string name="edit_profile_phone">Nomor</string>
+    <string name="edit_profile_location">Lokasi</string>
+
+    <!-- Explore -->
+    <string name="explore_search_placeholder">Mencari nama, lokasi, kategori event</string>
+    <string name="explore_hot_label">Lagi Ramai</string>
+    <string name="explore_search_name">Nama Event</string>
+    <string name="explore_search_location">Lokasi Event</string>
+    <string name="explore_search_category">Kategori</string>
+
+    <!-- Home -->
+    <string name="home_popular_events">Event Populer</string>
+    <string name="home_nearby_events">Event Terdekat di</string>
+    <string name="home_bookmark_saved">Event Tersimpan</string>
+
+    <!-- Create Event Additional -->
+    <string name="create_event_description_placeholder">Deskripsi acara Anda...</string>
+    <string name="create_event_online">Online</string>
+    <string name="create_event_offline">Offline</string>
+    <string name="create_event_calendar">Kalender</string>
+    <string name="create_event_category_placeholder">Kategori</string>
+    <string name="create_event_capacity">Kuota Peserta</string>
+
+    <!-- Ticket Empty States -->
+    <string name="tickets_empty_upcoming">Belum ada tiket</string>
+    <string name="tickets_empty_upcoming_subtitle">Gabung event untuk melihat tiket kamu di sini</string>
+    <string name="tickets_empty_history">Belum ada riwayat</string>
+    <string name="tickets_empty_history_subtitle">Event yang sudah selesai akan muncul di sini</string>
+
+    <!-- Empty States General -->
+    <string name="empty_events_not_found">Yahh.. Event tidak ditemukan</string>
+    <string name="empty_events_try_other">Coba gunakan kata kunci atau kategori lain</string>
+    <string name="empty_no_events">Belum Membuat Event\nCoba Disini</string>
+
+    <!-- Forget Password -->
+    <string name="forgot_password">Lupa Kata Sandi?</string>
+    <string name="no_account">Belum memiliki akun? </string>
+
+    <!-- Audit Error Messages -->
+    <string name="error_load_event">Gagal memuat detail event</string>
+    <string name="error_join_event">Gagal bergabung event</string>
+    <string name="error_leave_event">Gagal membatalkan pendaftaran</string>
+    <string name="error_change_password">Gagal mengubah kata sandi</string>
+    <string name="error_create_event">Gagal membuat event</string>
+    <string name="error_load_notifications">Gagal memuat notifikasi</string>
 </resources>

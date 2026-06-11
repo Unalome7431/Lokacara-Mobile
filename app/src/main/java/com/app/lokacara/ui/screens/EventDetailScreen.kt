@@ -33,6 +33,8 @@ import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.DetailInfoRow
 import com.app.lokacara.ui.navigation.Screen
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.EventDetailViewModel
@@ -48,12 +50,23 @@ fun EventDetailScreen(
     val error by viewModel.error.collectAsState()
     val isRegistered by viewModel.isRegistered.collectAsState()
     val isHost by viewModel.isHost.collectAsState()
+    val isJoining by viewModel.isJoining.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
     var showJoinDialog by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(eventId) {
-        if (eventId > 0L) viewModel.loadEvent(eventId)
+        if (eventId > 0L) {
+            viewModel.loadEvent(eventId)
+        } else {
+            navController.popBackStack()
+        }
+    }
+
+    LaunchedEffect(successMessage) {
+        if (!successMessage.isNullOrBlank()) {
+            showJoinDialog = true
+        }
     }
 
     Column(
@@ -69,14 +82,14 @@ fun EventDetailScreen(
         ) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.back),
                 modifier = Modifier
                     .size(20.dp)
                     .clickable { navController.popBackStack() }
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Detail Event",
+                text = stringResource(R.string.event_detail_title),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -89,7 +102,7 @@ fun EventDetailScreen(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Share,
-                    contentDescription = "Share",
+                    contentDescription = stringResource(R.string.event_detail_share_title),
                     tint = Primary500
                 )
             }
@@ -114,14 +127,20 @@ fun EventDetailScreen(
                         modifier = Modifier.fillMaxWidth().height(400.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = error ?: "Terjadi kesalahan",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = SemanticErrorBase,
-                            textAlign = TextAlign.Center
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = error ?: stringResource(R.string.error_occurred),
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = SemanticErrorBase,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { viewModel.loadEvent(eventId) }) {
+                                Text(stringResource(R.string.retry))
+                            }
+                        }
                     }
                 }
                 else -> {
@@ -133,7 +152,7 @@ fun EventDetailScreen(
                     ) {
                         AsyncImage(
                             model = event.imageUrl,
-                            contentDescription = null,
+                            contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -194,7 +213,7 @@ fun EventDetailScreen(
                         Column {
                             DetailInfoRow(
                                 icon = Icons.Outlined.CalendarToday,
-                                label = "Waktu & Tanggal",
+                                label = stringResource(R.string.event_detail_date_label),
                                 value = event.date
                             )
                             HorizontalDivider(
@@ -204,7 +223,7 @@ fun EventDetailScreen(
                             )
                             DetailInfoRow(
                                 icon = Icons.Outlined.LocationOn,
-                                label = "Lokasi",
+                                label = stringResource(R.string.event_detail_location_label),
                                 value = event.location
                             )
                             HorizontalDivider(
@@ -214,8 +233,8 @@ fun EventDetailScreen(
                             )
                             DetailInfoRow(
                                 icon = Icons.Outlined.Groups,
-                                label = "Penyelenggara",
-                                value = event.penyelenggara.ifEmpty { "Tidak diketahui" }
+                                label = stringResource(R.string.event_detail_organizer_label),
+                                value = event.penyelenggara.ifEmpty { stringResource(R.string.event_detail_unknown_organizer) }
                             )
                         }
                     }
@@ -223,7 +242,7 @@ fun EventDetailScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Deskripsi Acara",
+                        text = stringResource(R.string.event_detail_description_title),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
@@ -246,19 +265,20 @@ fun EventDetailScreen(
 
                     if (isHost) {
                         HostManagementButtons(
-                            eventId = event.id.toLongOrNull() ?: 0L,
+                            eventId = event.id,
                             navController = navController,
                             viewModel = viewModel
                         )
                     } else if (isRegistered) {
                         Button(
                             onClick = { viewModel.leaveEvent() },
+                            enabled = !isJoining,
                             modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
                             shape = RoundedCornerShape(28.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = SemanticErrorBase)
                         ) {
                             Text(
-                                text = "Batalkan Pendaftaran",
+                                text = stringResource(R.string.event_detail_cancel_registration),
                                 fontFamily = NunitoFont,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
@@ -268,12 +288,13 @@ fun EventDetailScreen(
                     } else {
                         Button(
                             onClick = { viewModel.joinEvent() },
+                            enabled = !isJoining,
                             modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
                             shape = RoundedCornerShape(28.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Primary500)
                         ) {
                             Text(
-                                text = "Gabung Event",
+                                text = stringResource(R.string.event_detail_join_event),
                                 fontFamily = NunitoFont,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
@@ -290,10 +311,10 @@ fun EventDetailScreen(
 
     if (showJoinDialog) {
         AlertDialog(
-            onDismissRequest = { showJoinDialog = false },
+            onDismissRequest = { showJoinDialog = false; viewModel.clearMessages() },
             title = {
                 Text(
-                    text = "Berhasil Bergabung!",
+                    text = if (isRegistered) "Berhasil" else "Berhasil",
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -302,7 +323,7 @@ fun EventDetailScreen(
             },
             text = {
                 Text(
-                    text = "Kamu telah bergabung di event \"${event.title}\".\nTiket dapat dilihat di halaman Tiket.",
+                    text = successMessage ?: "",
                     fontFamily = PlusJakartaSansFont,
                     fontSize = 14.sp,
                     color = Gray600,
@@ -310,9 +331,9 @@ fun EventDetailScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showJoinDialog = false }) {
+                TextButton(onClick = { showJoinDialog = false; viewModel.clearMessages() }) {
                     Text(
-                        text = "OK",
+                        text = stringResource(R.string.ok),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         color = Primary500
@@ -329,7 +350,7 @@ fun EventDetailScreen(
             onDismissRequest = { showShareDialog = false },
             title = {
                 Text(
-                    text = "Bagikan Event",
+                    text = stringResource(R.string.event_detail_share_title),
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -338,7 +359,7 @@ fun EventDetailScreen(
             },
             text = {
                 Text(
-                    text = "Link event \"${event.title}\" telah disalin ke clipboard.",
+                    text = stringResource(R.string.event_detail_share_detail, event.title),
                     fontFamily = PlusJakartaSansFont,
                     fontSize = 14.sp,
                     color = Gray600,
@@ -348,7 +369,7 @@ fun EventDetailScreen(
             confirmButton = {
                 TextButton(onClick = { showShareDialog = false }) {
                     Text(
-                        text = "OK",
+                        text = stringResource(R.string.ok),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         color = Primary500
@@ -377,7 +398,7 @@ private fun HostManagementButtons(
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Primary500)
         ) {
-            Text("Lihat Peserta", fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.event_detail_view_attendees), fontWeight = FontWeight.Bold, color = Color.White)
         }
         Button(
             onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) },
@@ -385,7 +406,7 @@ private fun HostManagementButtons(
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Secondary500)
         ) {
-            Text("Scan QR", fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.event_detail_scan_qr), fontWeight = FontWeight.Bold, color = Color.White)
         }
         Button(
             onClick = { viewModel.sendReminders() },
@@ -393,7 +414,7 @@ private fun HostManagementButtons(
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Gray700)
         ) {
-            Text("Kirim Pengingat", fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.event_detail_send_reminder), fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }

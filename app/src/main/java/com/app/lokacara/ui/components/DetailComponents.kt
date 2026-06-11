@@ -37,7 +37,7 @@ fun DetailInfoRow(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = label,
             tint = Gray600,
             modifier = Modifier.size(18.dp)
         )
@@ -76,8 +76,8 @@ fun EventRelatedCard(
     ) {
         Column {
             AsyncImage(
-                model = event.imageUrl ?: R.drawable.candi,
-                contentDescription = null,
+                model = event.imageUrl,
+                contentDescription = event.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)

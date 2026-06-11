@@ -20,9 +20,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
@@ -35,10 +37,30 @@ fun TicketsScreen(
     navController: NavController,
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Mendatang", "Riwayat")
+    val tabs = listOf(
+        context.getString(R.string.tab_tickets_upcoming),
+        context.getString(R.string.tab_tickets_history)
+    )
     val upcomingEvents by viewModel.upcomingEvents.collectAsState()
     val historyEvents by viewModel.historyEvents.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    if (isLoading) {
+        Box(Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Primary500)
+        }
+        return
+    }
+
+    if (error != null) {
+        Box(Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
+            ErrorStateView(message = error ?: "", onRetry = { viewModel.loadDashboard() })
+        }
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Row(
@@ -53,9 +75,13 @@ fun TicketsScreen(
                 contentScale = ContentScale.Fit
             )
             Row {
-                Icon(Icons.Outlined.Notifications, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-                Spacer(modifier = Modifier.width(16.dp))
-                Icon(Icons.Outlined.FavoriteBorder, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
+                IconButton(onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) }) {
+                    Icon(Icons.Outlined.Notifications, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Bookmark.route) }) {
+                    Icon(Icons.Outlined.FavoriteBorder, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
+                }
             }
         }
 
@@ -98,23 +124,28 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
     var showQrDialog by remember { mutableStateOf(false) }
 
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)) {
-        item {
-            Text("Event Hari Ini", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(bottom = 12.dp))
-            BigTicketCard(
-                title = "Seminar Ai di Kota Surakarta",
-                date = "Minggu, 30 Nov",
-                time = "15.00",
-                location = "Pura Mangkunegaran",
-                uniqueCode = "AI0347",
-                userName = "Arrivo Aryanto",
-                onQrClick = { showQrDialog = true }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Event Mendatang", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(bottom = 12.dp))
-        }
-        items(upcomingEvents) { event ->
-            SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
-            Spacer(modifier = Modifier.height(12.dp))
+        if (upcomingEvents.isEmpty()) {
+            item {
+                EmptyStateView(
+                    title = "Belum ada tiket",
+                    subtitle = "Gabung event untuk melihat tiket kamu di sini"
+                )
+            }
+        } else {
+            item {
+                val firstEvent = upcomingEvents.first()
+                Text(
+                    text = stringResource(R.string.tickets_upcoming_event),
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+            items(upcomingEvents) { event ->
+                SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
@@ -126,15 +157,19 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
                 date = event.date,
                 time = event.time,
                 location = event.location,
-                uniqueCode = "WK0123",
-                userName = "Arrivo Aryanto",
+                uniqueCode = event.id.toString(),
+                userName = "",
                 onQrClick = { showQrDialog = true }
             )
         }
     }
 
-    if (showQrDialog) {
-        QrCodeDialog(qrImageRes = R.drawable.qr_dummy, onDismiss = { showQrDialog = false })
+    val currentEvent = selectedEvent
+    if (showQrDialog && currentEvent != null) {
+        QrCodeDialog(
+            qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=ticket_${currentEvent.id}",
+            onDismiss = { showQrDialog = false }
+        )
     }
 }
 
@@ -146,9 +181,18 @@ fun RiwayatContent(
 ) {
     var selectedEvent by remember { mutableStateOf<HistoryEvent?>(null) }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)) {
-        items(historyEvents) { event ->
-            HistoryItemCard(event, onClick = { selectedEvent = event })
-            Spacer(modifier = Modifier.height(12.dp))
+        if (historyEvents.isEmpty()) {
+            item {
+                EmptyStateView(
+                    title = "Belum ada riwayat",
+                    subtitle = "Event yang sudah selesai akan muncul di sini"
+                )
+            }
+        } else {
+            items(historyEvents) { event ->
+                HistoryItemCard(event, onClick = { selectedEvent = event })
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }

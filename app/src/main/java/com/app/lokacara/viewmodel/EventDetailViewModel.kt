@@ -27,11 +27,11 @@ class EventDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var currentEventId: Long = 0
-    private var hostUserId: Long = 0
+    private var hostUserId: Long = 0L
 
     private val _event = MutableStateFlow(
         Event(
-            id = "", title = "Memuat...", description = "",
+            id = 0L, title = "Memuat...", description = "",
             date = "", location = "", price = "",
             imageUrl = null, category = "", isBookmarked = false,
             penyelenggara = ""
@@ -57,28 +57,38 @@ class EventDetailViewModel @Inject constructor(
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
 
+    private val _qrToken = MutableStateFlow<String?>(null)
+    val qrToken: StateFlow<String?> = _qrToken.asStateFlow()
+
     fun loadEvent(eventId: Long) {
         currentEventId = eventId
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            try {
+                val currentUserId = userSessionManager.userSession.first().userId
 
-            val currentUserId = userSessionManager.userSession.first().userId.toLong()
-
-            when (val result = repository.getEventDetail(eventId)) {
-                is ApiResult.Success -> {
-                    val detail = result.data
-                    _event.value = detail.event.toEvent(imageUrlProvider)
-                    _isRegistered.value = detail.is_registered
-                    hostUserId = detail.event.user?.id ?: 0L
-                    _isHost.value = hostUserId > 0 && hostUserId == currentUserId
-                    if (detail.is_registered) loadQrTicket()
+                when (val result = repository.getEventDetail(eventId)) {
+                    is ApiResult.Success -> {
+                        val detail = result.data
+                        val eventDto = detail.event
+                        if (eventDto != null) {
+                            _event.value = eventDto.toEvent(imageUrlProvider)
+                            hostUserId = eventDto.user?.id ?: 0L
+                            _isHost.value = hostUserId > 0 && hostUserId == currentUserId
+                            _isRegistered.value = detail.is_registered
+                            if (detail.is_registered) loadQrTicket()
+                        } else {
+                            _error.value = "Event tidak ditemukan"
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        _error.value = result.message
+                    }
                 }
-                is ApiResult.Error -> {
-                    _error.value = result.message
-                }
+            } catch (e: Exception) {
+                _error.value = "Gagal memuat detail event"
             }
-
             _isLoading.value = false
         }
     }
@@ -89,8 +99,8 @@ class EventDetailViewModel @Inject constructor(
             _isJoining.value = true
             _error.value = null
             _successMessage.value = null
-
-            safeApiCall { apiService.joinEvent(currentEventId) }.let { result ->
+            try {
+                safeApiCall { apiService.joinEvent(currentEventId) }.let { result ->
                 when (result) {
                     is ApiResult.Success -> {
                         _isRegistered.value = true
@@ -103,6 +113,9 @@ class EventDetailViewModel @Inject constructor(
                 }
             }
 
+            } catch (e: Exception) {
+                    _error.value = "Gagal bergabung event"
+                }
             _isJoining.value = false
         }
     }
@@ -113,8 +126,8 @@ class EventDetailViewModel @Inject constructor(
             _isJoining.value = true
             _error.value = null
             _successMessage.value = null
-
-            safeApiCall { apiService.leaveEvent(currentEventId) }.let { result ->
+            try {
+                safeApiCall { apiService.leaveEvent(currentEventId) }.let { result ->
                 when (result) {
                     is ApiResult.Success -> {
                         _isRegistered.value = false
@@ -126,6 +139,9 @@ class EventDetailViewModel @Inject constructor(
                 }
             }
 
+            } catch (e: Exception) {
+                    _error.value = "Gagal membatalkan pendaftaran"
+                }
             _isJoining.value = false
         }
     }
@@ -133,9 +149,13 @@ class EventDetailViewModel @Inject constructor(
     fun loadQrTicket() {
         if (currentEventId == 0L) return
         viewModelScope.launch {
-            when (safeApiCall { apiService.getQrTicket(currentEventId) }) {
-                is ApiResult.Success -> { }
-                is ApiResult.Error -> { }
+            when (val result = safeApiCall { apiService.getQrTicket(currentEventId) }) {
+                is ApiResult.Success -> {
+                    _qrToken.value = result.data.registration.qr_token
+                }
+                is ApiResult.Error -> {
+                    _error.value = result.message
+                }
             }
         }
     }

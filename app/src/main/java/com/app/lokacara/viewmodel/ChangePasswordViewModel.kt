@@ -2,8 +2,9 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +12,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ChangePasswordViewModel @Inject constructor() : ViewModel() {
+class ChangePasswordViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     val oldPassword = MutableStateFlow("")
     val newPassword = MutableStateFlow("")
@@ -51,9 +54,20 @@ class ChangePasswordViewModel @Inject constructor() : ViewModel() {
         }
         viewModelScope.launch {
             _isLoading.value = true
-            delay(500)
+            _errorMessage.value = null
+            when (val result = authRepository.changePassword(
+                oldPassword = oldPassword.value,
+                newPassword = newPassword.value,
+                newPasswordConfirmation = confirmPassword.value
+            )) {
+                is ApiResult.Success -> {
+                    _changeSuccess.value = true
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                }
+            }
             _isLoading.value = false
-            _changeSuccess.value = true
         }
     }
 

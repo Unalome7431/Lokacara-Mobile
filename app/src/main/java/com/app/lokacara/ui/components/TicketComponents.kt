@@ -1,7 +1,6 @@
 package com.app.lokacara.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,7 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.LocationOn
@@ -22,11 +21,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
@@ -100,15 +99,15 @@ fun BigTicketCard(
                         .clickable { onQrClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.qr_dummy),
+                    AsyncImage(
+                        model = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${uniqueCode.ifEmpty { "lokacara" }}",
                         contentDescription = "QR Code",
                         modifier = Modifier.fillMaxSize().padding(4.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text("Nama", fontSize = 12.sp, color = Secondary800, fontFamily = PlusJakartaSansFont)
+                    Text(stringResource(R.string.tickets_nama), fontSize = 12.sp, color = Secondary800, fontFamily = PlusJakartaSansFont)
                     Text(userName, fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.Bold, fontFamily = PlusJakartaSansFont)
                 }
             }
@@ -134,8 +133,8 @@ fun SmallUpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = event.imageUrl ?: R.drawable.candi,
-                contentDescription = null,
+                model = event.imageUrl,
+                contentDescription = event.title,
                 modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -181,7 +180,7 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
                     Text(event.category, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Icon(Icons.Default.ArrowForwardIos, null, modifier = Modifier.size(16.dp), tint = Gray600)
+            Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, "Detail", modifier = Modifier.size(16.dp), tint = Gray600)
         }
     }
 }
@@ -197,8 +196,8 @@ fun HistoryDetailDialog(
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
                 AsyncImage(
-                    model = event.imageUrl ?: R.drawable.candi,
-                    contentDescription = null,
+                    model = event.imageUrl,
+                    contentDescription = event.title,
                     modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -223,11 +222,11 @@ fun HistoryDetailDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Gray600)
+                    Icon(Icons.Outlined.CalendarToday, "Tanggal", modifier = Modifier.size(14.dp), tint = Gray600)
                             Text(" ${event.date} ${event.time}", fontSize = 12.sp, color = Gray600)
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = Gray600)
+                    Icon(Icons.Outlined.LocationOn, "Lokasi", modifier = Modifier.size(14.dp), tint = Gray600)
                             Text(" ${event.location}", fontSize = 12.sp, color = Gray600)
                         }
                     }
@@ -241,12 +240,12 @@ fun HistoryDetailDialog(
 }
 
 @Composable
-fun QrCodeDialog(qrImageRes: Int, onDismiss: () -> Unit) {
+fun QrCodeDialog(qrImageUrl: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.size(300.dp)) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = qrImageRes),
+                AsyncImage(
+                    model = qrImageUrl,
                     contentDescription = "Zoomed QR",
                     modifier = Modifier.fillMaxSize().padding(32.dp)
                 )

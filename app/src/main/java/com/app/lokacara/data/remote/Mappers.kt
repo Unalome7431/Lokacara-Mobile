@@ -13,13 +13,16 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
     val dateDisplay = start_datetime.take(10) // "2026-06-17"
 
     return Event(
-        id = id.toString(),
+        id = id,
         title = title,
         description = description,
         date = dateDisplay,
         location = location,
-        price = "Gratis",
-        imageUrl = imageUrlProvider.posterUrl(poster),
+        price = when {
+            price == null || price == 0 -> "Gratis"
+            else -> "Rp $price"
+        },
+        imageUrl = poster_url ?: imageUrlProvider.posterUrl(poster),
         category = categoryName,
         isBookmarked = false,
         penyelenggara = penyelenggara
@@ -36,7 +39,7 @@ fun RegistrationDto.toUpcomingEvent(imageUrlProvider: ImageUrlProvider): Upcomin
         time = e.start_datetime.substringAfter("T").take(8),
         location = location,
         type = e.type,
-        imageUrl = imageUrlProvider.posterUrl(e.poster)
+        imageUrl = e.poster_url ?: imageUrlProvider.posterUrl(e.poster)
     )
 }
 
@@ -51,6 +54,6 @@ fun RegistrationDto.toHistoryEvent(imageUrlProvider: ImageUrlProvider): HistoryE
         location = location,
         category = e.category?.name ?: "Lainnya",
         isBlueBg = false,
-        imageUrl = imageUrlProvider.posterUrl(e.poster)
+        imageUrl = e.poster_url ?: imageUrlProvider.posterUrl(e.poster)
     )
 }

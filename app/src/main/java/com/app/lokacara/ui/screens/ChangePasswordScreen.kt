@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.app.lokacara.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
@@ -72,7 +74,7 @@ fun ChangePasswordScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Ubah Kata Sandi",
+                text = stringResource(R.string.change_password_button),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -99,7 +101,7 @@ fun ChangePasswordScreen(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.LockReset,
-                    contentDescription = null,
+                    contentDescription = "Ubah Kata Sandi",
                     tint = Primary500,
                     modifier = Modifier.size(40.dp)
                 )
@@ -136,7 +138,7 @@ fun ChangePasswordScreen(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "Kata Sandi Lama",
+                        text = stringResource(R.string.change_password_old_label),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
@@ -147,14 +149,14 @@ fun ChangePasswordScreen(
                         value = oldPassword,
                         onValueChange = { viewModel.oldPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Masukkan kata sandi lama", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
+                        placeholder = { Text(stringResource(R.string.change_password_old_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (oldPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { viewModel.oldPasswordVisible.value = !viewModel.oldPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (oldPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = null,
+                                    contentDescription = "Tampilkan Kata Sandi",
                                     tint = Gray400
                                 )
                             }
@@ -172,7 +174,7 @@ fun ChangePasswordScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Kata Sandi Baru",
+                        text = stringResource(R.string.change_password_new_label),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
@@ -183,14 +185,14 @@ fun ChangePasswordScreen(
                         value = newPassword,
                         onValueChange = { viewModel.newPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Masukkan kata sandi baru", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
+                        placeholder = { Text(stringResource(R.string.change_password_new_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { viewModel.newPasswordVisible.value = !viewModel.newPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (newPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = null,
+                                    contentDescription = "Tampilkan Kata Sandi",
                                     tint = Gray400
                                 )
                             }
@@ -208,7 +210,7 @@ fun ChangePasswordScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Konfirmasi Kata Sandi Baru",
+                        text = stringResource(R.string.change_password_confirm_label),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
@@ -219,14 +221,14 @@ fun ChangePasswordScreen(
                         value = confirmPassword,
                         onValueChange = { viewModel.confirmPassword.value = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ulangi kata sandi baru", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
+                        placeholder = { Text(stringResource(R.string.change_password_confirm_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { viewModel.confirmPasswordVisible.value = !viewModel.confirmPasswordVisible.value }) {
                                 Icon(
                                     imageVector = if (confirmPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = null,
+                                    contentDescription = "Tampilkan Kata Sandi",
                                     tint = Gray400
                                 )
                             }

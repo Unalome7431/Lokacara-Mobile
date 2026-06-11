@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.data.remote.dto.LocationDto
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
@@ -22,16 +24,19 @@ class HomeViewModel @Inject constructor(
     private val imageUrlProvider: ImageUrlProvider
 ) : AndroidViewModel(application) {
 
-    val locations = repository.getLocations()
-    val categories = repository.getCategories()
+    private val _locations = MutableStateFlow<List<LocationDto>>(emptyList())
+    val locationNames: StateFlow<List<String>> = _locations.map { it.map { dto -> dto.name } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
+    val categoryNames: StateFlow<List<String>> = _categories.map { listOf("Semua") + it.map { dto -> dto.name } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi"))
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
-
-    private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
     private val _popularEvents = MutableStateFlow<List<Event>>(emptyList())
     val popularEvents: StateFlow<List<Event>> = _popularEvents.asStateFlow()
@@ -51,6 +56,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadData()
+        loadFilterData()
     }
 
     private fun loadData() {
@@ -64,7 +70,6 @@ class HomeViewModel @Inject constructor(
                     if (events.isNotEmpty()) {
                         _popularEvents.value = events.take(3)
                         _nearbyEvents.value = events
-                        _allEvents.value = events
                     }
                 }
                 is ApiResult.Error -> {
@@ -77,19 +82,42 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun refresh() {
-        loadData()
+    private fun loadFilterData() {
+        viewModelScope.launch {
+            val catResult = repository.getCategories()
+            if (catResult is ApiResult.Success) _categories.value = catResult.data
+
+            val locResult = repository.getLocations()
+            if (locResult is ApiResult.Success) _locations.value = locResult.data.data
+        }
     }
 
+    fun refresh() {
+        loadData()
+        loadFilterData()
+    }
+
+    private var bookmarkJob: kotlinx.coroutines.Job? = null
+
     private fun syncBookmarks() {
-        viewModelScope.launch {
+        bookmarkJob?.cancel()
+        bookmarkJob = viewModelScope.launch {
             bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
-                val sync: (List<Event>) -> List<Event> = { list ->
-                    list.map { it.copy(isBookmarked = it.id in bookmarkedIds) }
+                _nearbyEvents.value = _nearbyEvents.value.map { event ->
+                    val bookmarked = event.id.toString() in bookmarkedIds
+                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
                 }
-                _nearbyEvents.value = sync(_nearbyEvents.value)
-                _popularEvents.value = sync(_popularEvents.value)
+                _popularEvents.value = _popularEvents.value.map { event ->
+                    val bookmarked = event.id.toString() in bookmarkedIds
+                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
+                }
             }
+        }
+    }
+
+    fun toggleBookmark(eventId: String) {
+        viewModelScope.launch {
+            bookmarkManager.toggleBookmark(eventId)
         }
     }
 
@@ -99,11 +127,5 @@ class HomeViewModel @Inject constructor(
 
     fun updateCategory(category: String) {
         selectedCategory.value = category
-    }
-
-    fun toggleBookmark(eventId: String) {
-        viewModelScope.launch {
-            bookmarkManager.toggleBookmark(eventId)
-        }
     }
 }

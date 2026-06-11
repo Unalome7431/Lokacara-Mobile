@@ -13,17 +13,22 @@ suspend fun <T> safeApiCall(call: suspend () -> T): ApiResult<T> {
     return try {
         ApiResult.Success(call())
     } catch (e: HttpException) {
+        val code = e.code()
         val errorBody = e.response()?.errorBody()?.string()
-        val message = try {
-            Moshi.Builder().build()
-                .adapter(Map::class.java)
-                .fromJson(errorBody)
-                ?.let { it["message"] as? String ?: "Terjadi kesalahan" }
-                ?: "Terjadi kesalahan"
-        } catch (_: Exception) {
-            "Terjadi kesalahan"
+        val message = if (errorBody != null) {
+            try {
+                val map = Moshi.Builder().build()
+                    .adapter(Map::class.java)
+                    .fromJson(errorBody)
+                val msg = map?.get("message")?.toString()
+                if (!msg.isNullOrBlank()) msg else "Error $code"
+            } catch (_: Exception) {
+                "Error $code"
+            }
+        } else {
+            "Error $code"
         }
-        ApiResult.Error(message, e.code())
+        ApiResult.Error(message, code)
     } catch (e: IOException) {
         ApiResult.Error("Gagal terhubung ke server. Periksa koneksi internet Anda.")
     } catch (e: Exception) {

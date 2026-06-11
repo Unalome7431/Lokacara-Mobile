@@ -86,7 +86,7 @@ fun SavedEventsScreen(
                                 EventCard(
                                     event = event,
                                     onClick = {
-                                        navController.navigate(Screen.EventDetail.createRoute(event.id.toLongOrNull() ?: 0L))
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
                                     }
                                 )
                         }

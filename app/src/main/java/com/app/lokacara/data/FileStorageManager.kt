@@ -28,9 +28,10 @@ class FileStorageManager(private val context: Context) {
         return try {
             val dir = File(context.filesDir, subDir).also { it.mkdirs() }
             val file = File(dir, fileName)
-            context.contentResolver.openInputStream(uri)?.use { input ->
+            val input = context.contentResolver.openInputStream(uri) ?: return null
+            input.use { inputStream ->
                 file.outputStream().use { output ->
-                    input.copyTo(output)
+                    inputStream.copyTo(output)
                 }
             }
             file.absolutePath

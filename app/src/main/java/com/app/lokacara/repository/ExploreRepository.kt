@@ -2,6 +2,9 @@ package com.app.lokacara.repository
 
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.data.remote.dto.LocationDto
+import com.app.lokacara.data.remote.dto.LocationListResponse
 import com.app.lokacara.data.remote.dto.PaginatedEventsResponse
 import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
@@ -20,6 +23,11 @@ class ExploreRepository @Inject constructor(
         }
     }
 
-    fun getLocations() = listOf("Surabaya", "Surakarta", "Jakarta", "Semarang", "Yogyakarta")
-    fun getCategories() = listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik", "Teknologi")
+    suspend fun getCategories(): ApiResult<List<CategoryDto>> {
+        return safeApiCall { apiService.getCategories() }
+    }
+
+    suspend fun getLocations(): ApiResult<LocationListResponse> {
+        return safeApiCall { apiService.getLocations() }
+    }
 }

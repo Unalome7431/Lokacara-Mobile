@@ -1,5 +1,7 @@
 package com.app.lokacara.data.remote
 
+
+import android.util.Log
 import com.app.lokacara.data.UserSessionManager
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -35,7 +37,7 @@ object NetworkModule {
             .addInterceptor(authInterceptor)
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
+                    level = if (Log.isLoggable("OkHttp", Log.VERBOSE)) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
                 }
             )
             .connectTimeout(30, TimeUnit.SECONDS)

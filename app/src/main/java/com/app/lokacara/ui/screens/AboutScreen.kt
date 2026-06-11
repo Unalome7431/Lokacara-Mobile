@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
@@ -35,13 +36,8 @@ import com.app.lokacara.ui.theme.*
 fun AboutScreen(navController: NavController) {
     val scrollState = rememberScrollState()
     
-    val carouselImages = listOf(
-        R.drawable.candi,
-        R.drawable.seminar,
-        R.drawable.seminar_2,
-        R.drawable.seminar_3
-    )
-    val pagerState = rememberPagerState(pageCount = { carouselImages.size })
+    val carouselImages = emptyList<Int>()
+    val pagerState = rememberPagerState(pageCount = { maxOf(1, carouselImages.size) })
 
     Column(
         modifier = Modifier
@@ -91,19 +87,21 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp))
-        ) { page ->
-            Image(
-                painter = painterResource(id = carouselImages[page]),
-                contentDescription = "Carousel Image $page",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        if (carouselImages.isNotEmpty()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            ) { page ->
+                Image(
+                    painter = painterResource(id = carouselImages[page]),
+                    contentDescription = "Carousel Image $page",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -124,8 +122,14 @@ fun AboutScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        val context = LocalContext.current
         Button(
-            onClick = { },
+            onClick = {
+                val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                    data = android.net.Uri.parse("mailto:support@lokacara.my.id")
+                }
+                context.startActivity(intent)
+            },
             modifier = Modifier.align(Alignment.CenterHorizontally),
             colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             shape = RoundedCornerShape(24.dp)
