@@ -28,7 +28,10 @@ data class EventDto(
 
 data class CategoryDto(
     val id: Int,
-    val name: String
+    val name: String,
+    val slug: String = "",
+    val created_at: String? = null,
+    val updated_at: String? = null
 )
 
 data class EventUserDto(
