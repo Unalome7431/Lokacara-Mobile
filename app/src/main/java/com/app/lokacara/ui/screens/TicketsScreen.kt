@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
@@ -48,6 +52,17 @@ fun TicketsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     if (isLoading) {
         Box(Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Primary500)
@@ -57,7 +72,7 @@ fun TicketsScreen(
 
     if (error != null) {
         Box(Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
-            ErrorStateView(message = error ?: "", onRetry = { viewModel.loadDashboard() })
+            ErrorStateView(message = error ?: "", onRetry = { viewModel.refresh() })
         }
         return
     }
@@ -110,11 +125,25 @@ fun TicketsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (selectedTab == 0) MendatangContent(upcomingEvents) else RiwayatContent(
-            historyEvents = historyEvents,
-            downloadedCertIds = viewModel.downloadedCertIds.collectAsState().value,
-            onDownloadCert = { viewModel.downloadCertificate(it) }
-        )
+        if (selectedTab == 0) {
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                MendatangContent(upcomingEvents)
+            }
+        } else {
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                RiwayatContent(
+                    historyEvents = historyEvents,
+                    downloadedCertIds = viewModel.downloadedCertIds.collectAsState().value,
+                    onDownloadCert = { viewModel.downloadCertificate(it) }
+                )
+            }
+        }
     }
 }
 

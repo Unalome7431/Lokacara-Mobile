@@ -42,4 +42,10 @@ class AuthRepository @Inject constructor(
             )
         }
     }
+
+    suspend fun forgotPassword(email: String): ApiResult<MessageResponse> {
+        return safeApiCall {
+            apiService.forgotPassword(mapOf("email" to email.trim()))
+        }
+    }
 }

@@ -27,14 +27,10 @@ class ExploreViewModel @Inject constructor(
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
-    private val _locationSuggestions = MutableStateFlow<List<String>>(
-        listOf("Surabaya", "Surakarta", "Jakarta", "Semarang", "Yogyakarta")
-    )
+    private val _locationSuggestions = MutableStateFlow<List<String>>(emptyList())
     val locationSuggestions: StateFlow<List<String>> = _locationSuggestions.asStateFlow()
 
-    private val _categorySuggestions = MutableStateFlow<List<String>>(
-        listOf("Workshop", "Wanita", "Webinar", "Anime", "Musik", "Teknologi")
-    )
+    private val _categorySuggestions = MutableStateFlow<List<String>>(emptyList())
     val categorySuggestions: StateFlow<List<String>> = _categorySuggestions.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)

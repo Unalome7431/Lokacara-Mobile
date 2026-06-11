@@ -103,6 +103,38 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private val _forgotPasswordLoading = MutableStateFlow(false)
+    val forgotPasswordLoading: StateFlow<Boolean> = _forgotPasswordLoading.asStateFlow()
+
+    private val _forgotPasswordSuccess = MutableStateFlow(false)
+    val forgotPasswordSuccess: StateFlow<Boolean> = _forgotPasswordSuccess.asStateFlow()
+
+    private val _forgotPasswordError = MutableStateFlow<String?>(null)
+    val forgotPasswordError: StateFlow<String?> = _forgotPasswordError.asStateFlow()
+
+    fun forgotPassword(email: String) {
+        if (email.isBlank()) {
+            _forgotPasswordError.value = "Email harus diisi"
+            return
+        }
+        viewModelScope.launch {
+            _forgotPasswordLoading.value = true
+            _forgotPasswordError.value = null
+            when (val result = repository.forgotPassword(email.trim())) {
+                is ApiResult.Success -> {
+                    _forgotPasswordSuccess.value = true
+                    SnackbarManager.show("Link reset password telah dikirim ke email Anda")
+                }
+                is ApiResult.Error -> {
+                    _forgotPasswordError.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+            _forgotPasswordLoading.value = false
+        }
+    }
+
+    fun resetForgotPasswordSuccess() { _forgotPasswordSuccess.value = false }
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }
     fun clearError() { _errorMessage.value = null }

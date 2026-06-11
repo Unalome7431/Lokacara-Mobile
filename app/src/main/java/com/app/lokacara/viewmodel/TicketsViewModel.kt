@@ -52,6 +52,10 @@ class TicketsViewModel @Inject constructor(
         loadDashboard()
     }
 
+    fun refresh() {
+        loadDashboard()
+    }
+
     fun loadDashboard() {
         viewModelScope.launch {
             _isLoading.value = true

@@ -37,11 +37,25 @@ fun LoginScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsState()
+    val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsState()
+    val forgotPasswordError by viewModel.forgotPasswordError.collectAsState()
+
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var forgotEmail by remember { mutableStateOf("") }
 
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
             viewModel.resetLoginSuccess()
             onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(forgotPasswordSuccess) {
+        if (forgotPasswordSuccess) {
+            viewModel.resetForgotPasswordSuccess()
+            showForgotPasswordDialog = false
+            forgotEmail = ""
         }
     }
 
@@ -114,7 +128,7 @@ fun LoginScreen(
             color = Gray500,
             modifier = Modifier
                 .align(Alignment.End)
-                .clickable { }
+                .clickable { showForgotPasswordDialog = true }
                 .padding(vertical = 4.dp)
         )
 
@@ -176,6 +190,62 @@ fun LoginScreen(
             modifier = Modifier
                 .size(200.dp)
                 .padding(bottom = 100.dp)
+        )
+    }
+
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotPasswordDialog = false
+                forgotEmail = ""
+                viewModel.resetForgotPasswordSuccess()
+            },
+            title = { Text("Lupa Kata Sandi", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        "Masukkan email Anda untuk menerima link reset password.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = forgotEmail,
+                        onValueChange = { forgotEmail = it },
+                        placeholder = { Text("Email") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    forgotPasswordError?.let { err ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(err, color = SemanticErrorBase, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.forgotPassword(forgotEmail) },
+                    enabled = !forgotPasswordLoading,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                    shape = RoundedCornerShape(100.dp)
+                ) {
+                    if (forgotPasswordLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Kirim", color = Color.White)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showForgotPasswordDialog = false
+                    forgotEmail = ""
+                    viewModel.resetForgotPasswordSuccess()
+                }) {
+                    Text("Batal", color = Gray500)
+                }
+            }
         )
     }
 }

@@ -49,10 +49,12 @@ class HomeViewModel @Inject constructor(
     val selectedCategory = MutableStateFlow("Semua")
 
     val filteredEvents: StateFlow<List<Event>> = combine(
-        _nearbyEvents, selectedCategory
-    ) { events, category ->
-        if (category == "Semua") events
-        else events.filter { it.category == category }
+        _nearbyEvents, selectedCategory, selectedLocation
+    ) { events, category, location ->
+        events.filter { event ->
+            (category == "Semua" || event.category == category) &&
+            (location == "Solo" || event.location.contains(location, ignoreCase = true))
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

@@ -6,7 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -16,6 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.model.Event
@@ -51,13 +56,28 @@ fun HomeScreen(
         { eventId -> viewModel.toggleBookmark(eventId) }
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Primary500)
             }
             error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+            else -> PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             item(key = "header") {
                 HomeHeader(navController = navController)
@@ -94,6 +114,7 @@ fun HomeScreen(
 
             item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
         }
+            }
         }
     }
 }

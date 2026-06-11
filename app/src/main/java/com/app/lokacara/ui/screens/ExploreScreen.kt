@@ -6,11 +6,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
@@ -52,13 +56,28 @@ fun ExploreScreen(
         }
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Gray100)) {
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Primary500)
             }
             error != null -> ErrorStateView(message = error ?: "", onRetry = { viewModel.refresh() })
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+            else -> PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             item { ExploreHeader() }
 
@@ -117,6 +136,7 @@ fun ExploreScreen(
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
+            }
         }
     }
 }

@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,6 +20,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
@@ -31,6 +36,18 @@ fun BookmarkScreen(
     viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
 
@@ -56,23 +73,28 @@ fun BookmarkScreen(
             )
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp)
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { viewModel.refresh() }
         ) {
-            items(
-                items = savedEvents,
-                key = { it.id }
-            ) { event ->
-                EventCard(
-                    event = event,
-                    onBookmarkClick = {
-                        viewModel.toggleBookmark(event.id.toString())
-                    },
-                    onClick = {
-                        navController.navigate(Screen.EventDetail.createRoute(event.id))
-                    }
-                )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(
+                    items = savedEvents,
+                    key = { it.id }
+                ) { event ->
+                    EventCard(
+                        event = event,
+                        onBookmarkClick = {
+                            viewModel.toggleBookmark(event.id.toString())
+                        },
+                        onClick = {
+                            navController.navigate(Screen.EventDetail.createRoute(event.id))
+                        }
+                    )
+                }
             }
         }
     }
