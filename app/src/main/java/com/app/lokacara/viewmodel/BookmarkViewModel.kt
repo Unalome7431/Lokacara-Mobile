@@ -29,9 +29,6 @@ class BookmarkViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
     private val _savedEvents = MutableStateFlow<List<Event>>(emptyList())
     val savedEvents: StateFlow<List<Event>> = _savedEvents.asStateFlow()
 
@@ -42,21 +39,24 @@ class BookmarkViewModel @Inject constructor(
     private fun loadBookmarkedEvents() {
         viewModelScope.launch {
             _isLoading.value = true
-            _error.value = null
 
             val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
 
-            safeApiCall { apiService.getBookmarks() }.let { result ->
-                when (result) {
-                    is ApiResult.Success -> {
-                        val bookmarkedEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
-                        _savedEvents.value = bookmarkedEvents.map { event ->
-                            event.copy(isBookmarked = event.id.toString() in bookmarkedIds)
-                        }
-                    }
-                    is ApiResult.Error -> {
-                        _error.value = result.message
-                    }
+            if (bookmarkedIds.isEmpty()) {
+                _savedEvents.value = emptyList()
+                _isLoading.value = false
+                return@launch
+            }
+
+            // Fetch from feed and filter by local bookmarked IDs
+            when (val result = safeApiCall { apiService.getFeedEvents() }) {
+                is ApiResult.Success -> {
+                    _savedEvents.value = result.data.data
+                        .filter { it.id.toString() in bookmarkedIds }
+                        .map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
+                }
+                is ApiResult.Error -> {
+                    _savedEvents.value = emptyList()
                 }
             }
 
@@ -66,8 +66,10 @@ class BookmarkViewModel @Inject constructor(
 
     fun toggleBookmark(eventId: String) {
         viewModelScope.launch {
-            val currentlyBookmarked = _savedEvents.value.any { it.id.toString() == eventId }
-            if (currentlyBookmarked) {
+            val currentIds = bookmarkManager.bookmarkedIds.first()
+            val isRemoving = eventId in currentIds
+
+            if (isRemoving) {
                 _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
             }
             bookmarkManager.toggleBookmark(eventId)
