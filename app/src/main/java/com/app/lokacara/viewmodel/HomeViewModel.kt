@@ -11,6 +11,7 @@ import com.app.lokacara.data.remote.dto.LocationDto
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -117,7 +118,13 @@ class HomeViewModel @Inject constructor(
 
     fun toggleBookmark(eventId: String) {
         viewModelScope.launch {
+            val wasBookmarked = bookmarkManager.bookmarkedIds.first().contains(eventId)
             bookmarkManager.toggleBookmark(eventId)
+            if (wasBookmarked) {
+                SnackbarManager.show("Event dihapus dari bookmark")
+            } else {
+                SnackbarManager.show("Event disimpan")
+            }
         }
     }
 

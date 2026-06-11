@@ -8,6 +8,7 @@ import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -54,6 +55,7 @@ class SettingsViewModel @Inject constructor(
             when (val result = safeApiCall { apiService.deleteAccount() }) {
                 is ApiResult.Success -> {
                     _deleteSuccess.value = true
+                    SnackbarManager.show("Akun berhasil dihapus")
                 }
                 is ApiResult.Error -> {
                     _deleteError.value = result.message
@@ -66,6 +68,7 @@ class SettingsViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             userSessionManager.logout()
+            SnackbarManager.show("Anda telah logout")
         }
     }
 

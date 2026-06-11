@@ -13,6 +13,7 @@ import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
 import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -145,7 +146,10 @@ class ProfileViewModel @Inject constructor(
                 if (profile.location.isNotBlank()) body["location"] = profile.location
                 if (body.isEmpty()) return@launch
                 when (val result = repository.updateProfile(body)) {
-                    is ApiResult.Success -> { loadUserProfile() }
+                    is ApiResult.Success -> {
+                        loadUserProfile()
+                        SnackbarManager.show("Profil berhasil diperbarui")
+                    }
                     is ApiResult.Error -> { }
                 }
             } catch (_: Exception) { }
@@ -157,7 +161,10 @@ class ProfileViewModel @Inject constructor(
             _errorMessage.value = null
             val context = getApplication<Application>()
             when (val result = repository.uploadAvatar(context, uri)) {
-                is ApiResult.Success -> { loadUserProfile() }
+                is ApiResult.Success -> {
+                    loadUserProfile()
+                    SnackbarManager.show("Foto profil diperbarui")
+                }
                 is ApiResult.Error -> { _errorMessage.value = result.message }
             }
         }

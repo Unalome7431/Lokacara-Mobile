@@ -11,6 +11,7 @@ import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.MapLocation
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -185,9 +186,11 @@ class CreateEventViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     resetForm()
                     _publishSuccess.value = true
+                    SnackbarManager.show("Event berhasil diterbitkan")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
 

@@ -7,6 +7,7 @@ import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.repository.AuthRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,9 +60,11 @@ class AuthViewModel @Inject constructor(
                     )
                     settingsManager.setOnboardingCompleted()
                     _loginSuccess.value = true
+                    SnackbarManager.show("Login berhasil")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -90,6 +93,7 @@ class AuthViewModel @Inject constructor(
                     )
                     settingsManager.setOnboardingCompleted()
                     _registerSuccess.value = true
+                    SnackbarManager.show("Akun berhasil dibuat")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message

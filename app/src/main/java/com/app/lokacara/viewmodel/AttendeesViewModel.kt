@@ -6,6 +6,7 @@ import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AttendeeDto
 import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,7 @@ class AttendeesViewModel @Inject constructor(
                             checked_in_at = updated.checked_in_at
                         ) else it
                     }
+                    SnackbarManager.show("Peserta berhasil check-in")
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message

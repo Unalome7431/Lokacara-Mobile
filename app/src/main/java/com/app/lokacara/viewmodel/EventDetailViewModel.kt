@@ -10,6 +10,7 @@ import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.EventDetailRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,6 +106,7 @@ class EventDetailViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         _isRegistered.value = true
                         _successMessage.value = "Berhasil mendaftar event!"
+                        SnackbarManager.show("Berhasil mendaftar event")
                         loadQrTicket()
                     }
                     is ApiResult.Error -> {
@@ -132,6 +134,7 @@ class EventDetailViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         _isRegistered.value = false
                         _successMessage.value = "Berhasil membatalkan pendaftaran"
+                        SnackbarManager.show("Berhasil keluar dari event")
                     }
                     is ApiResult.Error -> {
                         _error.value = result.message

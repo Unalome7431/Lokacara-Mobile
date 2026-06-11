@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.repository.AuthRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,7 @@ class ChangePasswordViewModel @Inject constructor(
             )) {
                 is ApiResult.Success -> {
                     _changeSuccess.value = true
+                    SnackbarManager.show("Password berhasil diubah")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
