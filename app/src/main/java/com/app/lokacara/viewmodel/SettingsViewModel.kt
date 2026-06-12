@@ -45,6 +45,8 @@ class SettingsViewModel @Inject constructor(
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsManager.setNotificationsEnabled(enabled)
+            try { apiService.updateSettings(mapOf("notifications_enabled" to enabled)) } catch (_: Exception) {}
+            SnackbarManager.show(if (enabled) "Notifikasi diaktifkan" else "Notifikasi dinonaktifkan")
         }
     }
 

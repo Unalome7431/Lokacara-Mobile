@@ -1,10 +1,12 @@
 # Backend API — Bookmark & Notification Settings
 
-Dua endpoint tambahan untuk Android app agar bookmark dan preferensi notifikasi bisa sync ke server.
+Dua endpoint sudah diimplementasikan di server Laravel. Android app bisa panggil endpoint ini untuk sync bookmark dan preferensi notifikasi ke server.
 
 ---
 
 ## 1. Bookmark Toggle — `POST /api/bookmarks/{eventId}` & `DELETE /api/bookmarks/{eventId}`
+
+✅ **Status: Implemented** — `feat/bookmark-notif-api`
 
 ### Deskripsi
 Android app saat ini menyimpan bookmark hanya di DataStore lokal. Dua endpoint ini memungkinkan sync ke server, sehingga bookmark yang disimpan di Android juga muncul di web (dan sebaliknya).
@@ -63,13 +65,13 @@ Authorization: Bearer {token}
 ### Catatan
 - Endpoint ini **tidak mempengaruhi web flow yang sudah ada**. Web tetap pake form POST/redirect-nya sendiri.
 - `GET /api/bookmarks` yang sudah ada akan otomatis mencakup bookmark dari Android.
-- Server harus memvalidasi bahwa `eventId` adalah event yang valid (ada di database).
+- Route model binding Laravel dipakai (`Event $event`), jadi server otomatis memvalidasi bahwa event ada di database.
 
-### Kode Laravel
+### Kode Laravel (aktual)
 
 **Route — `routes/api.php`:**
 ```php
-use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\Api\BookmarkController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('bookmarks/{event}', [BookmarkController::class, 'store']);
@@ -77,18 +79,22 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 ```
 
-**Controller — `app/Http/Controllers/BookmarkController.php`:**
+**Controller — `app/Http/Controllers/Api/BookmarkController.php`:**
 ```php
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Models\Event;
+use App\Http\Controllers\Controller;
 use App\Models\Bookmark;
+use App\Models\Event;
 use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
 
 class BookmarkController extends Controller
 {
+    // ... index() sudah ada sebelumnya ...
+
     public function store(Request $request, Event $event)
     {
         $user = $request->user();
@@ -119,23 +125,33 @@ class BookmarkController extends Controller
 
 **Model — `app/Models/Bookmark.php`:**
 ```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable(['user_id', 'event_id'])]
 class Bookmark extends Model
 {
-    protected $fillable = ['user_id', 'event_id'];
+    use HasFactory;
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 }
 ```
 
-**Migration — tambah `bookmarks` table:**
+**Migration — `database/migrations/2026_06_09_154602_create_bookmarks_table.php`:**
 ```php
 Schema::create('bookmarks', function (Blueprint $table) {
     $table->id();
@@ -149,6 +165,8 @@ Schema::create('bookmarks', function (Blueprint $table) {
 ---
 
 ## 2. Update User Settings — `PATCH /api/user/settings`
+
+✅ **Status: Implemented** — `feat/bookmark-notif-api`
 
 ### Deskripsi
 Android app saat ini menyimpan preferensi notifikasi hanya secara lokal. Endpoint ini memungkinkan preferensi user disimpan di server.
@@ -183,41 +201,52 @@ Content-Type: application/json
 ```
 
 ### Catatan
-- Field `notifications_enabled` bisa ditambah ke tabel `users` atau dibuat tabel `user_settings` terpisah.
-- Pilihan: tambah kolom `notifications_enabled` di tabel `users` — lebih sederhana.
+- Kolom `notifications_enabled` ditambahkan langsung ke tabel `users` (tidak pakai tabel terpisah).
 - Android app akan memanggil endpoint ini setiap kali user mengubah toggle di Settings.
+- Endpoint ini ada di grup middleware `auth:sanctum`.
 
-### Kode Laravel
+### Kode Laravel (aktual)
 
 **Route — `routes/api.php`:**
 ```php
 Route::middleware('auth:sanctum')->patch('user/settings', [UserController::class, 'updateSettings']);
 ```
 
-**Controller — `app/Http/Controllers/UserController.php`:**
+**Controller — `app/Http/Controllers/Api/UserController.php`:**
 ```php
-public function updateSettings(Request $request)
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use OpenApi\Attributes as OA;
+
+class UserController extends Controller
 {
-    $validated = $request->validate([
-        'notifications_enabled' => 'required|boolean',
-    ]);
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'notifications_enabled' => 'required|boolean',
+        ]);
 
-    $user = $request->user();
-    $user->notifications_enabled = $validated['notifications_enabled'];
-    $user->save();
+        $user = $request->user();
+        $user->notifications_enabled = $validated['notifications_enabled'];
+        $user->save();
 
-    return response()->json([
-        'message' => 'Settings updated successfully',
-        'data' => [
-            'notifications_enabled' => (bool) $user->notifications_enabled,
-        ],
-    ]);
+        return response()->json([
+            'message' => 'Settings updated successfully',
+            'data' => [
+                'notifications_enabled' => (bool) $user->notifications_enabled,
+            ],
+        ]);
+    }
 }
 ```
 
-**Migration — tambah kolom ke tabel `users`:**
+**Migration — `database/migrations/2026_06_12_000000_add_notifications_enabled_to_users_table.php`:**
 ```php
 Schema::table('users', function (Blueprint $table) {
-    $table->boolean('notifications_enabled')->default(true)->after('remember_token');
+    $table->boolean('notifications_enabled')->default(true)->after('location');
 });
 ```

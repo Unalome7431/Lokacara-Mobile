@@ -102,9 +102,19 @@ interface ApiService {
     @GET("api/bookmarks")
     suspend fun getBookmarks(): BookmarkListResponse
 
+    @POST("api/bookmarks/{event}")
+    suspend fun addBookmark(@Path("event") eventId: Long): MessageResponse
+
+    @DELETE("api/bookmarks/{event}")
+    suspend fun removeBookmark(@Path("event") eventId: Long): MessageResponse
+
     // ── Config ──
     @GET("api/config/tabs")
     suspend fun getConfigTabs(): ConfigTabsResponse
+
+    // ── User Settings ──
+    @PATCH("api/user/settings")
+    suspend fun updateSettings(@Body body: Map<String, Boolean>): MessageResponse
 
     // ── Organizer ──
     @GET("api/organizer/events")

@@ -73,6 +73,14 @@ class BookmarkViewModel @Inject constructor(
                 _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
             }
             bookmarkManager.toggleBookmark(eventId)
+            val idLong = eventId.toLongOrNull()
+            if (idLong != null) {
+                if (isRemoving) {
+                    try { apiService.removeBookmark(idLong) } catch (_: Exception) {}
+                } else {
+                    try { apiService.addBookmark(idLong) } catch (_: Exception) {}
+                }
+            }
         }
     }
 

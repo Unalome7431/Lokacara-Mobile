@@ -12,6 +12,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.toEvent
@@ -31,7 +32,8 @@ class HomeViewModel @Inject constructor(
     application: Application,
     private val repository: HomeRepository,
     private val bookmarkManager: BookmarkManager,
-    private val imageUrlProvider: ImageUrlProvider
+    private val imageUrlProvider: ImageUrlProvider,
+    private val apiService: ApiService
 ) : AndroidViewModel(application) {
 
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
@@ -175,6 +177,14 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val wasBookmarked = bookmarkManager.bookmarkedIds.first().contains(eventId)
             bookmarkManager.toggleBookmark(eventId)
+            val idLong = eventId.toLongOrNull()
+            if (idLong != null) {
+                if (wasBookmarked) {
+                    try { apiService.removeBookmark(idLong) } catch (_: Exception) {}
+                } else {
+                    try { apiService.addBookmark(idLong) } catch (_: Exception) {}
+                }
+            }
             if (wasBookmarked) {
                 SnackbarManager.show("Event dihapus dari bookmark")
             } else {
