@@ -1,5 +1,7 @@
 package com.app.lokacara.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,6 +27,8 @@ import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import kotlinx.coroutines.launch
 
 @Composable
@@ -78,16 +83,27 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        val scope = rememberCoroutineScope()
-        val snackbarHostState = remember { SnackbarHostState() }
+        val context = LocalContext.current
+        val googleSignInOptions = remember {
+            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken("837483630487-tprpp5te2r42nldqdtddk1618l9nkqdh.apps.googleusercontent.com")
+                .build()
+        }
+        val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
+        val googleLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            account.result?.let { acct ->
+                acct.idToken?.let { idToken ->
+                    viewModel.loginWithGoogle(idToken)
+                }
+            }
+        }
 
         GoogleButton(
             text = stringResource(R.string.auth_login_google),
-            onClick = {
-                scope.launch {
-                    snackbarHostState.showSnackbar("Google Sign-In belum tersedia")
-                }
-            }
+            onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))

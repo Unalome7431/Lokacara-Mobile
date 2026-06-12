@@ -134,6 +134,35 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun loginWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            when (val result = repository.loginWithGoogle(idToken)) {
+                is ApiResult.Success -> {
+                    val auth = result.data
+                    val user = auth.user
+                    val userId = user?.id ?: 0L
+                    userSessionManager.saveAuth(
+                        token = auth.token ?: "",
+                        userId = userId,
+                        name = user?.name ?: "",
+                        email = user?.email ?: "",
+                        role = user?.role ?: ""
+                    )
+                    settingsManager.setOnboardingCompleted()
+                    _loginSuccess.value = true
+                    SnackbarManager.show("Login berhasil")
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun resetForgotPasswordSuccess() { _forgotPasswordSuccess.value = false }
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }

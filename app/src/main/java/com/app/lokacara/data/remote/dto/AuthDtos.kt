@@ -42,3 +42,7 @@ data class ProfileResponse(
 data class RefreshTokenResponse(
     val token: String
 )
+
+data class GoogleLoginRequest(
+    val token: String
+)

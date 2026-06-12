@@ -3,6 +3,7 @@ package com.app.lokacara.repository
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AuthResponse
+import com.app.lokacara.data.remote.dto.GoogleLoginRequest
 import com.app.lokacara.data.remote.dto.LoginRequest
 import com.app.lokacara.data.remote.dto.MessageResponse
 import com.app.lokacara.data.remote.dto.RegisterRequest
@@ -46,6 +47,12 @@ class AuthRepository @Inject constructor(
     suspend fun forgotPassword(email: String): ApiResult<MessageResponse> {
         return safeApiCall {
             apiService.forgotPassword(mapOf("email" to email.trim()))
+        }
+    }
+
+    suspend fun loginWithGoogle(idToken: String): ApiResult<AuthResponse> {
+        return safeApiCall {
+            apiService.loginWithGoogle(GoogleLoginRequest(token = idToken))
         }
     }
 }
