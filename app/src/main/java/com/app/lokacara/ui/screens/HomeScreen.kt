@@ -3,6 +3,10 @@ package com.app.lokacara.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -18,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.model.Event
+import com.app.lokacara.ui.components.EventCardCompact
 import com.app.lokacara.ui.components.HomeHeader
 import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
@@ -35,7 +40,7 @@ fun HomeScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val groupedEvents by viewModel.groupedEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
-    val categoryNames by viewModel.categoryNames.collectAsState()
+    val nearbyEvents by viewModel.nearbyEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentLocation by viewModel.currentLocationName.collectAsState()
@@ -76,12 +81,21 @@ fun HomeScreen(
             }
 
             item(key = "nearby_header") {
-                NearbyEventsHeader(
-                    selectedCategory = selectedCategory,
-                    categories = categoryNames,
-                    onCategoryChange = { viewModel.updateCategory(it) },
-                    currentLocation = currentLocation
-                )
+                NearbyEventsHeader(currentLocation = currentLocation)
+            }
+
+            if (nearbyEvents.isNotEmpty()) {
+                item(key = "nearby_events") {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(nearbyEvents, key = { it.id }) { event ->
+                            EventCardCompact(event = event, onClick = { onEventClick(event) })
+                        }
+                    }
+                }
             }
 
             val sortedCategories = if (selectedCategory == "Semua") groupedEvents.keys.toList()
@@ -90,14 +104,15 @@ fun HomeScreen(
             items(items = sortedCategories, key = { it }) { categoryName ->
                 val events = groupedEvents[categoryName] ?: emptyList()
                 if (events.isNotEmpty()) {
+                    val onSeeAll = {
+                        viewModel.updateCategory(categoryName)
+                        navController.navigate(Screen.Explore.route)
+                    }
                     CategoryEventSection(
                         categoryName = categoryName,
                         events = events,
                         onEventClick = onEventClick,
-                        onSeeAll = {
-                            viewModel.updateCategory(categoryName)
-                            // Optional: navigate to Explore with category filter
-                        }
+                        onSeeAll = onSeeAll
                     )
                 }
             }

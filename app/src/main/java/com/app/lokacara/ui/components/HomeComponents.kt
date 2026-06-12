@@ -177,14 +177,11 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
 @Composable
 fun NearbyEventsHeader(
-    selectedCategory: String,
-    categories: List<String>,
-    onCategoryChange: (String) -> Unit,
     currentLocation: String = "Sekitar Anda"
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
-            text = "EVENT TERDEKAT DI SEKITAR ANDA",
+            text = "Event terdekat di sekitar anda",
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
@@ -195,27 +192,6 @@ fun NearbyEventsHeader(
                 text = currentLocation,
                 style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
             )
-        }
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(categories, key = { it }) { category ->
-                val isSelected = category == selectedCategory
-                Surface(
-                    color = if (isSelected) Secondary500 else Gray100.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.clickable { onCategoryChange(category) }
-                ) {
-                    Text(
-                        text = category,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                        color = if (isSelected) Color.White else Gray900,
-                        style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 14.sp)
-                    )
-                }
-            }
         }
     }
 }

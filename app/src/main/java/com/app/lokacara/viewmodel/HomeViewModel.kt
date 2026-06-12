@@ -49,6 +49,20 @@ class HomeViewModel @Inject constructor(
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
     val currentLocationName = MutableStateFlow("Sekitar Anda")
+    private val _currentLatLng = MutableStateFlow<Pair<Double, Double>?>(null)
+
+    val nearbyEvents: StateFlow<List<Event>> = combine(
+        _allEvents, _currentLatLng
+    ) { events, latLng ->
+        if (latLng == null) events.take(5)
+        else events.sortedBy { event ->
+            if (event.latitude != null && event.longitude != null) {
+                val dx = event.latitude - latLng.first
+                val dy = event.longitude - latLng.second
+                dx * dx + dy * dy // squared distance approximation
+            } else Double.MAX_VALUE
+        }.take(5)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val selectedCategory = MutableStateFlow("Semua")
 
@@ -72,6 +86,7 @@ class HomeViewModel @Inject constructor(
                 val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if (location != null) {
+                    _currentLatLng.value = Pair(location.latitude, location.longitude)
                     val city = withContext(Dispatchers.IO) {
                         try {
                             val geocoder = Geocoder(getApplication())

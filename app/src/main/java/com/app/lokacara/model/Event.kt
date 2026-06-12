@@ -13,5 +13,7 @@ data class Event(
     val imageUrl: String? = null,
     val category: String,
     val isBookmarked: Boolean = false,
-    val penyelenggara: String = ""
+    val penyelenggara: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

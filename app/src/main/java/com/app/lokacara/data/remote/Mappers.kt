@@ -25,7 +25,9 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         imageUrl = poster_url ?: imageUrlProvider.posterUrl(poster),
         category = categoryName,
         isBookmarked = false,
-        penyelenggara = penyelenggara
+        penyelenggara = penyelenggara,
+        latitude = latitude,
+        longitude = longitude
     )
 }
 
