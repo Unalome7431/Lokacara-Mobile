@@ -81,11 +81,13 @@ fun LokacaraTextField(
 @Composable
 fun GoogleButton(
     text: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.fillMaxWidth().height(48.dp),
         shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, Gray300),

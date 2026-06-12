@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.AuthViewModel
@@ -40,6 +41,7 @@ fun RegisterScreen(
     val name by viewModel.name.collectAsState()
     val email by viewModel.email.collectAsState()
     val password by viewModel.password.collectAsState()
+    val confirmPassword by viewModel.confirmPassword.collectAsState()
     val isChecked by viewModel.isChecked.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -82,16 +84,21 @@ fun RegisterScreen(
         val googleLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            account.result?.let { acct ->
-                acct.idToken?.let { idToken ->
-                    viewModel.loginWithGoogle(idToken)
+            try {
+                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                account.result?.let { acct ->
+                    acct.idToken?.let { idToken ->
+                        viewModel.loginWithGoogle(idToken)
+                    }
                 }
+            } catch (e: Exception) {
+                SnackbarManager.showError("Gagal login dengan Google")
             }
         }
 
         GoogleButton(
             text = "Daftar dengan Google",
+            enabled = !isLoading,
             onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
         )
 
@@ -130,6 +137,15 @@ fun RegisterScreen(
             value = password,
             onValueChange = { viewModel.password.value = it },
             placeholder = "Kata Sandi",
+            isPassword = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LokacaraTextField(
+            value = confirmPassword,
+            onValueChange = { viewModel.confirmPassword.value = it },
+            placeholder = "Konfirmasi Kata Sandi",
             isPassword = true
         )
 

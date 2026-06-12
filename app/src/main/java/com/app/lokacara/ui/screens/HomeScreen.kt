@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,8 +27,7 @@ import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
 import com.app.lokacara.ui.components.EmptyStateView
 import com.app.lokacara.ui.components.ErrorStateView
-import com.app.lokacara.ui.theme.LokacaraMobileTheme
-import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.*
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.HomeViewModel
 
@@ -52,10 +52,18 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         when {
-            isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            isLoading && filteredEvents.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Primary500)
             }
             error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
+            filteredEvents.isEmpty() -> PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Tidak ada event ditemukan", fontFamily = NunitoFont, color = Gray500)
+                }
+            }
             else -> PullToRefreshBox(
                 isRefreshing = isLoading,
                 onRefresh = { viewModel.refresh() }

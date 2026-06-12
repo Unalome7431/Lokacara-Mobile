@@ -31,7 +31,7 @@ class HomeViewModel @Inject constructor(
 
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
     val categoryNames: StateFlow<List<String>> = _categories.map { listOf("Semua") + it.map { dto -> dto.name } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi"))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Semua"))
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

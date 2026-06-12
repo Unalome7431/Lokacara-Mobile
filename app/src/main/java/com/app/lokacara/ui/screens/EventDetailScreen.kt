@@ -359,7 +359,6 @@ fun EventDetailScreen(
             }
             val chooser = android.content.Intent.createChooser(shareIntent, context.getString(R.string.event_detail_share_title))
             context.startActivity(chooser)
-            android.widget.Toast.makeText(context, "Link berhasil disalin", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 }

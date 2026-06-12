@@ -84,7 +84,7 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val pageCount = popularEvents.size * 400
+    val pageCount = popularEvents.size * 10
     val initialPage = pageCount / 2
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pageCount })
 

@@ -14,6 +14,7 @@ import com.app.lokacara.data.remote.toHistoryEvent
 import com.app.lokacara.data.remote.toUpcomingEvent
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.repository.TicketsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -129,6 +130,7 @@ class TicketsViewModel @Inject constructor(
                             }
                         }
                         _downloadedCertIds.value = _downloadedCertIds.value + event.id
+                        SnackbarManager.show("Sertifikat berhasil diunduh")
                     }
                     is ApiResult.Error -> {
                         _error.value = res.message

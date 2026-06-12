@@ -26,6 +26,7 @@ class AuthViewModel @Inject constructor(
     val name = MutableStateFlow("")
     val email = MutableStateFlow("")
     val password = MutableStateFlow("")
+    val confirmPassword = MutableStateFlow("")
     val isChecked = MutableStateFlow(false)
 
     private val _isLoading = MutableStateFlow(false)
@@ -42,6 +43,11 @@ class AuthViewModel @Inject constructor(
 
     fun login() {
         if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
+        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
+        if (!emailRegex.matches(email.value.trim())) {
+            _errorMessage.value = "Format email tidak valid"
+            return
+        }
         if (password.value.isBlank()) { _errorMessage.value = "Kata sandi harus diisi"; return }
         viewModelScope.launch {
             _errorMessage.value = null
@@ -74,24 +80,19 @@ class AuthViewModel @Inject constructor(
     fun register() {
         if (name.value.isBlank()) { _errorMessage.value = "Nama harus diisi"; return }
         if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
+        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
+        if (!emailRegex.matches(email.value.trim())) {
+            _errorMessage.value = "Format email tidak valid"
+            return
+        }
         if (password.value.length < 6) { _errorMessage.value = "Kata sandi minimal 6 karakter"; return }
+        if (password.value != confirmPassword.value) { _errorMessage.value = "Password dan konfirmasi password tidak sama"; return }
         if (!isChecked.value) { _errorMessage.value = "Anda harus menyetujui syarat & ketentuan"; return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
             when (val result = repository.register(name.value.trim(), email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
-                    val auth = result.data
-                    val user = auth.user
-                    val userId = user?.id ?: 0L
-                    userSessionManager.saveAuth(
-                        token = auth.token ?: "",
-                        userId = userId,
-                        name = user?.name ?: "",
-                        email = user?.email ?: "",
-                        role = user?.role ?: ""
-                    )
-                    settingsManager.setOnboardingCompleted()
                     _registerSuccess.value = true
                     SnackbarManager.show("Akun berhasil dibuat")
                 }
@@ -115,6 +116,11 @@ class AuthViewModel @Inject constructor(
     fun forgotPassword(email: String) {
         if (email.isBlank()) {
             _forgotPasswordError.value = "Email harus diisi"
+            return
+        }
+        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
+        if (!emailRegex.matches(email.trim())) {
+            _forgotPasswordError.value = "Format email tidak valid"
             return
         }
         viewModelScope.launch {
@@ -171,6 +177,7 @@ class AuthViewModel @Inject constructor(
         name.value = ""
         email.value = ""
         password.value = ""
+        confirmPassword.value = ""
         isChecked.value = false
     }
 }

@@ -73,9 +73,9 @@ fun ExploreScreen(
                         eventName = eventName,
                         onEventNameChange = { viewModel.eventName.value = it; viewModel.searchWithDebounce(it) },
                         eventLocation = eventLocation,
-                        onEventLocationChange = { viewModel.eventLocation.value = it },
+                        onEventLocationChange = { viewModel.eventLocation.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
                         eventCategory = eventCategory,
-                        onEventCategoryChange = { viewModel.eventCategory.value = it },
+                        onEventCategoryChange = { viewModel.eventCategory.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
                         locationSuggestions = locationSuggestions,
                         categorySuggestions = categorySuggestions,
                         onSearchSubmit = {
@@ -92,7 +92,7 @@ fun ExploreScreen(
                 item {
                     HotLabelSection(
                         selectedCategory = selectedCategoryChip,
-                        onCategorySelected = { viewModel.selectedCategoryChip.value = it },
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
                         allCategories = categorySuggestions
                     )
                 }
@@ -100,7 +100,7 @@ fun ExploreScreen(
                 item {
                     ExploreCategories(
                         selectedCategory = selectedCategoryChip,
-                        onCategorySelected = { viewModel.selectedCategoryChip.value = it },
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
                         allCategories = categorySuggestions
                     )
                 }

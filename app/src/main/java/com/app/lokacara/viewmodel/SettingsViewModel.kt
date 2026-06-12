@@ -67,6 +67,7 @@ class SettingsViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            try { apiService.logout() } catch (_: Exception) {}
             userSessionManager.logout()
             SnackbarManager.show("Anda telah logout")
         }

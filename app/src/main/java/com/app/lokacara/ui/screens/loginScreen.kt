@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.viewmodel.AuthViewModel
@@ -48,6 +49,10 @@ fun LoginScreen(
 
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetForm()
+    }
 
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
@@ -93,16 +98,21 @@ fun LoginScreen(
         val googleLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            account.result?.let { acct ->
-                acct.idToken?.let { idToken ->
-                    viewModel.loginWithGoogle(idToken)
+            try {
+                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                account.result?.let { acct ->
+                    acct.idToken?.let { idToken ->
+                        viewModel.loginWithGoogle(idToken)
+                    }
                 }
+            } catch (e: Exception) {
+                SnackbarManager.showError("Gagal login dengan Google")
             }
         }
 
         GoogleButton(
             text = stringResource(R.string.auth_login_google),
+            enabled = !isLoading,
             onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
         )
 

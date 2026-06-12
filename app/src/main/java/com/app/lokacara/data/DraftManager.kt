@@ -24,7 +24,8 @@ data class EventDraft(
     val kuota: Int = 50,
     val selectedCategoryId: Int? = null,
     val latitude: String = "",
-    val longitude: String = ""
+    val longitude: String = "",
+    val posterUriString: String = ""
 )
 
 class DraftManager(private val context: Context) {
@@ -41,6 +42,7 @@ class DraftManager(private val context: Context) {
         val CATEGORY_ID = intPreferencesKey("draft_category_id")
         val LATITUDE = stringPreferencesKey("draft_latitude")
         val LONGITUDE = stringPreferencesKey("draft_longitude")
+        val POSTER_URI = stringPreferencesKey("draft_poster_uri")
         val HAS_DRAFT = booleanPreferencesKey("draft_has")
     }
 
@@ -64,6 +66,7 @@ class DraftManager(private val context: Context) {
             else prefs.remove(CATEGORY_ID)
             prefs[LATITUDE] = draft.latitude
             prefs[LONGITUDE] = draft.longitude
+            prefs[POSTER_URI] = draft.posterUriString
         }
     }
 
@@ -82,7 +85,8 @@ class DraftManager(private val context: Context) {
             kuota = prefs[KUOTA] ?: 50,
             selectedCategoryId = prefs[CATEGORY_ID],
             latitude = prefs[LATITUDE] ?: "",
-            longitude = prefs[LONGITUDE] ?: ""
+            longitude = prefs[LONGITUDE] ?: "",
+            posterUriString = prefs[POSTER_URI] ?: ""
         )
     }
 

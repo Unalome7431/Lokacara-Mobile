@@ -8,11 +8,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,23 +62,29 @@ fun BookmarkScreen(
             isRefreshing = isLoading,
             onRefresh = { viewModel.refresh() }
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                items(
-                    items = savedEvents,
-                    key = { it.id }
-                ) { event ->
-                    EventCard(
-                        event = event,
-                        onBookmarkClick = {
-                            viewModel.toggleBookmark(event.id.toString())
-                        },
-                        onClick = {
-                            navController.navigate(Screen.EventDetail.createRoute(event.id))
-                        }
-                    )
+            if (savedEvents.isEmpty() && !isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Belum ada event tersimpan", fontFamily = NunitoFont, color = Gray500)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(
+                        items = savedEvents,
+                        key = { it.id }
+                    ) { event ->
+                        EventCard(
+                            event = event,
+                            onBookmarkClick = {
+                                viewModel.toggleBookmark(event.id.toString())
+                            },
+                            onClick = {
+                                navController.navigate(Screen.EventDetail.createRoute(event.id))
+                            }
+                        )
+                    }
                 }
             }
         }

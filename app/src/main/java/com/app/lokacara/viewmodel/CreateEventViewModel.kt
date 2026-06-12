@@ -102,6 +102,7 @@ class CreateEventViewModel @Inject constructor(
             selectedCategoryId.value = draft.selectedCategoryId
             latitude.value = draft.latitude
             longitude.value = draft.longitude
+            // Poster URI excluded from draft restore — content:// URIs expire
             SnackbarManager.show("Draf dimuat")
         }
     }
@@ -121,7 +122,8 @@ class CreateEventViewModel @Inject constructor(
                     kuota = kuota.value,
                     selectedCategoryId = selectedCategoryId.value,
                     latitude = latitude.value,
-                    longitude = longitude.value
+                    longitude = longitude.value,
+                    posterUriString = posterUri.value?.toString() ?: ""
                 )
             )
             _hasDraft.value = true
@@ -169,9 +171,17 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Nama event harus diisi"
             return
         }
+        if (title.length > 255) {
+            _errorMessage.value = "Nama event maksimal 255 karakter"
+            return
+        }
         val desc = deskripsi.value.trim()
         if (desc.isBlank()) {
             _errorMessage.value = "Deskripsi event harus diisi"
+            return
+        }
+        if (desc.length > 5000) {
+            _errorMessage.value = "Deskripsi event maksimal 5000 karakter"
             return
         }
 
@@ -187,7 +197,11 @@ class CreateEventViewModel @Inject constructor(
                     _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
                     return
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                _errorMessage.value = "Format tanggal tidak valid"
+                _isLoading.value = false
+                return
+            }
         }
 
         val latStr = latitude.value.trim()
@@ -253,9 +267,12 @@ class CreateEventViewModel @Inject constructor(
                                 if (scaled !== bitmap) scaled.recycle()
                                 bitmap.recycle()
                             }
-                        } catch (_: Exception) {}
+                        } catch (_: Exception) {
+                            return@withContext null
+                        }
                     }
-                    MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody("image/jpeg".toMediaTypeOrNull()))
+                    val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
+                    MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
                 }
             }
 
@@ -296,6 +313,7 @@ class CreateEventViewModel @Inject constructor(
     private fun formatToApiDatetime(input: String): String {
         if (input.isBlank()) {
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
             return sdf.format(java.util.Date())
         }
         return input
@@ -303,15 +321,24 @@ class CreateEventViewModel @Inject constructor(
 
     /* end start closer to +1hr if not set */
     private fun formatEndApiDatetime(startInput: String, endInput: String): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
         if (startInput.isBlank() && endInput.isBlank()) {
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
             return sdf.format(cal.time)
         }
         if (endInput.isBlank()) {
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            if (startInput.isNotBlank()) {
+                try {
+                    val startDate = sdf.parse(startInput)
+                    val cal = java.util.Calendar.getInstance()
+                    cal.time = startDate
+                    cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
+                    return sdf.format(cal.time)
+                } catch (_: Exception) {}
+            }
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
