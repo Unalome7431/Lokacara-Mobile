@@ -109,25 +109,20 @@ class CreateEventViewModel @Inject constructor(
 
     fun saveDraft() {
         viewModelScope.launch {
-            draftManager.saveDraft(
-                EventDraft(
-                    namaEvent = namaEvent.value,
-                    penyelenggara = penyelenggara.value,
-                    waktuMulai = waktuMulai.value,
-                    waktuSelesai = waktuSelesai.value,
-                    isOnline = isOnline.value,
-                    aplikasiTempat = aplikasiTempat.value,
-                    alamat = alamat.value,
-                    deskripsi = deskripsi.value,
-                    kuota = kuota.value,
-                    selectedCategoryId = selectedCategoryId.value,
-                    latitude = latitude.value,
-                    longitude = longitude.value,
-                    posterUriString = posterUri.value?.toString() ?: ""
-                )
-            )
+            draftManager.saveDraft(currentDraft())
             _hasDraft.value = true
             SnackbarManager.show("Draf tersimpan")
+        }
+    }
+
+    fun saveDraftAndExit(onExit: () -> Unit) {
+        viewModelScope.launch {
+            if (hasMeaningfulDraft()) {
+                draftManager.saveDraft(currentDraft())
+                _hasDraft.value = true
+                SnackbarManager.show("Draf tersimpan")
+            }
+            onExit()
         }
     }
 
@@ -420,4 +415,35 @@ class CreateEventViewModel @Inject constructor(
 
     fun resetPublishSuccess() { _publishSuccess.value = false }
     fun clearError() { _errorMessage.value = null }
+
+    private fun currentDraft(): EventDraft = EventDraft(
+        namaEvent = namaEvent.value,
+        penyelenggara = penyelenggara.value,
+        waktuMulai = waktuMulai.value,
+        waktuSelesai = waktuSelesai.value,
+        isOnline = isOnline.value,
+        aplikasiTempat = aplikasiTempat.value,
+        alamat = alamat.value,
+        deskripsi = deskripsi.value,
+        kuota = kuota.value,
+        selectedCategoryId = selectedCategoryId.value,
+        latitude = latitude.value,
+        longitude = longitude.value,
+        posterUriString = posterUri.value?.toString() ?: ""
+    )
+
+    private fun hasMeaningfulDraft(): Boolean {
+        return namaEvent.value.isNotBlank() ||
+            waktuMulai.value.isNotBlank() ||
+            waktuSelesai.value.isNotBlank() ||
+            !isOnline.value ||
+            aplikasiTempat.value.isNotBlank() ||
+            alamat.value.isNotBlank() ||
+            deskripsi.value.isNotBlank() ||
+            kuota.value != 50 ||
+            selectedCategoryId.value != null ||
+            latitude.value.isNotBlank() ||
+            longitude.value.isNotBlank() ||
+            posterUri.value != null
+    }
 }
