@@ -18,6 +18,7 @@ import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
 import com.app.lokacara.ui.components.SnackbarManager
+import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -81,23 +82,42 @@ class HomeViewModel @Inject constructor(
 
     private fun autoDetectLocation() {
         viewModelScope.launch {
-            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                val locationManager = getApplication<Application>().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (location != null) {
-                    _currentLatLng.value = Pair(location.latitude, location.longitude)
-                    val city = withContext(Dispatchers.IO) {
-                        try {
-                            val geocoder = Geocoder(getApplication())
-                            val addresses: List<Address> = geocoder.getFromLocation(location.latitude, location.longitude, 1) ?: emptyList()
-                            if (addresses.isNotEmpty()) addresses[0].locality else null
-                        } catch (_: Exception) { null }
+            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return@launch
+
+            // Try FusedLocationProvider first
+            try {
+                val fusedClient = LocationServices.getFusedLocationProviderClient(getApplication())
+                fusedClient.lastLocation.addOnSuccessListener { loc ->
+                    if (loc != null) {
+                        _currentLatLng.value = Pair(loc.latitude, loc.longitude)
+                        viewModelScope.launch { resolveCityName(loc.latitude, loc.longitude) }
                     }
-                    if (!city.isNullOrBlank()) currentLocationName.value = city
                 }
+            } catch (_: Exception) {}
+
+            // Fallback to LocationManager
+            val location = try {
+                val mgr = getApplication<Application>().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                mgr.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: mgr.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            } catch (_: Exception) { null }
+
+            if (location != null && _currentLatLng.value == null) {
+                _currentLatLng.value = Pair(location.latitude, location.longitude)
+                resolveCityName(location.latitude, location.longitude)
             }
         }
+    }
+
+    private suspend fun resolveCityName(lat: Double, lng: Double) {
+        val city = withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(getApplication())
+                val addresses = geocoder.getFromLocation(lat, lng, 1) ?: emptyList()
+                if (addresses.isNotEmpty()) addresses[0].locality ?: addresses[0].subAdminArea ?: addresses[0].adminArea else null
+            } catch (_: Exception) { null }
+        }
+        if (!city.isNullOrBlank()) currentLocationName.value = city
     }
 
     private fun loadData() {
