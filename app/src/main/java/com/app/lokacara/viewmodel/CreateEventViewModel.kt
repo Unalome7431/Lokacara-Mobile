@@ -197,11 +197,7 @@ class CreateEventViewModel @Inject constructor(
             return
         }
         if (!isOnline.value && (latStr.isBlank() || lngStr.isBlank())) {
-            _errorMessage.value = "Untuk event offline, pilih lokasi menggunakan peta atau tombol 'Gunakan Lokasi Saat Ini'"
-            return
-        }
-        if (!isOnline.value && aplikasiTempat.value.isBlank()) {
-            _errorMessage.value = "Nama tempat harus diisi"
+            _errorMessage.value = "Untuk lokasi offline belum dipilih. Gunakan peta atau tombol 'Gunakan Lokasi Saat Ini'"
             return
         }
 

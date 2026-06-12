@@ -627,13 +627,7 @@ fun CategoryDropdownField(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = Gray800
-        )
+        Text(text = label, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Gray800)
         Surface(
             modifier = Modifier.fillMaxWidth().clickable { showDialog = true },
             shape = RoundedCornerShape(16.dp),
@@ -647,15 +641,9 @@ fun CategoryDropdownField(
                 Text(
                     text = selectedCategoryName.ifEmpty { "Pilih Kategori" },
                     color = if (selectedCategoryName.isEmpty()) Gray500 else Gray900,
-                    fontSize = 14.sp,
-                    fontFamily = NunitoFont
+                    fontSize = 14.sp, fontFamily = NunitoFont
                 )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Dropdown",
-                    tint = SvgOrange,
-                    modifier = Modifier.size(24.dp)
-                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = SvgOrange, modifier = Modifier.size(24.dp))
             }
         }
     }
@@ -663,9 +651,7 @@ fun CategoryDropdownField(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = {
-                Text("Pilih Kategori", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            },
+            title = { Text("Pilih Kategori", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
@@ -674,28 +660,22 @@ fun CategoryDropdownField(
                     categories.forEach { cat ->
                         val isSelected = selectedCategoryName == cat.name
                         Surface(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                onCategorySelected(cat)
-                                showDialog = false
-                            },
+                            modifier = Modifier.fillMaxWidth().clickable { onCategorySelected(cat); showDialog = false },
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) Primary500.copy(alpha = 0.1f) else Color.Transparent
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = cat.name,
-                                    fontFamily = NunitoFont,
-                                    fontSize = 15.sp,
+                                    fontFamily = NunitoFont, fontSize = 15.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) Primary500 else Gray900
                                 )
-                                if (isSelected) {
-                                    Icon(Icons.Default.Check, contentDescription = "Selected", tint = Primary500, modifier = Modifier.size(20.dp))
-                                }
+                                if (isSelected) Icon(Icons.Default.Check, "Selected", tint = Primary500, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -703,7 +683,7 @@ fun CategoryDropdownField(
             },
             confirmButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Tutup", color = Primary500, fontWeight = FontWeight.Bold)
+                    Text("Tutup", fontWeight = FontWeight.Bold)
                 }
             }
         )
