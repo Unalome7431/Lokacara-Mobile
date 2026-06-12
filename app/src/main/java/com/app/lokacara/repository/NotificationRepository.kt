@@ -1,18 +1,15 @@
 package com.app.lokacara.repository
 
-import com.app.lokacara.model.NotificationItem
-import com.app.lokacara.model.NotificationType
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.dto.NotificationListResponse
+import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
 
-class NotificationRepository @Inject constructor() {
-    fun getNotifications(): List<NotificationItem> {
-        return listOf(
-            NotificationItem("1", "Velengio", "mengikuti Event mu", "Jumat, 15:00", "Hari ini", NotificationType.SOCIAL, false),
-            NotificationItem("2", "Velengio", "menyimpan Event mu", "Jumat, 17:00", "Hari ini", NotificationType.SOCIAL, false),
-            NotificationItem("3", "Daffa", "mengikuti Event mu", "Kamis", "Minggu Ini", NotificationType.SOCIAL, true),
-
-            NotificationItem("4", "", "Pendaftaran Berhasil! Tiket Workshop AI kamu sudah terbit.", "Jumat, 10:00", "Hari ini", NotificationType.SYSTEM, false),
-            NotificationItem("5", "", "H-1 Event: Siapkan dirimu! Fullstack Workshop dimulai besok pagi.", "Rabu", "Minggu Ini", NotificationType.SYSTEM, true)
-        )
+class NotificationRepository @Inject constructor(
+    private val apiService: ApiService
+) {
+    suspend fun getNotifications(): ApiResult<NotificationListResponse> {
+        return safeApiCall { apiService.getNotifications() }
     }
 }

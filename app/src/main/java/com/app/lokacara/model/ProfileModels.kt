@@ -8,7 +8,7 @@ data class MyEventData(
     val date: String,
     val attendees: String,
     val status: String,
-    val imageRes: Int
+    val imageUrl: String? = null
 )
 
 @Immutable
@@ -19,7 +19,7 @@ data class CertificateData(
     val time: String,
     val location: String,
     val category: String,
-    val imageRes: Int,
+    val imageUrl: String? = null,
     val filePath: String? = null
 )
 
@@ -29,5 +29,5 @@ data class UserProfile(
     val email: String,
     val phone: String,
     val location: String,
-    val profileImageRes: Int? = null
+    val profileImageUrl: String? = null
 )

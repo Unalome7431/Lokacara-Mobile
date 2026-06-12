@@ -4,21 +4,23 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class UpcomingEvent(
+    val id: Long = 0,
     val title: String,
     val date: String,
     val time: String,
     val location: String,
     val type: String,
-    val imageRes: Int
+    val imageUrl: String? = null
 )
 
 @Immutable
 data class HistoryEvent(
+    val id: Long = 0,
     val title: String,
     val date: String,
     val time: String,
     val location: String,
     val category: String,
     val isBlueBg: Boolean,
-    val imageRes: Int
+    val imageUrl: String? = null
 )

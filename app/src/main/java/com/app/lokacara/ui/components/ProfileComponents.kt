@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,12 +36,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.material.icons.outlined.Group
 
 @Composable
 fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
@@ -59,7 +62,7 @@ fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = title,
                 tint = Primary500,
                 modifier = Modifier.size(20.dp)
             )
@@ -75,7 +78,7 @@ fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
         Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = null,
+            contentDescription = "Navigasi",
             tint = Gray400,
             modifier = Modifier.size(20.dp)
         )
@@ -110,7 +113,7 @@ fun ProfileDetailItem(label: String, value: String) {
 
 @Composable
 fun EmptyEventState(
-    text: String = "Belum Membuat Event\nCoba Disini",
+    text: String = stringResource(R.string.empty_no_events),
     onClick: () -> Unit
 ) {
     val stroke = Stroke(
@@ -157,9 +160,9 @@ fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Image(
-                painter = painterResource(id = event.imageRes),
-                contentDescription = null,
+            AsyncImage(
+                model = event.imageUrl,
+                contentDescription = event.title,
                 modifier = Modifier
                     .size(110.dp)
                     .clip(RoundedCornerShape(16.dp)),
@@ -182,7 +185,7 @@ fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 MyEventDetailItem(Icons.Outlined.CalendarToday, event.date)
-                MyEventDetailItem(Icons.Outlined.LocationOn, event.attendees)
+                MyEventDetailItem(Icons.Outlined.Group, event.attendees)
 
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -203,7 +206,7 @@ fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
 @Composable
 fun MyEventDetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(13.dp))
+        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
@@ -235,21 +238,12 @@ fun CertificateCard(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
             ) {
-                if (cert.filePath != null) {
-                    AsyncImage(
-                        model = cert.filePath,
-                        contentDescription = "Full Certificate",
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = cert.imageRes),
-                        contentDescription = "Full Certificate",
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth
-                    )
-                }
+                AsyncImage(
+                    model = cert.imageUrl ?: cert.filePath,
+                    contentDescription = "Full Certificate",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
+                )
             }
         }
     }
@@ -265,27 +259,15 @@ fun CertificateCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            if (cert.filePath != null) {
-                AsyncImage(
-                    model = cert.filePath,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = cert.imageRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            AsyncImage(
+                model = cert.imageUrl ?: cert.filePath,
+                contentDescription = cert.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -354,7 +336,7 @@ fun CertificateCard(
 @Composable
 fun CertDetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(14.dp))
+        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(14.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,

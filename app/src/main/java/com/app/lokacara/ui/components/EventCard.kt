@@ -1,6 +1,6 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,13 +18,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
@@ -32,9 +33,10 @@ import com.app.lokacara.ui.theme.*
 fun EventCard(
     event: Event,
     onBookmarkClick: () -> Unit = {},
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    showBookmark: Boolean = true
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 10.dp)
@@ -42,13 +44,17 @@ fun EventCard(
                 if (onClick != null) mod.clickable { onClick() } else mod
             },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        color = Color.White,
+        shadowElevation = 2.dp
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Image(
-                painter = painterResource(id = event.imageRes),
-                contentDescription = null,
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(event.imageUrl)
+                    .size(110)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = event.title,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -62,21 +68,23 @@ fun EventCard(
 
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.ConfirmationNumber, contentDescription = null, tint = Secondary500, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Outlined.ConfirmationNumber, contentDescription = "Tiket", tint = Secondary500, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(event.price, color = Secondary500, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, fontSize = 14.sp))
                     }
 
-                    val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
+                    if (showBookmark) {
+                        val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
 
-                    Icon(
-                        imageVector = bookmarkIcon,
-                        contentDescription = "Simpan Event",
-                        tint = Gray900,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onBookmarkClick() }
-                    )
+                        Icon(
+                            imageVector = bookmarkIcon,
+                            contentDescription = "Bookmark",
+                            tint = Gray900,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable { onBookmarkClick() }
+                        )
+                    }
                 }
             }
         }
@@ -86,8 +94,70 @@ fun EventCard(
 @Composable
 private fun DetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(13.dp))
+        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(text, color = Gray600, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
+    }
+}
+
+@Composable
+fun EventCardCompact(
+    event: Event,
+    onClick: () -> Unit = {}
+) {
+    Surface(
+        modifier = Modifier
+            .width(150.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Column {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(event.imageUrl)
+                    .size(150)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = event.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    text = event.title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Gray900,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = event.date,
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 11.sp,
+                    color = Gray500,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+@Composable
+private fun EventCardPreview() {
+    LokacaraMobileTheme {
+        EventCard(
+            event = Event(
+                id = 1L, title = "Test Event", description = "Desc", date = "12 Jun 2026",
+                location = "Surakarta", price = "Gratis", imageUrl = null, category = "Teknologi"
+            )
+        )
     }
 }

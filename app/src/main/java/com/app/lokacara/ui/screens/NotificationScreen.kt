@@ -22,6 +22,8 @@ import androidx.navigation.NavController
 import com.app.lokacara.ui.components.NotificationCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.NotificationViewModel
+import androidx.compose.ui.res.stringResource
+import com.app.lokacara.R
 
 @Composable
 fun NotificationScreen(
@@ -30,7 +32,10 @@ fun NotificationScreen(
 ) {
     val selectedTab by viewModel.selectedTab.collectAsState()
     val notifications by viewModel.filteredNotifications.collectAsState(initial = emptyList())
-    val tabs = listOf("Aktivitas", "Informasi")
+    val tabs = listOf(
+        stringResource(R.string.tab_notifications_activity),
+        stringResource(R.string.tab_notifications_info)
+    )
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
 

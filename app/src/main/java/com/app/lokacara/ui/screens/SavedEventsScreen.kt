@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,12 +26,12 @@ import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
-import com.app.lokacara.viewmodel.ProfileViewModel
+import com.app.lokacara.viewmodel.BookmarkViewModel
 
 @Composable
 fun SavedEventsScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -70,25 +71,31 @@ fun SavedEventsScreen(
                     color = Primary500
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 100.dp)
+                PullToRefreshBox(
+                    isRefreshing = isLoading,
+                    onRefresh = { viewModel.refresh() }
                 ) {
-                    if (savedEvents.isEmpty()) {
-                        item {
-                            EmptyEventState(
-                                text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                                onClick = { navController.navigate(Screen.Explore.route) }
-                            )
-                        }
-                    } else {
-                        items(savedEvents) { event ->
-                            EventCard(
-                                event = event,
-                                onClick = {
-                                    navController.navigate(Screen.EventDetail.route)
-                                }
-                            )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        if (savedEvents.isEmpty()) {
+                            item {
+                                EmptyEventState(
+                                    text = "Belum Ada Event Tersimpan\nCari Event Disini",
+                                    onClick = { navController.navigate(Screen.Explore.route) }
+                                )
+                            }
+                        } else {
+                            items(savedEvents) { event ->
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                )
+                            }
                         }
                     }
                 }

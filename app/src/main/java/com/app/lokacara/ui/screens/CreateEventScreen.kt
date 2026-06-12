@@ -1,20 +1,67 @@
 package com.app.lokacara.ui.screens
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,16 +72,32 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import coil.compose.AsyncImage
-import com.app.lokacara.ui.theme.*
+import androidx.compose.ui.unit.DpOffset
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.ui.theme.Gray500
+import com.app.lokacara.ui.theme.Gray600
+import com.app.lokacara.ui.theme.Gray800
+import com.app.lokacara.ui.theme.Gray900
+import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.SemanticErrorBase
+import com.app.lokacara.ui.theme.SvgBackground
+import com.app.lokacara.ui.theme.SvgOrange
+import com.app.lokacara.ui.theme.SvgPrimaryBlue
+import com.app.lokacara.ui.components.MapSearchPicker
+import com.app.lokacara.ui.components.MapLocation
 import com.app.lokacara.viewmodel.CreateEventViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +107,8 @@ fun CreateEventScreen(
     viewModel: CreateEventViewModel = hiltViewModel()
 ) {
     val namaEvent by viewModel.namaEvent.collectAsState()
-    val kategori by viewModel.kategori.collectAsState()
+    val selectedCategoryName by viewModel.selectedCategoryName.collectAsState()
+    val categories by viewModel.categories.collectAsState()
     val penyelenggara by viewModel.penyelenggara.collectAsState()
     val waktuMulai by viewModel.waktuMulai.collectAsState()
     val waktuSelesai by viewModel.waktuSelesai.collectAsState()
@@ -55,11 +119,13 @@ fun CreateEventScreen(
     val kuota by viewModel.kuota.collectAsState()
     val posterUri by viewModel.posterUri.collectAsState()
     val publishSuccess by viewModel.publishSuccess.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val hasDraft by viewModel.hasDraft.collectAsState()
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.posterUri.value = it } }
-    val errorMessage by viewModel.errorMessage.collectAsState()
 
     LaunchedEffect(publishSuccess) {
         if (publishSuccess) {
@@ -71,12 +137,120 @@ fun CreateEventScreen(
     val lightBlueBg = Color(0xFFD6E4FF)
     val darkerBlueBg = Color(0xFFA1C1FF)
 
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var tempStartDateMillis by remember { mutableLongStateOf(0L) }
+
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+    var tempEndDateMillis by remember { mutableLongStateOf(0L) }
+
+    if (showStartDatePicker) {
+        val datePickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showStartDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        tempStartDateMillis = millis
+                        showStartDatePicker = false
+                        showStartTimePicker = true
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartDatePicker = false }) { Text("Batal") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showStartTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = 12,
+            initialMinute = 0,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showStartTimePicker = false },
+            title = { Text("Pilih Waktu Mulai", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempStartDateMillis)
+                    val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                    viewModel.setDateTime(isStart = true, date = dateStr, time = timeStr)
+                    showStartTimePicker = false
+                    tempStartDateMillis = 0L
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartTimePicker = false; tempStartDateMillis = 0L }) { Text("Batal") }
+            }
+        )
+    }
+
+    if (showEndDatePicker) {
+        val datePickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        tempEndDateMillis = millis
+                        showEndDatePicker = false
+                        showEndTimePicker = true
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker = false }) { Text("Batal") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showEndTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = 12,
+            initialMinute = 0,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showEndTimePicker = false },
+            title = { Text("Pilih Waktu Selesai", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempEndDateMillis)
+                    val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                    viewModel.setDateTime(isStart = false, date = dateStr, time = timeStr)
+                    showEndTimePicker = false
+                    tempEndDateMillis = 0L
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndTimePicker = false; tempEndDateMillis = 0L }) { Text("Batal") }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(SvgBackground)
             .verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 24.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Row(
@@ -106,8 +280,48 @@ fun CreateEventScreen(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = SvgOrange,
-                modifier = Modifier.clickable { }
+                modifier = Modifier.clickable { viewModel.saveDraft() }
             )
+        }
+
+        if (hasDraft) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = SvgOrange.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Ada draf tersimpan",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = SvgOrange
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Lanjutkan",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = SvgPrimaryBlue,
+                            modifier = Modifier.clickable { viewModel.loadDraft() }
+                        )
+                        Text(
+                            text = "Hapus",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = SemanticErrorBase,
+                            modifier = Modifier.clickable { viewModel.deleteDraft() }
+                        )
+                    }
+                }
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -190,11 +404,11 @@ fun CreateEventScreen(
             containerColor = lightBlueBg
         )
 
-        CreateEventTextField(
-            value = kategori,
-            onValueChange = { viewModel.kategori.value = it },
+        CategoryDropdownField(
+            selectedCategoryName = selectedCategoryName,
+            categories = categories,
+            onCategorySelected = { viewModel.selectedCategoryId.value = it.id },
             label = "Kategori",
-            placeholder = "Kategori",
             containerColor = lightBlueBg
         )
 
@@ -218,21 +432,17 @@ fun CreateEventScreen(
                 )
             }
         ) {
-            CreateEventTextField(
-                value = waktuMulai,
-                onValueChange = { viewModel.waktuMulai.value = it },
+            DatePickerField(
+                value = if (waktuMulai.isNotBlank()) viewModel.getDisplayDateTime(waktuMulai) else "",
+                onClick = { showStartDatePicker = true },
                 label = "Mulai",
-                placeholder = "mm/dd/yyyy, --:--",
-                containerColor = Color.White,
-                labelSize = 14.sp
+                placeholder = "dd MMM yyyy, --:--"
             )
-            CreateEventTextField(
-                value = waktuSelesai,
-                onValueChange = { viewModel.waktuSelesai.value = it },
+            DatePickerField(
+                value = if (waktuSelesai.isNotBlank()) viewModel.getDisplayDateTime(waktuSelesai) else "",
+                onClick = { showEndDatePicker = true },
                 label = "Selesai",
-                placeholder = "mm/dd/yyyy, --:--",
-                containerColor = Color.White,
-                labelSize = 14.sp
+                placeholder = "dd MMM yyyy, --:--"
             )
         }
 
@@ -246,22 +456,30 @@ fun CreateEventScreen(
                     CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.isOnline.value = it })
                 }
             ) {
-                CreateEventTextField(
-                    value = aplikasiTempat,
-                    onValueChange = { viewModel.aplikasiTempat.value = it },
-                    label = if (isOnline) "Aplikasi" else "Tempat",
-                    placeholder = if (isOnline) "nama aplikasi" else "nama tempat",
-                    containerColor = Color.White,
-                    labelSize = 14.sp
-                )
-                CreateEventTextField(
-                    value = alamat,
-                    onValueChange = { viewModel.alamat.value = it },
-                    label = "Alamat/Link",
-                    placeholder = "uns.id/ivogamteng",
-                    containerColor = Color.White,
-                    labelSize = 14.sp
-                )
+                if (isOnline) {
+                    CreateEventTextField(
+                        value = aplikasiTempat,
+                        onValueChange = { viewModel.aplikasiTempat.value = it },
+                        label = "Aplikasi",
+                        placeholder = "nama aplikasi",
+                        containerColor = Color.White,
+                        labelSize = 14.sp
+                    )
+                    CreateEventTextField(
+                        value = alamat,
+                        onValueChange = { viewModel.alamat.value = it },
+                        label = "Link",
+                        placeholder = "uns.id/ivogamteng",
+                        containerColor = Color.White,
+                        labelSize = 14.sp
+                    )
+                } else {
+                    MapSearchPicker(
+                        onLocationSelected = { location ->
+                            viewModel.setLocationFromMap(location)
+                        }
+                    )
+                }
             }
 
             SectionContainer(
@@ -277,7 +495,7 @@ fun CreateEventScreen(
                         .height(200.dp),
                     placeholder = {
                         Text(
-                            text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet,",
+                            text = "Deskripsikan event Anda secara detail...",
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 12.sp,
                             color = Gray500
@@ -321,29 +539,154 @@ fun CreateEventScreen(
 
         Button(
             onClick = { viewModel.publish() },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = SvgPrimaryBlue,
+                disabledContainerColor = SvgPrimaryBlue.copy(alpha = 0.6f)
+            ),
             shape = RoundedCornerShape(28.dp)
         ) {
-            Text(
-                text = "Terbitkan Event",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Outlined.FileUpload,
-                contentDescription = "Publish",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Menerbitkan...",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = "Terbitkan Event",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Outlined.FileUpload,
+                    contentDescription = "Publish",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun DatePickerField(
+    value: String,
+    onClick: () -> Unit,
+    label: String,
+    placeholder: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = label,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            color = Gray800
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = value.ifBlank { placeholder },
+                color = if (value.isBlank()) Gray500 else Gray900,
+                fontSize = 14.sp,
+                fontFamily = NunitoFont
+            )
+        }
+    }
+}
+
+@Composable
+fun CategoryDropdownField(
+    selectedCategoryName: String,
+    categories: List<CategoryDto>,
+    onCategorySelected: (CategoryDto) -> Unit,
+    label: String,
+    containerColor: Color
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = label, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Gray800)
+        Surface(
+            modifier = Modifier.fillMaxWidth().clickable { showDialog = true },
+            shape = RoundedCornerShape(16.dp),
+            color = containerColor
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = selectedCategoryName.ifEmpty { "Pilih Kategori" },
+                    color = if (selectedCategoryName.isEmpty()) Gray500 else Gray900,
+                    fontSize = 14.sp, fontFamily = NunitoFont
+                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = SvgOrange, modifier = Modifier.size(24.dp))
+            }
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Pilih Kategori", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    categories.forEach { cat ->
+                        val isSelected = selectedCategoryName == cat.name
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clickable { onCategorySelected(cat); showDialog = false },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Primary500.copy(alpha = 0.1f) else Color.Transparent
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = cat.name,
+                                    fontFamily = NunitoFont, fontSize = 15.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) Primary500 else Gray900
+                                )
+                                if (isSelected) Icon(Icons.Default.Check, "Selected", tint = Primary500, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Tutup", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 

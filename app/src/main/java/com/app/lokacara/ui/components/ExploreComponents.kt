@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.navigation.Screen
@@ -63,8 +66,8 @@ fun CollapsedSearchBar(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Mencari nama, lokasi, kategori event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500))
-            Icon(Icons.Outlined.Search, null, tint = Primary500)
+            Text(stringResource(R.string.explore_search_placeholder), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500))
+            Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
         }
     }
 }
@@ -78,11 +81,11 @@ fun HotLabelSection(selectedCategory: String, onCategorySelected: (String) -> Un
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Lagi Ramai", style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500))
+        Text(stringResource(R.string.explore_hot_label), style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500))
 
         Box {
             IconButton(onClick = { showMenu = true }) {
-                Icon(Icons.Outlined.FilterList, null, tint = Gray900)
+                Icon(Icons.Outlined.FilterList, "Filter", tint = Gray900)
             }
             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(Color.White)) {
                 allCategories.forEach { category ->
@@ -115,7 +118,7 @@ fun ExpandedSearchSection(
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = eventName, onValueChange = onEventNameChange,
-                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)) },
+                placeholder = { Text(stringResource(R.string.explore_search_name), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)) },
                 textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(8.dp), colors = textFieldColors, singleLine = true,
@@ -127,13 +130,13 @@ fun ExpandedSearchSection(
                 modifier = Modifier.size(56.dp).border(1.dp, Primary500, RoundedCornerShape(8.dp)).background(Color.White, RoundedCornerShape(8.dp)).clickable { onSearchSubmit() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Outlined.Search, null, tint = Primary500)
+                Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        AutocompleteField(eventLocation, onEventLocationChange, "Lokasi Event", Icons.Outlined.LocationOn, locationSuggestions, focusManager, textFieldColors)
+        AutocompleteField(eventLocation, onEventLocationChange, stringResource(R.string.explore_search_location), Icons.Outlined.LocationOn, locationSuggestions, focusManager, textFieldColors)
         Spacer(modifier = Modifier.height(16.dp))
-        AutocompleteField(eventCategory, onEventCategoryChange, "Kategori", Icons.Outlined.FormatListBulleted, categorySuggestions, focusManager, textFieldColors)
+        AutocompleteField(eventCategory, onEventCategoryChange, stringResource(R.string.explore_search_category), Icons.AutoMirrored.Outlined.FormatListBulleted, categorySuggestions, focusManager, textFieldColors)
     }
 }
 
@@ -148,8 +151,8 @@ fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholde
             value = value, onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray500) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
-            trailingIcon = { Icon(icon, null, tint = Primary500) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(), shape = RoundedCornerShape(8.dp),
+            trailingIcon = { Icon(icon, "Dropdown", tint = Primary500) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable), shape = RoundedCornerShape(8.dp),
             colors = colors, singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
@@ -169,16 +172,10 @@ fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholde
 }
 
 @Composable
-fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit) {
-    val row1 = listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi")
-    val row2 = listOf("Olahraga", "Bisnis", "Seni", "Webinar")
-    Column(modifier = Modifier.padding(bottom = 12.dp)) {
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-            items(row1) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
-        }
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(row2) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
-        }
+fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit, allCategories: List<String>) {
+    val categories = listOf("Semua") + allCategories
+    LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+        items(categories) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
     }
 }
 
@@ -190,11 +187,36 @@ fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun EmptyStateView() {
+fun EmptyStateView(
+    title: String? = null,
+    subtitle: String? = null
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Outlined.SentimentDissatisfied, null, tint = Gray400, modifier = Modifier.size(64.dp))
+        Icon(Icons.Outlined.SentimentDissatisfied, "Tidak Ditemukan", tint = Gray400, modifier = Modifier.size(64.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Yahh.. Event tidak ditemukan", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray600)
-        Text("Coba gunakan kata kunci atau kategori lain", textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 40.dp, vertical = 8.dp), color = Gray500, fontSize = 14.sp)
+        Text(title ?: stringResource(R.string.empty_events_not_found), fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray600)
+        Text(subtitle ?: stringResource(R.string.empty_events_try_other), textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 40.dp, vertical = 8.dp), color = Gray500, fontSize = 14.sp)
+    }
+}
+
+@Composable
+fun ErrorStateView(
+    message: String,
+    onRetry: (() -> Unit)? = null
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Outlined.ErrorOutline, "Error", tint = SemanticErrorBase, modifier = Modifier.size(64.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(message, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray600)
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onRetry,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+            ) {
+                Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
     }
 }

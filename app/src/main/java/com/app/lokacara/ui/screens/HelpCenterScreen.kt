@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,13 +30,21 @@ fun HelpCenterScreen(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
-    val faqs = listOf(
-        "Bagaimana cara membuat event?" to "Anda dapat membuat event dengan menekan tombol '+' di navbar bawah dan mengisi detail event yang diperlukan.",
-        "Bagaimana cara membeli tiket?" to "Cari event yang Anda inginkan di halaman Explore, lalu tekan tombol 'Beli Tiket' dan ikuti langkah pembayarannya.",
-        "Di mana saya bisa melihat sertifikat?" to "Sertifikat dapat dilihat di menu Profile > Sertifikat Saya setelah Anda menyelesaikan event terkait.",
-        "Bagaimana cara membatalkan pesanan tiket?" to "Pembatalan tiket dapat dilakukan melalui menu Tiket Saya sebelum batas waktu yang ditentukan oleh penyelenggara.",
-        "Apakah data saya aman?" to "Ya, kami berkomitmen untuk melindungi privasi dan keamanan data Anda sesuai dengan kebijakan privasi kami."
-    )
+    val allFaqs = remember {
+        listOf(
+            "Bagaimana cara membuat event?" to "Anda dapat membuat event dengan menekan tombol '+' di navbar bawah dan mengisi detail event yang diperlukan.",
+            "Bagaimana cara membeli tiket?" to "Cari event yang Anda inginkan di halaman Explore, lalu tekan tombol 'Beli Tiket' dan ikuti langkah pembayarannya.",
+            "Di mana saya bisa melihat sertifikat?" to "Sertifikat dapat dilihat di menu Profile > Sertifikat Saya setelah Anda menyelesaikan event terkait.",
+            "Bagaimana cara membatalkan pesanan tiket?" to "Pembatalan tiket dapat dilakukan melalui menu Tiket Saya sebelum batas waktu yang ditentukan oleh penyelenggara.",
+            "Apakah data saya aman?" to "Ya, kami berkomitmen untuk melindungi privasi dan keamanan data Anda sesuai dengan kebijakan privasi kami."
+        )
+    }
+    val faqs = remember(searchQuery) {
+        if (searchQuery.isBlank()) allFaqs
+        else allFaqs.filter { (q, a) ->
+            q.contains(searchQuery, ignoreCase = true) || a.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -171,8 +180,14 @@ fun HelpCenterScreen(navController: NavController) {
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(20.dp))
+                    val context = LocalContext.current
                     Button(
-                        onClick = { },
+                        onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                data = android.net.Uri.parse("mailto:support@lokacara.my.id")
+                            }
+                            context.startActivity(intent)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                         shape = RoundedCornerShape(28.dp),
                         modifier = Modifier.fillMaxWidth()

@@ -7,11 +7,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +32,7 @@ fun BookmarkScreen(
     viewModel: BookmarkViewModel = hiltViewModel()
 ) {
     val savedEvents by viewModel.savedEvents.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
 
@@ -56,23 +58,34 @@ fun BookmarkScreen(
             )
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp)
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { viewModel.refresh() }
         ) {
-            items(
-                items = savedEvents,
-                key = { it.id }
-            ) { event ->
-                EventCard(
-                    event = event,
-                    onBookmarkClick = {
-                        viewModel.toggleBookmark(event.id)
-                    },
-                    onClick = {
-                        navController.navigate(Screen.EventDetail.route)
+            if (savedEvents.isEmpty() && !isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Belum ada event tersimpan", fontFamily = NunitoFont, color = Gray500)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(
+                        items = savedEvents,
+                        key = { it.id }
+                    ) { event ->
+                        EventCard(
+                            event = event,
+                            onBookmarkClick = {
+                                viewModel.toggleBookmark(event.id.toString())
+                            },
+                            onClick = {
+                                navController.navigate(Screen.EventDetail.createRoute(event.id))
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
@@ -20,10 +21,9 @@ import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.app.lokacara.R
-import com.app.lokacara.model.MyEventData
+import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
-import com.app.lokacara.ui.components.MyEventCard
+import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
 import com.app.lokacara.ui.navigation.Screen
@@ -71,24 +71,30 @@ fun MyEventsScreen(
                     color = Primary500
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 100.dp)
+                PullToRefreshBox(
+                    isRefreshing = isLoading,
+                    onRefresh = { viewModel.refresh() }
                 ) {
-                    if (myEvents.isEmpty()) {
-                        item {
-                            EmptyEventState(
-                                onClick = { navController.navigate(Screen.CreateEvent.route) }
-                            )
-                        }
-                    } else {
-                        items(myEvents) { event ->
-                            MyEventCard(
-                                event,
-                                onClick = {
-                                    navController.navigate(Screen.EventDetail.route)
-                                }
-                            )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        if (myEvents.isEmpty()) {
+                            item {
+                                EmptyEventState(
+                                    onClick = { navController.navigate(Screen.CreateEvent.route) }
+                                )
+                            }
+                        } else {
+                            items(myEvents) { event ->
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    showBookmark = false
+                                )
+                            }
                         }
                     }
                 }

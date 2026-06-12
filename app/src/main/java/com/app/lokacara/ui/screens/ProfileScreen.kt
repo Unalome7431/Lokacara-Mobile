@@ -20,15 +20,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileMenuItem
 import com.app.lokacara.ui.navigation.Screen
+import coil.compose.AsyncImage
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.ProfileViewModel
 
@@ -39,6 +40,14 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    if (isLoading) {
+        Box(Modifier.fillMaxSize().background(Gray50), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Primary500)
+        }
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -53,7 +62,7 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "Profil Saya",
+                text = stringResource(R.string.profile_title),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -68,8 +77,8 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = userProfile.profileImageRes ?: R.drawable.profileicon),
+            AsyncImage(
+                model = userProfile.profileImageUrl,
                 contentDescription = "Profile Picture",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -98,25 +107,25 @@ fun ProfileScreen(
                 Column {
                     ProfileMenuItem(
                         icon = Icons.Rounded.Event,
-                        title = "Event Saya",
+                        title = stringResource(R.string.profile_my_events),
                         onClick = { navController.navigate(Screen.MyEvents.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Person,
-                        title = "Edit Profil",
+                        title = stringResource(R.string.profile_edit_profile),
                         onClick = { navController.navigate(Screen.EditProfile.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Bookmark,
-                        title = "Event Tersimpan",
-                        onClick = { navController.navigate(Screen.SavedEvents.route) }
+                        title = stringResource(R.string.profile_saved_events),
+                        onClick = { navController.navigate(Screen.Bookmark.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.WorkspacePremium,
-                        title = "Sertifikat",
+                        title = stringResource(R.string.profile_certificates),
                         onClick = { navController.navigate(Screen.Certificates.route) }
                     )
                 }
@@ -133,13 +142,13 @@ fun ProfileScreen(
                 Column {
                     ProfileMenuItem(
                         icon = Icons.Rounded.Tune,
-                        title = "Pengaturan",
+                        title = stringResource(R.string.profile_settings),
                         onClick = { navController.navigate(Screen.Settings.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(
                         icon = Icons.Rounded.Info,
-                        title = "Tentang Lokacara",
+                        title = stringResource(R.string.profile_about),
                         onClick = { navController.navigate(Screen.About.route) }
                     )
                 }
@@ -157,7 +166,7 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Keluar",
+                    text = stringResource(R.string.profile_logout),
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp,
@@ -166,7 +175,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.Logout,
-                    contentDescription = "Keluar",
+                    contentDescription = stringResource(R.string.profile_logout),
                     tint = SemanticErrorBase,
                     modifier = Modifier.size(20.dp)
                 )

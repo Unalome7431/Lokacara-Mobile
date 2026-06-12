@@ -42,11 +42,11 @@ fun BottomNavbar(navController: NavController) {
 
     val items = remember {
         listOf(
-            NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Home"),
-            NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Explore"),
-            NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Create"),
-            NavigationItem(Screen.Tickets.route, Icons.Outlined.ConfirmationNumber, "Tickets"),
-            NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profile")
+            NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Beranda"),
+            NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Jelajahi"),
+            NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Buat Event"),
+            NavigationItem(Screen.Tickets.route, Icons.Outlined.ConfirmationNumber, "Tiket"),
+            NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profil")
         )
     }
 
@@ -57,6 +57,7 @@ fun BottomNavbar(navController: NavController) {
                     saveState = true
                 }
                 launchSingleTop = true
+                restoreState = true
             }
         }
     }
@@ -144,7 +145,7 @@ private fun CenterActionButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Create",
+            contentDescription = "Buat Event",
             tint = Color.White,
             modifier = Modifier.size(28.dp)
         )

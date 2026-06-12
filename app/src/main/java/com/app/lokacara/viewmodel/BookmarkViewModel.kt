@@ -4,8 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
+import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.ImageUrlProvider
+import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
-import com.app.lokacara.repository.BookmarkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,43 +21,70 @@ import javax.inject.Inject
 @HiltViewModel
 class BookmarkViewModel @Inject constructor(
     application: Application,
-    private val repository: BookmarkRepository,
     private val bookmarkManager: BookmarkManager,
+    private val apiService: ApiService,
+    private val imageUrlProvider: ImageUrlProvider
 ) : AndroidViewModel(application) {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-
-    private val _savedEvents = MutableStateFlow(repository.getSavedEvents())
+    private val _savedEvents = MutableStateFlow<List<Event>>(emptyList())
     val savedEvents: StateFlow<List<Event>> = _savedEvents.asStateFlow()
 
     init {
-        syncBookmarks()
+        loadBookmarkedEvents()
     }
 
-    private fun syncBookmarks() {
+    private fun loadBookmarkedEvents() {
         viewModelScope.launch {
+            _isLoading.value = true
+
             val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            _savedEvents.value = _savedEvents.value.map { event ->
-                event.copy(isBookmarked = event.id in bookmarkedIds)
+
+            if (bookmarkedIds.isEmpty()) {
+                _savedEvents.value = emptyList()
+                _isLoading.value = false
+                return@launch
             }
+
+            // Fetch from feed and filter by local bookmarked IDs
+            when (val result = safeApiCall { apiService.getFeedEvents() }) {
+                is ApiResult.Success -> {
+                    _savedEvents.value = result.data.data
+                        .filter { it.id.toString() in bookmarkedIds }
+                        .map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
+                }
+                is ApiResult.Error -> {
+                    _savedEvents.value = emptyList()
+                }
+            }
+
+            _isLoading.value = false
         }
     }
 
     fun toggleBookmark(eventId: String) {
         viewModelScope.launch {
+            val currentIds = bookmarkManager.bookmarkedIds.first()
+            val isRemoving = eventId in currentIds
+
+            if (isRemoving) {
+                _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
+            }
             bookmarkManager.toggleBookmark(eventId)
-            val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            _savedEvents.value = _savedEvents.value.map { event ->
-                if (event.id == eventId) {
-                    event.copy(isBookmarked = event.id in bookmarkedIds)
+            val idLong = eventId.toLongOrNull()
+            if (idLong != null) {
+                if (isRemoving) {
+                    try { apiService.removeBookmark(idLong) } catch (_: Exception) {}
                 } else {
-                    event
+                    try { apiService.addBookmark(idLong) } catch (_: Exception) {}
                 }
             }
         }
+    }
+
+    fun refresh() {
+        loadBookmarkedEvents()
     }
 }

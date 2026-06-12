@@ -1,6 +1,9 @@
 package com.app.lokacara.di
 
 import android.content.Context
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import com.app.lokacara.data.*
 import dagger.Module
 import dagger.Provides
@@ -12,6 +15,16 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideImageLoader(@ApplicationContext context: Context): ImageLoader {
+        return ImageLoader.Builder(context)
+            .memoryCache { MemoryCache.Builder(context).maxSizePercent(0.25).build() }
+            .diskCache { DiskCache.Builder().directory(context.cacheDir.resolve("image_cache")).maxSizeBytes(250L * 1024 * 1024).build() }
+            .crossfade(true)
+            .build()
+    }
 
     @Provides
     @Singleton
@@ -35,6 +48,12 @@ object AppModule {
     @Singleton
     fun provideOnboardingManager(@ApplicationContext context: Context): OnboardingManager {
         return OnboardingManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDraftManager(@ApplicationContext context: Context): DraftManager {
+        return DraftManager(context)
     }
 
     @Provides

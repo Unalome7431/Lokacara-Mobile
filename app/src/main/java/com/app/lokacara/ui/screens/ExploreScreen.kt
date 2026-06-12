@@ -5,14 +5,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Alignment
+import com.app.lokacara.R
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.theme.Primary500
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.ExploreViewModel
 
@@ -27,11 +34,29 @@ fun ExploreScreen(
     val eventCategory by viewModel.eventCategory.collectAsState()
     val selectedCategoryChip by viewModel.selectedCategoryChip.collectAsState()
     val events by viewModel.filteredEvents.collectAsState()
+    val locationSuggestions by viewModel.locationSuggestions.collectAsState()
+    val categorySuggestions by viewModel.categorySuggestions.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     val focusManager = LocalFocusManager.current
 
+    val listState = rememberLazyListState()
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem != null && lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 3
+        }
+    }
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && !isLoading) {
+            viewModel.loadNextPage()
+        }
+    }
+
+    val allCategoryLabel = stringResource(R.string.category_all)
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
-            eventCategory.isNotEmpty() || selectedCategoryChip != "Semua"
+            eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel
 
     BackHandler(enabled = isSearchExpanded || hasActiveFilter) {
         if (isSearchExpanded) {
@@ -43,7 +68,19 @@ fun ExploreScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Gray100)) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        when {
+            isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Primary500)
+            }
+            error != null -> ErrorStateView(message = error ?: "", onRetry = { viewModel.refresh() })
+            else -> PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState
+                ) {
 
             item { ExploreHeader() }
 
@@ -51,13 +88,13 @@ fun ExploreScreen(
                 if (isSearchExpanded) {
                     ExpandedSearchSection(
                         eventName = eventName,
-                        onEventNameChange = { viewModel.eventName.value = it },
+                        onEventNameChange = { viewModel.eventName.value = it; viewModel.searchWithDebounce(it) },
                         eventLocation = eventLocation,
-                        onEventLocationChange = { viewModel.eventLocation.value = it },
+                        onEventLocationChange = { viewModel.eventLocation.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
                         eventCategory = eventCategory,
-                        onEventCategoryChange = { viewModel.eventCategory.value = it },
-                        locationSuggestions = viewModel.locationSuggestions,
-                        categorySuggestions = viewModel.categorySuggestions,
+                        onEventCategoryChange = { viewModel.eventCategory.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
+                        locationSuggestions = locationSuggestions,
+                        categorySuggestions = categorySuggestions,
                         onSearchSubmit = {
                             viewModel.isSearchExpanded.value = false
                             focusManager.clearFocus()
@@ -72,15 +109,16 @@ fun ExploreScreen(
                 item {
                     HotLabelSection(
                         selectedCategory = selectedCategoryChip,
-                        onCategorySelected = { viewModel.selectedCategoryChip.value = it },
-                        allCategories = viewModel.categorySuggestions
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
+                        allCategories = categorySuggestions
                     )
                 }
 
                 item {
                     ExploreCategories(
                         selectedCategory = selectedCategoryChip,
-                        onCategorySelected = { viewModel.selectedCategoryChip.value = it }
+                        onCategorySelected = { viewModel.selectedCategoryChip.value = it; viewModel.searchWithDebounce(viewModel.eventName.value) },
+                        allCategories = categorySuggestions
                     )
                 }
 
@@ -91,14 +129,17 @@ fun ExploreScreen(
                         EventCard(
                             event = event,
                             onClick = {
-                                navController.navigate(Screen.EventDetail.route)
-                            }
+                                navController.navigate(Screen.EventDetail.createRoute(event.id))
+                            },
+                            onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
                         )
                     }
                 }
             }
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
+            }
         }
     }
 }

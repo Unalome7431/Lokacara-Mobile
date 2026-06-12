@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
@@ -36,7 +37,7 @@ fun DetailInfoRow(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = label,
             tint = Gray600,
             modifier = Modifier.size(18.dp)
         )
@@ -75,8 +76,8 @@ fun EventRelatedCard(
     ) {
         Column {
             AsyncImage(
-                model = event.imageRes,
-                contentDescription = null,
+                model = event.imageUrl,
+                contentDescription = event.title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
