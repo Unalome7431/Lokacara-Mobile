@@ -167,4 +167,11 @@ class AuthViewModel @Inject constructor(
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }
     fun clearError() { _errorMessage.value = null }
+
+    fun resetForm() {
+        name.value = ""
+        email.value = ""
+        password.value = ""
+        isChecked.value = false
+    }
 }

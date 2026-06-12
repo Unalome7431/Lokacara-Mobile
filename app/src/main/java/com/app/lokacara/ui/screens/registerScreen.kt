@@ -48,6 +48,7 @@ fun RegisterScreen(
     LaunchedEffect(registerSuccess) {
         if (registerSuccess) {
             viewModel.resetRegisterSuccess()
+            viewModel.resetForm()
             onNavigateToLogin()
         }
     }

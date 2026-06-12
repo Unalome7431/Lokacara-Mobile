@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -62,16 +63,17 @@ fun LokacaraTextField(
                 }
             }
         },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Secondary100,
-            unfocusedContainerColor = Secondary100,
-            disabledContainerColor = Secondary100,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            focusedTextColor = Gray900,
-            unfocusedTextColor = Gray900
-        ),
-        shape = MaterialTheme.shapes.small,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Secondary100,
+                unfocusedContainerColor = Secondary100,
+                disabledContainerColor = Secondary100,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = Gray900,
+                unfocusedTextColor = Gray900
+            ),
+            textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp),
+            shape = MaterialTheme.shapes.small,
         singleLine = true
     )
 }

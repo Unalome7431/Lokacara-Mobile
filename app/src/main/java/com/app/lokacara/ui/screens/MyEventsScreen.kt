@@ -10,7 +10,6 @@ import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
@@ -22,9 +21,6 @@ import androidx.navigation.NavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
@@ -39,17 +35,6 @@ fun MyEventsScreen(
 ) {
     val myEvents by viewModel.myEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
 
     Column(
         modifier = Modifier

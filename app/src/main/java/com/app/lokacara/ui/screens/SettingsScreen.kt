@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.automirrored.rounded.Article
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -218,6 +219,43 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable {
+                            scope.launch {
+                                viewModel.logout()
+                                (rootNavController ?: navController).navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Primary100, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ExitToApp,
+                            contentDescription = "Keluar",
+                            tint = Primary500,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Keluar",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = Gray900
+                    )
+                }
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .clickable { showDeleteDialog = true }
                         .padding(horizontal = 16.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -237,7 +275,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                    text = "Keluar dari Akun",
+                        text = "Hapus Akun",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,

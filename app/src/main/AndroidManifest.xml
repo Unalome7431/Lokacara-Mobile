@@ -20,10 +20,10 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.LokacaraMobile">
 
-        <!-- TODO: Replace with your Google Maps API key (needs Maps SDK for Android + Places API enabled) -->
+        <!-- Google Maps API Key (Maps SDK + Places API) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_MAPS_API_KEY" />
+            android:value="AIzaSyDt5jVh7qfmPMUxkxKplJgCMljNSPHap6U" />
 
         <activity
             android:name=".MainActivity"

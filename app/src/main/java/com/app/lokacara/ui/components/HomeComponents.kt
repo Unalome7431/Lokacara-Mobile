@@ -97,10 +97,12 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
     }
     val context = LocalContext.current
 
-    LaunchedEffect(pagerState.currentPage) {
-        delay(4000)
-        if (pageCount > 1) {
-            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(4000)
+            if (pageCount > 1) {
+                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+            }
         }
     }
 
