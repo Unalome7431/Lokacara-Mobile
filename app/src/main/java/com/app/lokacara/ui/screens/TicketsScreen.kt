@@ -39,6 +39,35 @@ fun TicketsScreen(
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+
+    if (!isLoggedIn) {
+        Box(Modifier.fillMaxSize().background(Color.White), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Silakan login untuk melihat tiket",
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Default,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Gray900
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        navController.navigate(com.app.lokacara.ui.navigation.Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text("Login", color = Color.White)
+                }
+            }
+        }
+        return
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(
         context.getString(R.string.tab_tickets_upcoming),

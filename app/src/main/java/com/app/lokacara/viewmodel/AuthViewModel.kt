@@ -127,7 +127,6 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _forgotPasswordError.value = result.message
-                    SnackbarManager.showError(result.message)
                 }
             }
             _forgotPasswordLoading.value = false

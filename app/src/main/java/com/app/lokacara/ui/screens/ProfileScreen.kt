@@ -120,7 +120,7 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Rounded.Bookmark,
                         title = stringResource(R.string.profile_saved_events),
-                        onClick = { navController.navigate(Screen.SavedEvents.route) }
+                        onClick = { navController.navigate(Screen.Bookmark.route) }
                     )
                     HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuItem(

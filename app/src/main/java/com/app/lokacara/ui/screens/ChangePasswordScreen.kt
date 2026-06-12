@@ -50,6 +50,7 @@ fun ChangePasswordScreen(
     LaunchedEffect(changeSuccess) {
         if (changeSuccess) {
             viewModel.resetChangeSuccess()
+            kotlinx.coroutines.delay(1500)
             navController.popBackStack()
         }
     }

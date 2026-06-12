@@ -250,7 +250,7 @@ fun CreateEventScreen(
             .fillMaxSize()
             .background(SvgBackground)
             .verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 24.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Row(

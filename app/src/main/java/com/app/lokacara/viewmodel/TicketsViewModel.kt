@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.ImageUrlProvider
@@ -19,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import java.io.File
@@ -30,8 +33,12 @@ class TicketsViewModel @Inject constructor(
     application: Application,
     private val repository: TicketsRepository,
     private val apiService: ApiService,
-    private val imageUrlProvider: ImageUrlProvider
+    private val imageUrlProvider: ImageUrlProvider,
+    private val userSessionManager: UserSessionManager
 ) : AndroidViewModel(application) {
+
+    private val _isLoggedIn = MutableStateFlow(false)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -49,6 +56,14 @@ class TicketsViewModel @Inject constructor(
     val downloadedCertIds: StateFlow<Set<Long>> = _downloadedCertIds.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            _isLoggedIn.value = userSessionManager.userSession.first().isLoggedIn
+        }
+        viewModelScope.launch {
+            userSessionManager.userSession.map { it.isLoggedIn }.collect { loggedIn ->
+                _isLoggedIn.value = loggedIn
+            }
+        }
         loadDashboard()
     }
 
