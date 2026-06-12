@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -178,15 +179,23 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 fun NearbyEventsHeader(
     selectedCategory: String,
     categories: List<String>,
-    onCategoryChange: (String) -> Unit
+    onCategoryChange: (String) -> Unit,
+    currentLocation: String = "Sekitar Anda"
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
-            text = stringResource(R.string.home_nearby_events),
+            text = "EVENT TERDEKAT DI SEKITAR ANDA",
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
-
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
+            Icon(Icons.Outlined.MyLocation, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = currentLocation,
+                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
+            )
+        }
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
@@ -206,6 +215,45 @@ fun NearbyEventsHeader(
                         style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, fontSize = 14.sp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryEventSection(
+    categoryName: String,
+    events: List<Event>,
+    onEventClick: (Event) -> Unit,
+    onSeeAll: () -> Unit,
+    animated: Boolean = true
+) {
+    Column(modifier = Modifier.padding(top = 24.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = categoryName,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Gray900
+            )
+            TextButton(onClick = onSeeAll) {
+                Text("Lihat Semua →", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SvgOrange)
+            }
+        }
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(events, key = { it.id }) { event ->
+                EventCardCompact(event = event, onClick = { onEventClick(event) })
             }
         }
     }

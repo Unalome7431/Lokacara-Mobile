@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.LocationManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -17,8 +19,10 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,18 +46,18 @@ class HomeViewModel @Inject constructor(
     private val _popularEvents = MutableStateFlow<List<Event>>(emptyList())
     val popularEvents: StateFlow<List<Event>> = _popularEvents.asStateFlow()
 
-    private val _nearbyEvents = MutableStateFlow<List<Event>>(emptyList())
-    val nearbyEvents: StateFlow<List<Event>> = _nearbyEvents.asStateFlow()
+    private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
+
+    val currentLocationName = MutableStateFlow("Sekitar Anda")
 
     val selectedCategory = MutableStateFlow("Semua")
 
-    val filteredEvents: StateFlow<List<Event>> = combine(
-        _nearbyEvents, selectedCategory
+    val groupedEvents: StateFlow<Map<String, List<Event>>> = combine(
+        _allEvents, selectedCategory
     ) { events, category ->
-        events.filter { event ->
-            category == "Semua" || event.category == category
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        val filtered = if (category == "Semua") events else events.filter { it.category == category }
+        filtered.groupBy { it.category.ifEmpty { "Lainnya" } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     init {
         loadData()
@@ -65,8 +69,18 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 val locationManager = getApplication<Application>().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                if (location != null) {
+                    val city = withContext(Dispatchers.IO) {
+                        try {
+                            val geocoder = Geocoder(getApplication())
+                            val addresses: List<Address> = geocoder.getFromLocation(location.latitude, location.longitude, 1) ?: emptyList()
+                            if (addresses.isNotEmpty()) addresses[0].locality else null
+                        } catch (_: Exception) { null }
+                    }
+                    if (!city.isNullOrBlank()) currentLocationName.value = city
+                }
             }
         }
     }
@@ -81,7 +95,7 @@ class HomeViewModel @Inject constructor(
                     val events = result.data.data.map { it.toEvent(imageUrlProvider) }
                     if (events.isNotEmpty()) {
                         _popularEvents.value = events.take(3)
-                        _nearbyEvents.value = events
+                        _allEvents.value = events
                     }
                 }
                 is ApiResult.Error -> {
@@ -112,14 +126,12 @@ class HomeViewModel @Inject constructor(
         bookmarkJob?.cancel()
         bookmarkJob = viewModelScope.launch {
             bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
-                _nearbyEvents.value = _nearbyEvents.value.map { event ->
+                val syncEvent: (Event) -> Event = { event ->
                     val bookmarked = event.id.toString() in bookmarkedIds
                     if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
                 }
-                _popularEvents.value = _popularEvents.value.map { event ->
-                    val bookmarked = event.id.toString() in bookmarkedIds
-                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
-                }
+                _popularEvents.value = _popularEvents.value.map(syncEvent)
+                _allEvents.value = _allEvents.value.map(syncEvent)
             }
         }
     }
