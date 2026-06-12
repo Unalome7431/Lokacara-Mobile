@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -40,6 +41,19 @@ fun ExploreScreen(
 
     val focusManager = LocalFocusManager.current
 
+    val listState = rememberLazyListState()
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem != null && lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 3
+        }
+    }
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && !isLoading) {
+            viewModel.loadNextPage()
+        }
+    }
+
     val allCategoryLabel = stringResource(R.string.category_all)
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
             eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel
@@ -63,7 +77,10 @@ fun ExploreScreen(
                 isRefreshing = isLoading,
                 onRefresh = { viewModel.refresh() }
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState
+                ) {
 
             item { ExploreHeader() }
 

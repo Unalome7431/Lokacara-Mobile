@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,8 +65,10 @@ fun SettingsScreen(
     }
 
     if (showDeleteDialog) {
+        var password by remember { mutableStateOf("") }
+
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { showDeleteDialog = false; password = "" },
             title = {
                 Text(
                     text = stringResource(R.string.settings_delete_account),
@@ -77,9 +80,19 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = stringResource(R.string.confirm_delete_account),
+                        text = stringResource(R.string.delete_account_password_hint),
                         fontFamily = NunitoFont,
                         fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.auth_password_placeholder), fontFamily = NunitoFont) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = LocalTextStyle.current.copy(fontFamily = NunitoFont)
                     )
                     if (deleteError != null) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -95,9 +108,9 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteAccount()
+                        viewModel.deleteAccount(password)
                     },
-                    enabled = !isDeleting
+                    enabled = !isDeleting && password.isNotBlank()
                 ) {
                     if (isDeleting) {
                         CircularProgressIndicator(
@@ -116,7 +129,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false; viewModel.clearDeleteError() }) {
+                TextButton(onClick = { showDeleteDialog = false; viewModel.clearDeleteError(); password = "" }) {
                     Text(
                         text = stringResource(R.string.cancel),
                         fontFamily = NunitoFont,

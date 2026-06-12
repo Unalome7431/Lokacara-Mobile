@@ -48,7 +48,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun deleteAccount() {
+    fun deleteAccount(password: String) {
         viewModelScope.launch {
             _isDeleting.value = true
             _deleteError.value = null

@@ -33,6 +33,11 @@ class ExploreViewModel @Inject constructor(
     private val _categorySuggestions = MutableStateFlow<List<String>>(emptyList())
     val categorySuggestions: StateFlow<List<String>> = _categorySuggestions.asStateFlow()
 
+    private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
+
+    private var currentPage = 1
+    private var hasMorePages = true
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -68,6 +73,7 @@ class ExploreViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.getCategories()) {
                 is ApiResult.Success -> {
+                    _categories.value = result.data
                     _categorySuggestions.value = result.data.map { it.name }
                 }
                 else -> {}
@@ -88,10 +94,16 @@ class ExploreViewModel @Inject constructor(
         searchJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            currentPage = 1
+            hasMorePages = true
 
-            when (val result = repository.searchEvents(keyword = query.ifBlank { null })) {
+            val catId = _categories.value.find { it.name.equals(selectedCategoryChip.value, ignoreCase = true) }?.id
+
+            when (val result = repository.searchEvents(keyword = query.ifBlank { null }, categoryId = catId)) {
                 is ApiResult.Success -> {
-                    _allEvents.value = result.data.data.map { it.toEvent(imageUrlProvider) }
+                    val events = result.data.data.map { it.toEvent(imageUrlProvider) }
+                    _allEvents.value = events
+                    hasMorePages = result.data.current_page < result.data.last_page
                     syncBookmarks()
                 }
                 is ApiResult.Error -> {
@@ -102,6 +114,31 @@ class ExploreViewModel @Inject constructor(
                 }
             }
 
+            _isLoading.value = false
+        }
+    }
+
+    fun loadNextPage() {
+        if (!hasMorePages || _isLoading.value) return
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _isLoading.value = true
+            currentPage++
+
+            val catId = _categories.value.find { it.name.equals(selectedCategoryChip.value, ignoreCase = true) }?.id
+
+            when (val result = repository.searchEvents(keyword = eventName.value.ifBlank { null }, categoryId = catId, page = currentPage)) {
+                is ApiResult.Success -> {
+                    val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
+                    _allEvents.value = _allEvents.value + newEvents
+                    hasMorePages = result.data.current_page < result.data.last_page
+                    syncBookmarks()
+                }
+                is ApiResult.Error -> {
+                    currentPage--
+                    _error.value = result.message
+                }
+            }
             _isLoading.value = false
         }
     }

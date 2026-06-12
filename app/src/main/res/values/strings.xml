@@ -50,6 +50,7 @@
     <string name="cancel">Batal</string>
     <string name="delete">Hapus</string>
     <string name="confirm_delete_account">Apakah Anda yakin ingin menghapus akun? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="delete_account_password_hint">Masukkan password Anda untuk konfirmasi</string>
 
     <!-- Event Detail -->
     <string name="event_detail_title">Detail Event</string>
