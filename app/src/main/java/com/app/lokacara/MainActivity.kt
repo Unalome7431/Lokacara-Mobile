@@ -8,7 +8,11 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -18,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.NavGraph
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
@@ -37,24 +42,41 @@ class MainActivity : ComponentActivity() {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState(initial = null)
 
             LokacaraMobileTheme {
-                Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
-                    when {
-                        isLoggedIn != null && isOnboardingCompleted != null -> {
-                            NavGraph(
-                                isLoggedIn = isLoggedIn == true,
-                                isOnboardingCompleted = isOnboardingCompleted == true
-                            )
-                        }
-                        else -> {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFFFAF8FF)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Loading...")
+                Box(Modifier.fillMaxSize()) {
+                    Scaffold {
+                        when {
+                            isLoggedIn != null && isOnboardingCompleted != null -> {
+                                NavGraph(
+                                    isLoggedIn = isLoggedIn == true,
+                                    isOnboardingCompleted = isOnboardingCompleted == true
+                                )
+                            }
+                            else -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color(0xFFFAF8FF)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Loading...")
+                                }
                             }
                         }
+                    }
+
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(start = 24.dp, end = 24.dp, top = 48.dp)
+                    ) { data ->
+                        Snackbar(
+                            snackbarData = data,
+                            containerColor = Color(0xFF323232),
+                            contentColor = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.widthIn(max = 400.dp)
+                        )
                     }
                 }
             }
