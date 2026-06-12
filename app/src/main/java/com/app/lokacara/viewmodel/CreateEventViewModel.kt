@@ -196,6 +196,14 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Latitude dan longitude harus diisi keduanya atau dikosongkan"
             return
         }
+        if (!isOnline.value && (latStr.isBlank() || lngStr.isBlank())) {
+            _errorMessage.value = "Untuk event offline, pilih lokasi menggunakan peta atau tombol 'Gunakan Lokasi Saat Ini'"
+            return
+        }
+        if (!isOnline.value && aplikasiTempat.value.isBlank()) {
+            _errorMessage.value = "Nama tempat harus diisi"
+            return
+        }
 
         viewModelScope.launch {
             _isLoading.value = true
