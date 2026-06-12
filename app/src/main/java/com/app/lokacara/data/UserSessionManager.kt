@@ -1,6 +1,8 @@
 package com.app.lokacara.data
 
 import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -9,6 +11,12 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import android.util.Base64
 
 private val Context.userDataStore by preferencesDataStore(name = "user_session")
 
@@ -26,6 +34,10 @@ data class UserSession(
 
 class UserSessionManager(private val context: Context) {
     companion object {
+        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val TOKEN_KEY_ALIAS = "lokacara_session_token"
+        private const val TOKEN_PREFIX = "v1:"
+
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         val NAME = stringPreferencesKey("name")
         val EMAIL = stringPreferencesKey("email")
@@ -45,7 +57,7 @@ class UserSessionManager(private val context: Context) {
             phone = prefs[PHONE] ?: "",
             location = prefs[LOCATION] ?: "",
             profileImagePath = prefs[PROFILE_IMAGE_PATH] ?: "",
-            accessToken = prefs[ACCESS_TOKEN] ?: "",
+            accessToken = decryptToken(prefs[ACCESS_TOKEN] ?: ""),
             userId = prefs[USER_ID] ?: 0L,
             userRole = prefs[USER_ROLE] ?: ""
         )
@@ -64,7 +76,7 @@ class UserSessionManager(private val context: Context) {
     suspend fun saveAuth(token: String, userId: Long, name: String, email: String, role: String) {
         context.userDataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
-            prefs[ACCESS_TOKEN] = token
+            prefs[ACCESS_TOKEN] = encryptToken(token)
             prefs[USER_ID] = userId
             prefs[NAME] = name
             prefs[EMAIL] = email
@@ -73,7 +85,7 @@ class UserSessionManager(private val context: Context) {
     }
 
     suspend fun getAccessToken(): String {
-        return context.userDataStore.data.first()[ACCESS_TOKEN] ?: ""
+        return decryptToken(context.userDataStore.data.first()[ACCESS_TOKEN] ?: "")
     }
 
     enum class Field { NAME, EMAIL, PHONE, LOCATION }
@@ -103,5 +115,51 @@ class UserSessionManager(private val context: Context) {
         context.userDataStore.edit { prefs ->
             prefs.clear()
         }
+    }
+
+    private fun encryptToken(token: String): String {
+        if (token.isBlank()) return ""
+        return try {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
+            val encrypted = cipher.doFinal(token.toByteArray(Charsets.UTF_8))
+            val payload = cipher.iv + encrypted
+            TOKEN_PREFIX + Base64.encodeToString(payload, Base64.NO_WRAP)
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun decryptToken(storedToken: String): String {
+        if (storedToken.isBlank()) return ""
+        if (!storedToken.startsWith(TOKEN_PREFIX)) return storedToken
+        return try {
+            val payload = Base64.decode(storedToken.removePrefix(TOKEN_PREFIX), Base64.NO_WRAP)
+            if (payload.size <= 12) return ""
+            val iv = payload.copyOfRange(0, 12)
+            val encrypted = payload.copyOfRange(12, payload.size)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), GCMParameterSpec(128, iv))
+            String(cipher.doFinal(encrypted), Charsets.UTF_8)
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun getOrCreateSecretKey(): SecretKey {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        (keyStore.getKey(TOKEN_KEY_ALIAS, null) as? SecretKey)?.let { return it }
+
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        val keySpec = KeyGenParameterSpec.Builder(
+            TOKEN_KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setRandomizedEncryptionRequired(true)
+            .build()
+        keyGenerator.init(keySpec)
+        return keyGenerator.generateKey()
     }
 }

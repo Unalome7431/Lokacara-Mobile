@@ -41,7 +41,8 @@ fun RegistrationDto.toUpcomingEvent(imageUrlProvider: ImageUrlProvider): Upcomin
         time = e.start_datetime.substringAfter("T").take(8),
         location = location,
         type = e.type,
-        imageUrl = e.poster_url ?: imageUrlProvider.posterUrl(e.poster)
+        imageUrl = e.poster_url ?: imageUrlProvider.posterUrl(e.poster),
+        qrToken = qr_token
     )
 }
 

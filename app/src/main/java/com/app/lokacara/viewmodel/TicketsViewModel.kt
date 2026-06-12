@@ -27,6 +27,9 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -80,7 +83,7 @@ class TicketsViewModel @Inject constructor(
             when (val result = repository.getDashboard()) {
                 is ApiResult.Success -> {
                     val dashboard = result.data
-                    val now = java.time.LocalDateTime.now().toString().take(10)
+                    val now = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
                     val upcoming = mutableListOf<UpcomingEvent>()
                     val history = mutableListOf<HistoryEvent>()

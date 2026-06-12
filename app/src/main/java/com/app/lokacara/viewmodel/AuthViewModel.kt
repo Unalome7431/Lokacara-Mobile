@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.dto.AuthResponse
 import com.app.lokacara.repository.AuthRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,19 +55,11 @@ class AuthViewModel @Inject constructor(
             _isLoading.value = true
             when (val result = repository.login(email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
-                    val auth = result.data
-                    val user = auth.user
-                    val userId = user?.id ?: 0L
-                    userSessionManager.saveAuth(
-                        token = auth.token ?: "",
-                        userId = userId,
-                        name = user?.name ?: "",
-                        email = user?.email ?: "",
-                        role = user?.role ?: ""
-                    )
-                    settingsManager.setOnboardingCompleted()
-                    _loginSuccess.value = true
-                    SnackbarManager.show("Login berhasil")
+                    if (saveAuthenticatedSession(result.data)) {
+                        settingsManager.setOnboardingCompleted()
+                        _loginSuccess.value = true
+                        SnackbarManager.show("Login berhasil")
+                    }
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
@@ -145,19 +138,11 @@ class AuthViewModel @Inject constructor(
             _errorMessage.value = null
             when (val result = repository.loginWithGoogle(idToken)) {
                 is ApiResult.Success -> {
-                    val auth = result.data
-                    val user = auth.user
-                    val userId = user?.id ?: 0L
-                    userSessionManager.saveAuth(
-                        token = auth.token ?: "",
-                        userId = userId,
-                        name = user?.name ?: "",
-                        email = user?.email ?: "",
-                        role = user?.role ?: ""
-                    )
-                    settingsManager.setOnboardingCompleted()
-                    _loginSuccess.value = true
-                    SnackbarManager.show("Login berhasil")
+                    if (saveAuthenticatedSession(result.data)) {
+                        settingsManager.setOnboardingCompleted()
+                        _loginSuccess.value = true
+                        SnackbarManager.show("Login berhasil")
+                    }
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
@@ -172,6 +157,26 @@ class AuthViewModel @Inject constructor(
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }
     fun clearError() { _errorMessage.value = null }
+
+    private suspend fun saveAuthenticatedSession(auth: AuthResponse): Boolean {
+        val token = auth.token?.takeIf { it.isNotBlank() }
+        val user = auth.user
+        if (token == null || user == null || user.id <= 0L) {
+            val message = "Respons login tidak valid"
+            _errorMessage.value = message
+            SnackbarManager.showError(message)
+            return false
+        }
+
+        userSessionManager.saveAuth(
+            token = token,
+            userId = user.id,
+            name = user.name,
+            email = user.email,
+            role = user.role
+        )
+        return true
+    }
 
     fun resetForm() {
         name.value = ""

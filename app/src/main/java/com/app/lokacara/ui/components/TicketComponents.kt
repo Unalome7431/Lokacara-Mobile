@@ -1,6 +1,8 @@
 package com.app.lokacara.ui.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,12 +16,14 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +34,10 @@ import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.ui.theme.*
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
 @Composable
 fun BigTicketCard(
@@ -38,6 +46,7 @@ fun BigTicketCard(
     time: String,
     location: String,
     uniqueCode: String,
+    qrData: String = uniqueCode,
     userName: String,
     onQrClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -99,9 +108,8 @@ fun BigTicketCard(
                         .clickable { onQrClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${uniqueCode.ifEmpty { "lokacara" }}",
-                        contentDescription = "QR Code",
+                    QrCodeImage(
+                        data = qrData.ifEmpty { uniqueCode.ifEmpty { "lokacara" } },
                         modifier = Modifier.fillMaxSize().padding(4.dp)
                     )
                 }
@@ -240,16 +248,43 @@ fun HistoryDetailDialog(
 }
 
 @Composable
-fun QrCodeDialog(qrImageUrl: String, onDismiss: () -> Unit) {
+fun QrCodeDialog(qrData: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.size(300.dp)) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                AsyncImage(
-                    model = qrImageUrl,
-                    contentDescription = "Zoomed QR",
+                QrCodeImage(
+                    data = qrData.ifEmpty { "lokacara" },
                     modifier = Modifier.fillMaxSize().padding(32.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun QrCodeImage(data: String, modifier: Modifier = Modifier) {
+    val bitmap = remember(data) { createQrBitmap(data) }
+    Image(
+        bitmap = bitmap.asImageBitmap(),
+        contentDescription = "QR Code",
+        modifier = modifier
+    )
+}
+
+private fun createQrBitmap(data: String, size: Int = 512): Bitmap {
+    val hints = mapOf(
+        EncodeHintType.MARGIN to 1,
+        EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M
+    )
+    val matrix = MultiFormatWriter().encode(data, BarcodeFormat.QR_CODE, size, size, hints)
+    val pixels = IntArray(size * size)
+    for (y in 0 until size) {
+        val offset = y * size
+        for (x in 0 until size) {
+            pixels[offset + x] = if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        }
+    }
+    return Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).apply {
+        setPixels(pixels, 0, size, 0, 0, size, size)
     }
 }

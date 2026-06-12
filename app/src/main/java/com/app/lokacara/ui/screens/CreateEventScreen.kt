@@ -183,7 +183,7 @@ fun CreateEventScreen(
             confirmButton = {
                 TextButton(onClick = {
                     val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempStartDateMillis)
-                    val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                    val timeStr = String.format(Locale.US, "%02d:%02d:00", timePickerState.hour, timePickerState.minute)
                     viewModel.setDateTime(isStart = true, date = dateStr, time = timeStr)
                     showStartTimePicker = false
                     tempStartDateMillis = 0L
@@ -233,7 +233,7 @@ fun CreateEventScreen(
             confirmButton = {
                 TextButton(onClick = {
                     val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempEndDateMillis)
-                    val timeStr = String.format("%02d:%02d:00", timePickerState.hour, timePickerState.minute)
+                    val timeStr = String.format(Locale.US, "%02d:%02d:00", timePickerState.hour, timePickerState.minute)
                     viewModel.setDateTime(isStart = false, date = dateStr, time = timeStr)
                     showEndTimePicker = false
                     tempEndDateMillis = 0L

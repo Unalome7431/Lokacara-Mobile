@@ -10,7 +10,8 @@ data class UpcomingEvent(
     val time: String,
     val location: String,
     val type: String,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val qrToken: String? = null
 )
 
 @Immutable

@@ -44,17 +44,32 @@ class SettingsViewModel @Inject constructor(
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
+            val previous = notificationsEnabled.value
             settingsManager.setNotificationsEnabled(enabled)
-            try { apiService.updateSettings(mapOf("notifications_enabled" to enabled)) } catch (_: Exception) {}
+            val synced = try {
+                apiService.updateSettings(mapOf("notifications_enabled" to enabled))
+                true
+            } catch (_: Exception) {
+                false
+            }
+            if (!synced) {
+                settingsManager.setNotificationsEnabled(previous)
+                SnackbarManager.showError("Gagal menyinkronkan pengaturan")
+                return@launch
+            }
             SnackbarManager.show(if (enabled) "Notifikasi diaktifkan" else "Notifikasi dinonaktifkan")
         }
     }
 
     fun deleteAccount(password: String) {
+        if (password.isBlank()) {
+            _deleteError.value = "Password harus diisi"
+            return
+        }
         viewModelScope.launch {
             _isDeleting.value = true
             _deleteError.value = null
-            when (val result = safeApiCall { apiService.deleteAccount() }) {
+            when (val result = safeApiCall { apiService.deleteAccount(mapOf("password" to password)) }) {
                 is ApiResult.Success -> {
                     _deleteSuccess.value = true
                     SnackbarManager.show("Akun berhasil dihapus")
