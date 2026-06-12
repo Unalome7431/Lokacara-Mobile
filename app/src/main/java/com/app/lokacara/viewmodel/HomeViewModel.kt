@@ -1,13 +1,17 @@
 package com.app.lokacara.viewmodel
 
+import android.Manifest
 import android.app.Application
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.BookmarkManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.dto.CategoryDto
-import com.app.lokacara.data.remote.dto.LocationDto
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
@@ -25,10 +29,6 @@ class HomeViewModel @Inject constructor(
     private val imageUrlProvider: ImageUrlProvider
 ) : AndroidViewModel(application) {
 
-    private val _locations = MutableStateFlow<List<LocationDto>>(emptyList())
-    val locationNames: StateFlow<List<String>> = _locations.map { it.map { dto -> dto.name } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
     val categoryNames: StateFlow<List<String>> = _categories.map { listOf("Semua") + it.map { dto -> dto.name } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Semua", "Musik", "Teknologi", "Anime", "Hobi"))
@@ -45,21 +45,30 @@ class HomeViewModel @Inject constructor(
     private val _nearbyEvents = MutableStateFlow<List<Event>>(emptyList())
     val nearbyEvents: StateFlow<List<Event>> = _nearbyEvents.asStateFlow()
 
-    val selectedLocation = MutableStateFlow("Solo")
     val selectedCategory = MutableStateFlow("Semua")
 
     val filteredEvents: StateFlow<List<Event>> = combine(
-        _nearbyEvents, selectedCategory, selectedLocation
-    ) { events, category, location ->
+        _nearbyEvents, selectedCategory
+    ) { events, category ->
         events.filter { event ->
-            (category == "Semua" || event.category == category) &&
-            (location == "Solo" || event.location.contains(location, ignoreCase = true))
+            category == "Semua" || event.category == category
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadData()
         loadFilterData()
+        autoDetectLocation()
+    }
+
+    private fun autoDetectLocation() {
+        viewModelScope.launch {
+            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                val locationManager = getApplication<Application>().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            }
+        }
     }
 
     private fun loadData() {
@@ -89,9 +98,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val catResult = repository.getCategories()
             if (catResult is ApiResult.Success) _categories.value = catResult.data
-
-            val locResult = repository.getLocations()
-            if (locResult is ApiResult.Success) _locations.value = locResult.data.data
         }
     }
 
@@ -128,10 +134,6 @@ class HomeViewModel @Inject constructor(
                 SnackbarManager.show("Event disimpan")
             }
         }
-    }
-
-    fun updateLocation(location: String) {
-        selectedLocation.value = location
     }
 
     fun updateCategory(category: String) {

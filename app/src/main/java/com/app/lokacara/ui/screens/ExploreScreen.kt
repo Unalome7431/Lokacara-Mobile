@@ -71,7 +71,7 @@ fun ExploreScreen(
                 if (isSearchExpanded) {
                     ExpandedSearchSection(
                         eventName = eventName,
-                        onEventNameChange = { viewModel.eventName.value = it },
+                        onEventNameChange = { viewModel.eventName.value = it; viewModel.searchWithDebounce(it) },
                         eventLocation = eventLocation,
                         onEventLocationChange = { viewModel.eventLocation.value = it },
                         eventCategory = eventCategory,

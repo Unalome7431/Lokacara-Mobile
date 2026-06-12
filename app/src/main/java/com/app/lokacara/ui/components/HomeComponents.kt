@@ -176,35 +176,16 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
 @Composable
 fun NearbyEventsHeader(
-    currentLocation: String,
     selectedCategory: String,
-    locations: List<String>,
     categories: List<String>,
-    onLocationChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Column(modifier = Modifier.padding(top = 28.dp)) {
-        Row(modifier = Modifier.padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.home_nearby_events), style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black))
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Box {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { expanded = true }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = Secondary500, modifier = Modifier.size(24.dp))
-                    Text(currentLocation, style = TextStyle(fontFamily = PlusJakartaSansFont, color = Secondary500, fontSize = 16.sp, fontWeight = FontWeight.Bold))
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
-                    locations.forEach { location ->
-                        DropdownMenuItem(
-                            text = { Text(location, fontFamily = PlusJakartaSansFont, color = Color.Black) },
-                            onClick = { onLocationChange(location); expanded = false }
-                        )
-                    }
-                }
-            }
-        }
+        Text(
+            text = stringResource(R.string.home_nearby_events),
+            style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),

@@ -36,11 +36,9 @@ fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val selectedLocation by viewModel.selectedLocation.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val filteredEvents by viewModel.filteredEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
-    val locationNames by viewModel.locationNames.collectAsState()
     val categoryNames by viewModel.categoryNames.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -77,11 +75,8 @@ fun HomeScreen(
 
             item(key = "nearby_header") {
                 NearbyEventsHeader(
-                    currentLocation = selectedLocation,
                     selectedCategory = selectedCategory,
-                    locations = locationNames,
                     categories = categoryNames,
-                    onLocationChange = { viewModel.updateLocation(it) },
                     onCategoryChange = { viewModel.updateCategory(it) }
                 )
             }
