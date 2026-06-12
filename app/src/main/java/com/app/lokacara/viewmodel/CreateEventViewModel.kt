@@ -184,6 +184,28 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Deskripsi event maksimal 5000 karakter"
             return
         }
+        if (selectedCategoryId.value == null) {
+            _errorMessage.value = "Kategori event harus dipilih"
+            return
+        }
+        if (waktuMulai.value.isBlank() || waktuSelesai.value.isBlank()) {
+            _errorMessage.value = "Waktu mulai dan selesai harus diisi"
+            return
+        }
+        if (kuota.value <= 0 || kuota.value > 100_000) {
+            _errorMessage.value = "Kuota peserta harus di antara 1 sampai 100000"
+            return
+        }
+        if (isOnline.value) {
+            if (aplikasiTempat.value.isBlank()) {
+                _errorMessage.value = "Aplikasi/platform harus diisi untuk event online"
+                return
+            }
+            if (alamat.value.isBlank()) {
+                _errorMessage.value = "Link event harus diisi untuk event online"
+                return
+            }
+        }
 
         val startDt = formatToApiDatetime(waktuMulai.value)
         val endDt = formatEndApiDatetime(waktuMulai.value, waktuSelesai.value)
@@ -245,35 +267,37 @@ class CreateEventViewModel @Inject constructor(
             val lngPart = if (lngStr.isNotBlank())
                 lngStr.toRequestBody("text/plain".toMediaTypeOrNull()) else null
 
-            val posterBody = posterUri.value?.let { uri ->
-                val ctx = getApplication<Application>()
-                withContext(Dispatchers.IO) {
-                    val inputStream = ctx.contentResolver.openInputStream(uri) ?: return@withContext null
-                    var bytes = inputStream.use { it.readBytes() }
-                    val fileName = "poster_${System.currentTimeMillis()}.jpg"
-                    // Compress image to avoid 413 error
-                    if (bytes.size > 300_000) { // > ~300KB, compress
-                        try {
+            val posterBody = try {
+                posterUri.value?.let { uri ->
+                    val ctx = getApplication<Application>()
+                    withContext(Dispatchers.IO) {
+                        val inputStream = ctx.contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Poster tidak dapat dibuka")
+                        var bytes = inputStream.use { it.readBytes() }
+                        if (bytes.size > 10_000_000) throw IllegalArgumentException("Ukuran poster maksimal 10 MB")
+                        val fileName = "poster_${System.currentTimeMillis()}.jpg"
+                        // Compress image to avoid 413 error
+                        if (bytes.size > 300_000) {
                             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                            if (bitmap != null) {
-                                val maxDim = 1600f
-                                val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
-                                val scaled = if (scale < 1f) {
-                                    android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                                } else bitmap
-                                val out = ByteArrayOutputStream()
-                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                                bytes = out.toByteArray()
-                                if (scaled !== bitmap) scaled.recycle()
-                                bitmap.recycle()
-                            }
-                        } catch (_: Exception) {
-                            return@withContext null
+                                ?: throw IllegalArgumentException("Format poster tidak didukung")
+                            val maxDim = 1600f
+                            val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
+                            val scaled = if (scale < 1f) {
+                                android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+                            } else bitmap
+                            val out = ByteArrayOutputStream()
+                            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                            bytes = out.toByteArray()
+                            if (scaled !== bitmap) scaled.recycle()
+                            bitmap.recycle()
                         }
+                        val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
+                        MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
                     }
-                    val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
-                    MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
                 }
+            } catch (e: IllegalArgumentException) {
+                _errorMessage.value = e.message ?: "Poster tidak valid"
+                _isLoading.value = false
+                return@launch
             }
 
             when (val result = safeApiCall {

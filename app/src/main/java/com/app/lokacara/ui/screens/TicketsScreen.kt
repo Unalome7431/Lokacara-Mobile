@@ -21,7 +21,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -36,9 +35,9 @@ import com.app.lokacara.viewmodel.TicketsViewModel
 @Composable
 fun TicketsScreen(
     navController: NavController,
+    rootNavController: NavController? = null,
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     if (!isLoggedIn) {
@@ -54,7 +53,7 @@ fun TicketsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        navController.navigate(com.app.lokacara.ui.navigation.Screen.Login.route) {
+                        (rootNavController ?: navController).navigate(com.app.lokacara.ui.navigation.Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
@@ -70,8 +69,8 @@ fun TicketsScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf(
-        context.getString(R.string.tab_tickets_upcoming),
-        context.getString(R.string.tab_tickets_history)
+        stringResource(R.string.tab_tickets_upcoming),
+        stringResource(R.string.tab_tickets_history)
     )
     val upcomingEvents by viewModel.upcomingEvents.collectAsState()
     val historyEvents by viewModel.historyEvents.collectAsState()
@@ -202,6 +201,7 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
                 time = event.time,
                 location = event.location,
                 uniqueCode = event.id.toString(),
+                qrData = event.qrToken ?: event.id.toString(),
                 userName = "",
                 onQrClick = { showQrDialog = true }
             )
@@ -211,7 +211,7 @@ fun MendatangContent(upcomingEvents: List<UpcomingEvent>) {
     val currentEvent = selectedEvent
     if (showQrDialog && currentEvent != null) {
         QrCodeDialog(
-            qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=ticket_${currentEvent.id}",
+            qrData = currentEvent.qrToken ?: currentEvent.id.toString(),
             onDismiss = { showQrDialog = false }
         )
     }

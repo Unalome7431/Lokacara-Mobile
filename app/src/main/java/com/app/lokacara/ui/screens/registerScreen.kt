@@ -23,6 +23,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.GoogleButton
 import com.app.lokacara.ui.components.LokacaraTextField
@@ -36,6 +37,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
+    onLoginSuccess: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val name by viewModel.name.collectAsState()
@@ -46,12 +48,20 @@ fun RegisterScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val registerSuccess by viewModel.registerSuccess.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
 
     LaunchedEffect(registerSuccess) {
         if (registerSuccess) {
             viewModel.resetRegisterSuccess()
             viewModel.resetForm()
             onNavigateToLogin()
+        }
+    }
+
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            viewModel.resetLoginSuccess()
+            onLoginSuccess()
         }
     }
 
@@ -75,10 +85,11 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         val context = LocalContext.current
-        val googleSignInOptions = remember {
-            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("837483630487-tprpp5te2r42nldqdtddk1618l9nkqdh.apps.googleusercontent.com")
-                .build()
+        val googleWebClientId = stringResource(R.string.google_web_client_id)
+        val googleSignInOptions = remember(googleWebClientId) {
+            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
+                if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
+            }.build()
         }
         val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
         val googleLauncher = rememberLauncherForActivityResult(
@@ -98,7 +109,7 @@ fun RegisterScreen(
 
         GoogleButton(
             text = "Daftar dengan Google",
-            enabled = !isLoading,
+            enabled = !isLoading && googleWebClientId.isNotBlank(),
             onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
         )
 

@@ -43,13 +43,15 @@ class MainActivity : ComponentActivity() {
 
             LokacaraMobileTheme {
                 Box(Modifier.fillMaxSize()) {
-                    Scaffold {
+                    Scaffold { innerPadding ->
                         when {
                             isLoggedIn != null && isOnboardingCompleted != null -> {
-                                NavGraph(
-                                    isLoggedIn = isLoggedIn == true,
-                                    isOnboardingCompleted = isOnboardingCompleted == true
-                                )
+                                Box(modifier = Modifier.padding(innerPadding)) {
+                                    NavGraph(
+                                        isLoggedIn = isLoggedIn == true,
+                                        isOnboardingCompleted = isOnboardingCompleted == true
+                                    )
+                                }
                             }
                             else -> {
                                 Box(

@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
+
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) {
+        localFile.inputStream().use { input -> load(input) }
+    }
+}
+
 android {
     namespace = "com.app.lokacara"
     compileSdk {
@@ -20,6 +30,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders["MAPS_API_KEY"] = providers.gradleProperty("MAPS_API_KEY")
+            .orElse(providers.environmentVariable("MAPS_API_KEY"))
+            .orElse(localProperties.getProperty("MAPS_API_KEY") ?: "")
+            .get()
+        resValue(
+            "string",
+            "google_web_client_id",
+            providers.gradleProperty("GOOGLE_WEB_CLIENT_ID")
+                .orElse(providers.environmentVariable("GOOGLE_WEB_CLIENT_ID"))
+                .orElse(localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: "")
+                .get()
+        )
     }
 
     buildTypes {
@@ -37,6 +60,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
 }
 
@@ -64,6 +88,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
+    implementation(libs.zxing.core)
 
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)

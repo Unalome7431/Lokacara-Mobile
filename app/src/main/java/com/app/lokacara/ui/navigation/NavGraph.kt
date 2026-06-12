@@ -21,13 +21,17 @@ import com.app.lokacara.ui.screens.*
 @Composable
 fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
     val rootNavController = rememberNavController()
+    val startDestination = when {
+        !isOnboardingCompleted -> Screen.Onboarding.route
+        isLoggedIn -> "main_container"
+        else -> Screen.Login.route
+    }
 
-    NavHost(navController = rootNavController, startDestination = Screen.Onboarding.route) {
+    NavHost(navController = rootNavController, startDestination = startDestination) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
                 val nextRoute = when {
                     isLoggedIn -> "main_container"
-                    isOnboardingCompleted -> Screen.Login.route
                     else -> Screen.Register.route
                 }
                 rootNavController.navigate(nextRoute) {
@@ -36,9 +40,14 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             })
         }
         composable(Screen.Register.route) {
-            RegisterScreen(onNavigateToLogin = {
-                rootNavController.navigate(Screen.Login.route)
-            })
+            RegisterScreen(
+                onNavigateToLogin = { rootNavController.navigate(Screen.Login.route) },
+                onLoginSuccess = {
+                    rootNavController.navigate("main_container") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(Screen.Login.route) {
             LoginScreen(
@@ -86,7 +95,12 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     EventDetailScreen(navController = internalNavController, eventId = eventId)
                 }
                 composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }
-                composable(Screen.Tickets.route) { TicketsScreen(navController = internalNavController) }
+                composable(Screen.Tickets.route) {
+                    TicketsScreen(
+                        navController = internalNavController,
+                        rootNavController = rootNavController
+                    )
+                }
                 composable(Screen.Profile.route) {
                     ProfileScreen(
                         navController = internalNavController,
@@ -118,7 +132,12 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.MyEvents.route) { MyEventsScreen(navController = internalNavController) }
                 composable(Screen.SavedEvents.route) { BookmarkScreen(navController = internalNavController) }
                 composable(Screen.Certificates.route) { CertificatesScreen(navController = internalNavController) }
-                composable(Screen.Settings.route) { SettingsScreen(navController = internalNavController) }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        navController = internalNavController,
+                        rootNavController = rootNavController
+                    )
+                }
                 composable(Screen.About.route) { AboutScreen(navController = internalNavController) }
                 composable(Screen.Bookmark.route) {
                     BookmarkScreen(navController = internalNavController)

@@ -39,6 +39,11 @@ class ProfileRepository @Inject constructor(
 
     suspend fun uploadAvatar(context: Context, imageUri: Uri): ApiResult<ProfileResponse> {
         return safeApiCall {
+            context.contentResolver.openAssetFileDescriptor(imageUri, "r")?.use { descriptor ->
+                if (descriptor.length > 5_000_000) {
+                    throw Exception("Ukuran foto maksimal 5 MB")
+                }
+            }
             val inputStream: InputStream = context.contentResolver.openInputStream(imageUri)
                 ?: throw Exception("Cannot open image")
             val bytes = inputStream.use { it.readBytes() }

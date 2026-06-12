@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,14 +97,49 @@ fun MapSearchPicker(
     var selectedAddress by remember { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
+    fun useCurrentLocation() {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        ) {
+            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            if (location != null) {
+                val loc = MapLocation("Lokasi Saat Ini", "", location.latitude, location.longitude)
+                val latLng = LatLng(loc.latitude, loc.longitude)
+                markerState.position = latLng
+                scope.launch { cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(latLng, 16f)) }
+                selectedName = loc.name
+                selectedAddress = loc.address
+                onLocationSelected(loc)
+            } else {
+                SnackbarManager.showError("Lokasi saat ini belum tersedia")
+            }
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            useCurrentLocation()
+        } else {
+            SnackbarManager.showError("Izin lokasi diperlukan untuk memakai lokasi saat ini")
+        }
+    }
 
     val placesClient = remember {
-        if (!Places.isInitialized()) {
-            val ai = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-            val key = ai.metaData.getString("com.google.android.geo.API_KEY") ?: ""
-            Places.initialize(context, key)
-        }
-        Places.createClient(context)
+        runCatching {
+            if (!Places.isInitialized()) {
+                val ai = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+                val key = ai.metaData.getString("com.google.android.geo.API_KEY") ?: ""
+                if (key.isBlank()) return@runCatching null
+                Places.initialize(context, key)
+            }
+            Places.createClient(context)
+        }.getOrNull()
     }
 
     LaunchedEffect(searchQuery) {
@@ -111,8 +148,13 @@ fun MapSearchPicker(
             showDropdown = false
             return@LaunchedEffect
         }
+        val client = placesClient ?: run {
+            predictions = emptyList()
+            showDropdown = false
+            return@LaunchedEffect
+        }
         try {
-            val result = findPredictions(placesClient, searchQuery)
+            val result = findPredictions(client, searchQuery)
             predictions = result
             showDropdown = result.isNotEmpty()
         } catch (_: Exception) {
@@ -160,7 +202,8 @@ fun MapSearchPicker(
                             val secondary = prediction.getSecondaryText(null).toString()
                             searchQuery = ""
                             showDropdown = false
-                            fetchPlace(placesClient, placeId, primary, secondary) { loc ->
+                            val client = placesClient ?: return@DropdownMenuItem
+                            fetchPlace(client, placeId, primary, secondary) { loc ->
                                 val latLng = LatLng(loc.latitude, loc.longitude)
                                 selectedName = loc.name
                                 selectedAddress = loc.address
@@ -192,21 +235,17 @@ fun MapSearchPicker(
 
         Button(
             onClick = {
-                val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 ) {
-                    val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                        ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                    if (location != null) {
-                        val loc = MapLocation("Lokasi Saat Ini", "", location.latitude, location.longitude)
-                        val latLng = LatLng(loc.latitude, loc.longitude)
-                        markerState.position = latLng
-                        scope.launch { cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(latLng, 16f)) }
-                        selectedName = loc.name
-                        selectedAddress = loc.address
-                        onLocationSelected(loc)
-                    }
+                    useCurrentLocation()
+                } else {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth().height(40.dp),

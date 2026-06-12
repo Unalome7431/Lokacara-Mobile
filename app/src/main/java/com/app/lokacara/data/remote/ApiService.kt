@@ -58,8 +58,8 @@ interface ApiService {
     @GET("api/user")
     suspend fun getCurrentUser(): UserDto
 
-    @DELETE("api/user")
-    suspend fun deleteAccount(): MessageResponse
+    @HTTP(method = "DELETE", path = "api/user", hasBody = true)
+    suspend fun deleteAccount(@Body body: Map<String, String>): MessageResponse
 
     @GET("api/profile")
     suspend fun getProfile(): ProfileResponse

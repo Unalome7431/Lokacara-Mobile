@@ -151,10 +151,16 @@ class ExploreViewModel @Inject constructor(
             bookmarkManager.toggleBookmark(eventId)
             val idLong = eventId.toLongOrNull()
             if (idLong != null) {
-                if (wasBookmarked) {
-                    try { apiService.removeBookmark(idLong) } catch (_: Exception) {}
-                } else {
-                    try { apiService.addBookmark(idLong) } catch (_: Exception) {}
+                val synced = try {
+                    if (wasBookmarked) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
+                    true
+                } catch (_: Exception) {
+                    false
+                }
+                if (!synced) {
+                    bookmarkManager.toggleBookmark(eventId)
+                    SnackbarManager.showError("Gagal menyinkronkan bookmark")
+                    return@launch
                 }
             }
             if (wasBookmarked) {

@@ -89,10 +89,11 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         val context = LocalContext.current
-        val googleSignInOptions = remember {
-            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("837483630487-tprpp5te2r42nldqdtddk1618l9nkqdh.apps.googleusercontent.com")
-                .build()
+        val googleWebClientId = stringResource(R.string.google_web_client_id)
+        val googleSignInOptions = remember(googleWebClientId) {
+            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
+                if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
+            }.build()
         }
         val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
         val googleLauncher = rememberLauncherForActivityResult(
@@ -112,7 +113,7 @@ fun LoginScreen(
 
         GoogleButton(
             text = stringResource(R.string.auth_login_google),
-            enabled = !isLoading,
+            enabled = !isLoading && googleWebClientId.isNotBlank(),
             onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
         )
 

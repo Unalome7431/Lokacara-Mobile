@@ -346,6 +346,7 @@ fun EventDetailScreen(
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val shareTitle = stringResource(R.string.event_detail_share_title)
 
     if (showShareDialog) {
         val shareUrl = "https://lokacara.my.id/events/${event.id}"
@@ -357,7 +358,7 @@ fun EventDetailScreen(
                 type = "text/plain"
                 putExtra(android.content.Intent.EXTRA_TEXT, shareText)
             }
-            val chooser = android.content.Intent.createChooser(shareIntent, context.getString(R.string.event_detail_share_title))
+            val chooser = android.content.Intent.createChooser(shareIntent, shareTitle)
             context.startActivity(chooser)
         }
     }

@@ -10,6 +10,7 @@ import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,10 +76,16 @@ class BookmarkViewModel @Inject constructor(
             bookmarkManager.toggleBookmark(eventId)
             val idLong = eventId.toLongOrNull()
             if (idLong != null) {
-                if (isRemoving) {
-                    try { apiService.removeBookmark(idLong) } catch (_: Exception) {}
-                } else {
-                    try { apiService.addBookmark(idLong) } catch (_: Exception) {}
+                val synced = try {
+                    if (isRemoving) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
+                    true
+                } catch (_: Exception) {
+                    false
+                }
+                if (!synced) {
+                    bookmarkManager.toggleBookmark(eventId)
+                    loadBookmarkedEvents()
+                    SnackbarManager.showError("Gagal menyinkronkan bookmark")
                 }
             }
         }

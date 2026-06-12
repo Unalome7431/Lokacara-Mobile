@@ -127,37 +127,66 @@ class ProfileViewModel @Inject constructor(
 
     fun updateProfileField(field: UserSessionManager.Field, newValue: String) {
         val current = _userProfile.value
-        _userProfile.value = when (field) {
-            UserSessionManager.Field.NAME -> current.copy(name = newValue)
-            UserSessionManager.Field.EMAIL -> current.copy(email = newValue)
-            UserSessionManager.Field.PHONE -> current.copy(phone = newValue)
-            UserSessionManager.Field.LOCATION -> current.copy(location = newValue)
+        val trimmedValue = newValue.trim()
+        if (field == UserSessionManager.Field.NAME && trimmedValue.isBlank()) {
+            _errorMessage.value = "Nama tidak boleh kosong"
+            SnackbarManager.showError("Nama tidak boleh kosong")
+            return
+        }
+        if (field == UserSessionManager.Field.EMAIL && !isValidEmail(trimmedValue)) {
+            _errorMessage.value = "Format email tidak valid"
+            SnackbarManager.showError("Format email tidak valid")
+            return
+        }
+
+        val updatedProfile = when (field) {
+            UserSessionManager.Field.NAME -> current.copy(name = trimmedValue)
+            UserSessionManager.Field.EMAIL -> current.copy(email = trimmedValue)
+            UserSessionManager.Field.PHONE -> current.copy(phone = trimmedValue)
+            UserSessionManager.Field.LOCATION -> current.copy(location = trimmedValue)
         }
         viewModelScope.launch {
-            userSessionManager.updateField(field, newValue)
-            updateProfile(_userProfile.value.name, _userProfile.value.email)
+            updateProfile(updatedProfile, field)
         }
     }
 
-    fun updateProfile(name: String?, email: String?) {
-        viewModelScope.launch {
-            try {
-                val body = mutableMapOf<String, String>()
-                name?.let { body["name"] = it }
-                email?.let { body["email"] = it }
-                val profile = _userProfile.value
-                if (profile.phone.isNotBlank()) body["phone"] = profile.phone
-                if (profile.location.isNotBlank()) body["location"] = profile.location
-                if (body.isEmpty()) return@launch
-                when (val result = repository.updateProfile(body)) {
-                    is ApiResult.Success -> {
-                        loadUserProfile()
-                        SnackbarManager.show("Profil berhasil diperbarui")
-                    }
-                    is ApiResult.Error -> { }
+    private suspend fun updateProfile(profile: UserProfile, updatedField: UserSessionManager.Field) {
+        try {
+            val body = mutableMapOf(
+                "name" to profile.name,
+                "email" to profile.email
+            )
+            if (profile.phone.isNotBlank()) body["phone"] = profile.phone
+            if (profile.location.isNotBlank()) body["location"] = profile.location
+
+            when (val result = repository.updateProfile(body)) {
+                is ApiResult.Success -> {
+                    userSessionManager.updateField(
+                        field = updatedField,
+                        value = when (updatedField) {
+                            UserSessionManager.Field.NAME -> profile.name
+                            UserSessionManager.Field.EMAIL -> profile.email
+                            UserSessionManager.Field.PHONE -> profile.phone
+                            UserSessionManager.Field.LOCATION -> profile.location
+                        }
+                    )
+                    _userProfile.value = profile
+                    loadUserProfile()
+                    SnackbarManager.show("Profil berhasil diperbarui")
                 }
-            } catch (_: Exception) { }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+        } catch (_: Exception) {
+            _errorMessage.value = "Gagal memperbarui profil"
+            SnackbarManager.showError("Gagal memperbarui profil")
         }
+    }
+
+    private fun isValidEmail(value: String): Boolean {
+        return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(value)
     }
 
     fun saveProfilePhoto(uri: Uri) {
