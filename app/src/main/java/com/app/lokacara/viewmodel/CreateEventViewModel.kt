@@ -174,7 +174,7 @@ class CreateEventViewModel @Inject constructor(
         }
 
         val startDt = formatToApiDatetime(waktuMulai.value)
-        val endDt = formatToApiDatetime(waktuSelesai.value)
+        val endDt = formatEndApiDatetime(waktuMulai.value, waktuSelesai.value)
 
         if (waktuMulai.value.isNotBlank() && waktuSelesai.value.isNotBlank()) {
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
@@ -276,6 +276,25 @@ class CreateEventViewModel @Inject constructor(
             return sdf.format(java.util.Date())
         }
         return input
+    }
+
+    /* end start closer to +1hr if not set */
+    private fun formatEndApiDatetime(startInput: String, endInput: String): String {
+        if (startInput.isBlank() && endInput.isBlank()) {
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val cal = java.util.Calendar.getInstance()
+            cal.time = java.util.Date()
+            cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
+            return sdf.format(cal.time)
+        }
+        if (endInput.isBlank()) {
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val cal = java.util.Calendar.getInstance()
+            cal.time = java.util.Date()
+            cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
+            return sdf.format(cal.time)
+        }
+        return endInput
     }
 
     val latitude = MutableStateFlow("")
