@@ -28,6 +28,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import android.graphics.BitmapFactory
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
@@ -229,10 +231,27 @@ class CreateEventViewModel @Inject constructor(
                 val ctx = getApplication<Application>()
                 withContext(Dispatchers.IO) {
                     val inputStream = ctx.contentResolver.openInputStream(uri) ?: return@withContext null
-                    val bytes = inputStream.use { it.readBytes() }
+                    var bytes = inputStream.use { it.readBytes() }
                     val fileName = "poster_${System.currentTimeMillis()}.jpg"
-                    val mediaType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
-                    MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(mediaType.toMediaTypeOrNull()))
+                    // Compress image to avoid 413 error
+                    if (bytes.size > 300_000) { // > ~300KB, compress
+                        try {
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            if (bitmap != null) {
+                                val maxDim = 1600f
+                                val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
+                                val scaled = if (scale < 1f) {
+                                    android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+                                } else bitmap
+                                val out = ByteArrayOutputStream()
+                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                bytes = out.toByteArray()
+                                if (scaled !== bitmap) scaled.recycle()
+                                bitmap.recycle()
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody("image/jpeg".toMediaTypeOrNull()))
                 }
             }
 

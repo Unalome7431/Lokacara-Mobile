@@ -625,7 +625,7 @@ fun CategoryDropdownField(
     label: String,
     containerColor: Color
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = label,
@@ -634,13 +634,13 @@ fun CategoryDropdownField(
             fontSize = 16.sp,
             color = Gray800
         )
-        Box {
+        Surface(
+            modifier = Modifier.fillMaxWidth().clickable { showDialog = true },
+            shape = RoundedCornerShape(16.dp),
+            color = containerColor
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(containerColor, RoundedCornerShape(16.dp))
-                    .clickable { expanded = true }
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -657,36 +657,56 @@ fun CategoryDropdownField(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                offset = DpOffset(0.dp, 55.dp),
-                modifier = Modifier
-                    .background(Color.White)
-                    .heightIn(max = 280.dp)
-            ) {
-                categories.forEach { cat ->
-                    val isSelected = selectedCategoryName == cat.name
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = cat.name,
-                                fontFamily = NunitoFont,
-                                color = if (isSelected) Primary500 else Gray900,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        onClick = {
-                            onCategorySelected(cat)
-                            expanded = false
-                        },
-                        trailingIcon = if (isSelected) {
-                            { Icon(Icons.Default.Check, "Selected", tint = Primary500, modifier = Modifier.size(18.dp)) }
-                        } else null
-                    )
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = {
+                Text("Pilih Kategori", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    categories.forEach { cat ->
+                        val isSelected = selectedCategoryName == cat.name
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                onCategorySelected(cat)
+                                showDialog = false
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Primary500.copy(alpha = 0.1f) else Color.Transparent
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = cat.name,
+                                    fontFamily = NunitoFont,
+                                    fontSize = 15.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) Primary500 else Gray900
+                                )
+                                if (isSelected) {
+                                    Icon(Icons.Default.Check, contentDescription = "Selected", tint = Primary500, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Tutup", color = Primary500, fontWeight = FontWeight.Bold)
                 }
             }
-        }
+        )
     }
 }
 
