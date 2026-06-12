@@ -12,7 +12,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -177,7 +177,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
 @Composable
 fun NearbyEventsHeader(
-    currentLocation: String = "Sekitar Anda"
+    currentLocation: String = ""
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
@@ -185,13 +185,15 @@ fun NearbyEventsHeader(
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
-            Icon(Icons.Outlined.MyLocation, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = currentLocation,
-                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
-            )
+        if (currentLocation.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
+                Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "di $currentLocation",
+                    style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
+                )
+            }
         }
     }
 }

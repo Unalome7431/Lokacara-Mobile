@@ -48,7 +48,7 @@ class HomeViewModel @Inject constructor(
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
-    val currentLocationName = MutableStateFlow("Sekitar Anda")
+    val currentLocationName = MutableStateFlow("")
     private val _currentLatLng = MutableStateFlow<Pair<Double, Double>?>(null)
 
     val nearbyEvents: StateFlow<List<Event>> = combine(
