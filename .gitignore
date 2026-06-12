@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+openspec/
+.opencode/
+AGENTS.md
