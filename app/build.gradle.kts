@@ -20,6 +20,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val mapsApiKeyFile = rootProject.file("local.properties")
+        val mapsApiKey = if (mapsApiKeyFile.exists()) {
+            mapsApiKeyFile.readLines()
+                .firstOrNull { it.startsWith("MAPS_API_KEY") }
+                ?.substringAfter("=")
+                ?.trim()
+                ?: ""
+        } else {
+            System.getenv("MAPS_API_KEY") ?: ""
+        }
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
