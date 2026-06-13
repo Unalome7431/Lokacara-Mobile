@@ -216,7 +216,7 @@ fun EventCardCompact(
                         text = event.date,
                         fontFamily = PlusJakartaSansFont,
                         fontSize = 11.sp,
-                        color = Gray400,
+                        color = Gray600,
                         maxLines = 1
                     )
                     Text(

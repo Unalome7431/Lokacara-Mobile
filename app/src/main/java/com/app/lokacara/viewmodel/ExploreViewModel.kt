@@ -72,7 +72,7 @@ class ExploreViewModel @Inject constructor(
     private var currentPage = 1
     private var hasMorePages = true
 
-    private val _isLoading = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _isLoadingMore = MutableStateFlow(false)

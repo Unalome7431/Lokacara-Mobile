@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -127,6 +128,12 @@ private fun RowScope.NavItem(
         label = "navIconScale"
     )
 
+    val pillHeight by animateDpAsState(
+        targetValue = if (isSelected) 26.dp else 18.dp,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
+        label = "pillHeight"
+    )
+
     val pillShape = RoundedCornerShape(14.dp)
 
     Column(
@@ -139,8 +146,8 @@ private fun RowScope.NavItem(
     ) {
         Box(
             modifier = Modifier
-                .height(26.dp)
-                .widthIn(min = 36.dp)
+                .height(pillHeight)
+                .widthIn(min = if (isSelected) 36.dp else 28.dp)
                 .clip(pillShape)
                 .background(if (isSelected) Secondary500 else Color.Transparent)
                 .padding(horizontal = 10.dp),
