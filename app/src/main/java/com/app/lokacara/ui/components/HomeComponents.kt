@@ -1,11 +1,18 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -13,32 +20,42 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastForEach
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
+import android.location.Geocoder
 import com.app.lokacara.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
 fun HomeHeader(navController: NavController) {
@@ -92,15 +109,28 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
     val cardShape = remember { RoundedCornerShape(24.dp) }
     val gradientBrush = remember {
         Brush.verticalGradient(
-            colors = listOf(Color.Black.copy(0.3f), Color.Transparent, Color.Black.copy(0.5f)),
+            colors = listOf(Color.Black.copy(0.1f), Color.Transparent, Color.Black.copy(0.6f), Color.Black.copy(0.7f)),
             startY = 0f
         )
     }
     val context = LocalContext.current
 
+    var paused by remember { mutableStateOf(false) }
+
+    // Pause auto-slide when user interacts with the pager
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collect { scrolling ->
+                if (scrolling) {
+                    paused = true
+                }
+            }
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
-            delay(4000)
+            delay(if (paused) 3000L else 4000L)
+            if (paused) { paused = false; continue }
             if (pageCount > 1) {
                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
             }
@@ -124,7 +154,8 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth(),
-            beyondViewportPageCount = 1
+            beyondViewportPageCount = 1,
+            userScrollEnabled = true
         ) { page ->
             key(page) {
                 val event = popularEvents[page % popularEvents.size]
@@ -132,7 +163,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .height(200.dp)
                         .clickable { onEventClick(event) },
                     shape = cardShape,
                     color = Color.Transparent,
@@ -154,22 +185,63 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
                         Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
 
-                        Text(
-                            text = event.title,
-                            color = Color.White,
-                            style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                            modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
-                        )
-
                         Column(
-                            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
-                            horizontalAlignment = Alignment.End
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
-                            Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                            Box(modifier = Modifier.align(Alignment.Start).widthIn(max = 200.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = SvgOrange.copy(alpha = 0.9f)
+                                ) {
+                                    Text(
+                                        text = event.category,
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+
+                            Column {
+                                Text(
+                                    text = event.title,
+                                    color = Color.White,
+                                    style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = event.date, color = Color.White.copy(alpha = 0.8f), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+
+        // Page indicator dots
+        val currentPage = pagerState.currentPage % popularEvents.size
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            popularEvents.indices.forEach { index ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(if (index == currentPage) 24.dp else 8.dp, 8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (index == currentPage) SvgPrimaryBlue else Gray300)
+                )
             }
         }
     }
@@ -177,23 +249,28 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
 @Composable
 fun NearbyEventsHeader(
-    currentLocation: String = ""
+    currentLocation: String = "",
+    onLocationClick: () -> Unit = {}
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
-            text = "Event terdekat di sekitar anda",
+            text = "Event di Sekitar Anda",
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
-        if (currentLocation.isNotBlank()) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
-                Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "di $currentLocation",
-                    style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
-                )
-            }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 4.dp)
+                .clickable { onLocationClick() }
+        ) {
+            Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            val displayText = if (currentLocation.isNotBlank()) "di $currentLocation" else "di Sekitar Anda"
+            Text(
+                text = displayText,
+                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
+            )
         }
     }
 }
@@ -204,9 +281,13 @@ fun CategoryEventSection(
     events: List<Event>,
     onEventClick: (Event) -> Unit,
     onSeeAll: () -> Unit,
-    animated: Boolean = true
+    onBookmarkClick: (String) -> Unit = {}
 ) {
-    Column(modifier = Modifier.padding(top = 24.dp)) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
+
+    Column(modifier = Modifier.padding(top = 24.dp).graphicsLayer(alpha = alpha)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -231,8 +312,124 @@ fun CategoryEventSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(events, key = { it.id }) { event ->
-                EventCardCompact(event = event, onClick = { onEventClick(event) })
+                EventCardCompact(
+                    event = event,
+                    onClick = { onEventClick(event) },
+                    onBookmarkClick = { onBookmarkClick(event.id.toString()) }
+                )
             }
         }
+        }
     }
+
+@Composable
+fun LocationPickerDialog(
+    currentLocation: String,
+    onDismiss: () -> Unit,
+    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Pilih Lokasi", fontFamily = NunitoFont, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text(
+                    "Masukkan nama kota untuk melihat event di sekitar lokasi tersebut",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 13.sp,
+                    color = Gray500,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Cari kota...", fontFamily = PlusJakartaSansFont) },
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, "Lokasi", tint = Secondary500) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp)
+                )
+                if (currentLocation.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Lokasi saat ini",
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 12.sp,
+                        color = Gray400,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Secondary100,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDismiss() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Outlined.MyLocation, null, tint = Secondary500, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "di $currentLocation",
+                                fontFamily = PlusJakartaSansFont,
+                                fontSize = 14.sp,
+                                color = Gray900
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val city = searchQuery.text.trim()
+                    if (city.isNotBlank()) {
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                try {
+                                    val geocoder = Geocoder(context)
+                                    val addresses = geocoder.getFromLocationName(city, 1)
+                                    if (!addresses.isNullOrEmpty()) {
+                                        val loc = addresses[0]
+                                        Result.success(Triple(
+                                            loc.locality ?: loc.subAdminArea ?: loc.adminArea ?: city,
+                                            loc.latitude,
+                                            loc.longitude
+                                        ))
+                                    } else {
+                                        Result.failure(Exception("Lokasi tidak ditemukan"))
+                                    }
+                                } catch (e: Exception) {
+                                    Result.failure(e)
+                                }
+                            }
+                            result.onSuccess { (cityName, lat, lng) ->
+                                onLocationSelected(cityName, lat, lng)
+                            }.onFailure {
+                                SnackbarManager.show("Lokasi tidak ditemukan")
+                            }
+                        }
+                    }
+                },
+                enabled = searchQuery.text.isNotBlank()
+            ) {
+                Text("Gunakan", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray500)
+            }
+        }
+    )
 }

@@ -94,7 +94,13 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
                     EventDetailScreen(navController = internalNavController, eventId = eventId)
                 }
-                composable(Screen.Explore.route) { ExploreScreen(navController = internalNavController) }
+                composable(
+                    Screen.Explore.route,
+                    arguments = listOf(navArgument("category") { type = NavType.StringType; defaultValue = "" })
+                ) { backStackEntry ->
+                    val initialCategory = backStackEntry.arguments?.getString("category") ?: ""
+                    ExploreScreen(navController = internalNavController, initialCategory = initialCategory)
+                }
                 composable(Screen.Tickets.route) {
                     TicketsScreen(
                         navController = internalNavController,

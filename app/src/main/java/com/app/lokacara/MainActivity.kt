@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,25 +42,16 @@ class MainActivity : ComponentActivity() {
 
             LokacaraMobileTheme {
                 Box(Modifier.fillMaxSize()) {
-                    Scaffold { innerPadding ->
-                        when {
-                            isLoggedIn != null && isOnboardingCompleted != null -> {
-                                Box(modifier = Modifier.padding(innerPadding)) {
-                                    NavGraph(
-                                        isLoggedIn = isLoggedIn == true,
-                                        isOnboardingCompleted = isOnboardingCompleted == true
-                                    )
-                                }
-                            }
-                            else -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color(0xFFFAF8FF)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("Loading...")
-                                }
+                    when {
+                        isLoggedIn != null && isOnboardingCompleted != null -> {
+                            NavGraph(
+                                isLoggedIn = isLoggedIn == true,
+                                isOnboardingCompleted = isOnboardingCompleted == true
+                            )
+                        }
+                        else -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Loading...")
                             }
                         }
                     }

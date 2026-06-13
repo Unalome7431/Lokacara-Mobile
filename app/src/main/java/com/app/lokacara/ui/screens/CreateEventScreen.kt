@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -132,6 +133,10 @@ fun CreateEventScreen(
             viewModel.resetPublishSuccess()
             onPublish()
         }
+    }
+
+    BackHandler {
+        viewModel.saveDraftAndExit(onBack)
     }
 
     val lightBlueBg = Color(0xFFD6E4FF)
@@ -262,7 +267,7 @@ fun CreateEventScreen(
                 contentDescription = "Tutup",
                 modifier = Modifier
                     .size(28.dp)
-                    .clickable { onBack() },
+                    .clickable { viewModel.saveDraftAndExit(onBack) },
                 tint = Gray900
             )
             Spacer(modifier = Modifier.width(16.dp))

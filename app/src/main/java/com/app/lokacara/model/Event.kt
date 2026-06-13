@@ -15,5 +15,6 @@ data class Event(
     val isBookmarked: Boolean = false,
     val penyelenggara: String = "",
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val viewCount: Int = 0
 )
