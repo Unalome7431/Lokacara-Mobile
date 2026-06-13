@@ -1,5 +1,8 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -73,13 +76,12 @@ fun ExploreHeader() {
 }
 
 @Composable
-fun CollapsedSearchBar(onClick: () -> Unit) {
+fun CollapsedSearchBar(onClick: () -> Unit, onFilterClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .height(52.dp)
-            .border(1.dp, Gray300, RoundedCornerShape(100.dp))
             .background(Color.White, RoundedCornerShape(100.dp))
             .clickable { onClick() },
         contentAlignment = Alignment.CenterStart
@@ -90,7 +92,16 @@ fun CollapsedSearchBar(onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("Cari event...", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray400))
-            Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onFilterClick,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = Primary500, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
+            }
         }
     }
 }
@@ -103,6 +114,7 @@ fun ExpandedSearchSection(
     searchHistory: List<String> = emptyList(),
     onClearHistory: () -> Unit = {},
     onSearchSubmit: () -> Unit,
+    onFilterClick: () -> Unit = {},
     onCancel: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
@@ -571,6 +583,152 @@ fun EmptyStateView(
                 Icon(Icons.Outlined.Clear, null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Reset Filter", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterBottomSheet(
+    sortOption: SortOption,
+    onSortChange: (SortOption) -> Unit,
+    priceFilter: PriceFilter,
+    onPriceChange: (PriceFilter) -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 3 }
+            ) {
+                Text(
+                    "Filter Pencarian",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = Gray900
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { it / 3 }
+            ) {
+                Column {
+                    Text(
+                        "Urutkan",
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Gray700
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SortOption.entries.forEach { option ->
+                            FilterChip(
+                                selected = sortOption == option,
+                                onClick = { onSortChange(option) },
+                                label = {
+                                    Text(
+                                        option.label,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (sortOption == option) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (sortOption == option) Color.White else Gray700
+                                    )
+                                },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Primary500,
+                                    containerColor = Gray100
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 3 }
+            ) {
+                Column {
+                    Text(
+                        "Harga",
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Gray700
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PriceFilter.entries.forEach { filter ->
+                            FilterChip(
+                                selected = priceFilter == filter,
+                                onClick = { onPriceChange(filter) },
+                                label = {
+                                    Text(
+                                        filter.label,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (priceFilter == filter) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (priceFilter == filter) Color.White else Gray700
+                                    )
+                                },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Secondary500,
+                                    containerColor = Gray100
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 3 }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = onReset) {
+                        Text(
+                            "Reset Filter",
+                            fontFamily = PlusJakartaSansFont,
+                            fontWeight = FontWeight.Bold,
+                            color = SemanticErrorBase
+                        )
+                    }
+                    Button(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                    ) {
+                        Text("Terapkan", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
             }
         }
     }

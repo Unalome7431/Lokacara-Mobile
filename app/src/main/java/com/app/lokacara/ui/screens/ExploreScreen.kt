@@ -62,6 +62,8 @@ fun ExploreScreen(
     val categorySuggestions by viewModel.categorySuggestions.collectAsState()
     val showDatePicker by viewModel.showDatePicker.collectAsState()
 
+    var showBottomSheet by remember { mutableStateOf(false) }
+
     LaunchedEffect(initialCategory) {
         viewModel.setInitialCategory(initialCategory)
     }
@@ -98,11 +100,22 @@ fun ExploreScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        when {
-            isLoading && events.isEmpty() && error == null -> {
+        AnimatedContent(
+            targetState = when {
+                isLoading && events.isEmpty() && error == null -> "loading"
+                error != null && events.isEmpty() -> "error"
+                else -> "content"
+            },
+            transitionSpec = {
+                fadeIn(tween(250)) togetherWith fadeOut(tween(150))
+            },
+            label = "explore_state"
+        ) { state ->
+        when (state) {
+            "loading" -> {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item { ExploreHeader() }
-                    item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }) }
+                    item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }, onFilterClick = {}) }
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         ExploreCategories(
@@ -115,7 +128,7 @@ fun ExploreScreen(
                     item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
-            error != null && events.isEmpty() -> {
+            "error" -> {
                 PullToRefreshBox(
                     isRefreshing = isLoading,
                     onRefresh = { viewModel.refresh() }
@@ -177,7 +190,10 @@ fun ExploreScreen(
 
                     if (!isSearchExpanded) {
                         item(key = "collapsed_search") {
-                            CollapsedSearchBar(onClick = { viewModel.expandSearch() })
+                            CollapsedSearchBar(
+                                onClick = { viewModel.expandSearch() },
+                                onFilterClick = { showBottomSheet = true }
+                            )
                         }
                     }
 
@@ -187,13 +203,6 @@ fun ExploreScreen(
                             selectedCategory = selectedCategoryChip,
                             onCategorySelected = { viewModel.selectCategoryChip(it) },
                             allCategories = categorySuggestions
-                        )
-                    }
-
-                    item(key = "price_filter") {
-                        PriceFilterChips(
-                            selected = priceFilter,
-                            onSelected = { viewModel.selectPriceFilter(it) }
                         )
                     }
 
@@ -261,17 +270,18 @@ fun ExploreScreen(
                     } else if (isGridView) {
                         item(key = "grid_events") {
                             Spacer(modifier = Modifier.height(4.dp))
-                            LazyVerticalGrid(
+                                Crossfade(targetState = events, animationSpec = tween(300), label = "grid_crossfade") { currentEvents ->
+                                LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height((((events.size + 1) / 2) * 280).dp),
+                                    .height((((currentEvents.size + 1) / 2) * 280).dp),
                                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
                                 userScrollEnabled = false
                             ) {
-                                items(events, key = { it.id }) { event ->
+                                items(currentEvents, key = { it.id }) { event ->
                                     EventCardCompact(
                                         event = event,
                                         onClick = {
@@ -281,6 +291,7 @@ fun ExploreScreen(
                                         onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
                                     )
                                 }
+                            }
                             }
                         }
                     } else {
@@ -315,6 +326,7 @@ fun ExploreScreen(
                 }
             }
         }
+        }
     }
 
     if (showDatePicker) {
@@ -339,6 +351,17 @@ fun ExploreScreen(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showBottomSheet) {
+        FilterBottomSheet(
+            sortOption = sortOption,
+            onSortChange = { viewModel.selectSortOption(it) },
+            priceFilter = priceFilter,
+            onPriceChange = { viewModel.selectPriceFilter(it) },
+            onReset = { viewModel.resetFilters() },
+            onDismiss = { showBottomSheet = false }
+        )
     }
 }
 
