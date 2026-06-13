@@ -16,5 +16,9 @@ data class Event(
     val penyelenggara: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val viewCount: Int = 0
+    val viewCount: Int = 0,
+    val type: String? = null,
+    val startDatetime: String = "",
+    val endDatetime: String? = null,
+    val capacity: Int? = null
 )

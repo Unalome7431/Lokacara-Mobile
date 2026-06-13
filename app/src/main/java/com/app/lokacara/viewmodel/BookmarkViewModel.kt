@@ -91,22 +91,33 @@ class BookmarkViewModel @Inject constructor(
             val currentIds = bookmarkManager.bookmarkedIds.first()
             val isRemoving = eventId in currentIds
 
-            // Update local DataStore immediately (optimistic UI)
             bookmarkManager.toggleBookmark(eventId)
 
-            // Update local list immediately
             if (isRemoving) {
+                val removed = _savedEvents.value.find { it.id.toString() == eventId }
                 _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
-            }
-            // If adding, we'll load the event on next refresh()
-
-            // Sync to server (fire-and-forget — gak undo kalau gagal)
-            val idLong = eventId.toLongOrNull()
-            if (idLong != null) {
-                try {
-                    if (isRemoving) apiService.removeBookmark(idLong)
-                    else apiService.addBookmark(idLong)
-                } catch (_: Exception) { /* server sync gagal — lokal tetap tersimpan */ }
+                val idLong = eventId.toLongOrNull()
+                if (idLong != null) {
+                    try {
+                        apiService.removeBookmark(idLong)
+                    } catch (_: Exception) {
+                        if (removed != null) {
+                            _savedEvents.value = _savedEvents.value + removed
+                        }
+                        bookmarkManager.toggleBookmark(eventId)
+                        SnackbarManager.showError("Gagal menghapus bookmark")
+                    }
+                }
+            } else {
+                val idLong = eventId.toLongOrNull()
+                if (idLong != null) {
+                    try {
+                        apiService.addBookmark(idLong)
+                    } catch (_: Exception) {
+                        bookmarkManager.toggleBookmark(eventId)
+                        SnackbarManager.showError("Gagal menyimpan bookmark")
+                    }
+                }
             }
         }
     }

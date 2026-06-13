@@ -122,8 +122,8 @@ private fun RowScope.NavItem(
     onClick: () -> Unit
 ) {
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
+        targetValue = if (isSelected) 1.15f else 1f,
+        animationSpec = spring(dampingRatio = 0.3f, stiffness = 600f),
         label = "navIconScale"
     )
 
@@ -139,10 +139,10 @@ private fun RowScope.NavItem(
     ) {
         Box(
             modifier = Modifier
-                .height(32.dp)
-                .widthIn(min = 48.dp)
+                .height(26.dp)
+                .widthIn(min = 36.dp)
                 .clip(pillShape)
-                .background(if (isSelected) Primary500 else Color.Transparent)
+                .background(if (isSelected) Secondary500 else Color.Transparent)
                 .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -155,7 +155,7 @@ private fun RowScope.NavItem(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(pillShape)
-                        .background(Primary500)
+                        .background(Secondary500)
                 )
             }
 
@@ -186,7 +186,7 @@ private fun RowScope.NavItem(
                     fontFamily = PlusJakartaSansFont,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Primary600
+                    color = Secondary600
                 )
             )
         }

@@ -83,7 +83,8 @@ fun HomeScreen(
             onDismiss = { viewModel.dismissLocationPicker() },
             onLocationSelected = { city, lat, lng ->
                 viewModel.setManualLocation(city, lat, lng)
-            }
+            },
+            onUseCurrentGps = { viewModel.useCurrentGps() }
         )
     }
 
@@ -188,7 +189,7 @@ fun HomeScreen(
                                 fontFamily = NunitoFont,
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 20.sp,
-                                color = Color.Black,
+                                color = Primary500,
                                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 4.dp)
                             )
                         }

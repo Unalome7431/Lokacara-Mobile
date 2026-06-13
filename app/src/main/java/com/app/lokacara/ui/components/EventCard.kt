@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.app.lokacara.model.Event
+import com.app.lokacara.data.remote.countdownLabel
 import com.app.lokacara.ui.theme.*
 
 @Composable
@@ -197,12 +198,14 @@ fun EventCardCompact(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val cdLabel = if (event.startDatetime.isNotEmpty()) countdownLabel(event.startDatetime) else null
                     Text(
-                        text = event.date,
+                        text = cdLabel ?: event.date,
                         fontFamily = PlusJakartaSansFont,
                         fontSize = 11.sp,
-                        color = Gray400,
-                        maxLines = 1
+                        color = if (cdLabel != null) Secondary500 else Gray400,
+                        maxLines = 1,
+                        fontWeight = if (cdLabel != null) FontWeight.Bold else FontWeight.Normal
                     )
                     Text(
                         text = event.price,

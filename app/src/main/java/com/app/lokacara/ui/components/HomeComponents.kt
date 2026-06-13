@@ -50,6 +50,7 @@ import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
 import android.location.Geocoder
+import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -188,21 +189,51 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                             modifier = Modifier.fillMaxSize().padding(16.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(modifier = Modifier.align(Alignment.Start).widthIn(max = 200.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = SvgOrange.copy(alpha = 0.9f)
-                                ) {
-                                    Text(
-                                        text = event.category,
-                                        color = Color.White,
-                                        fontSize = 11.sp,
-                                        fontFamily = PlusJakartaSansFont,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Box(modifier = Modifier.widthIn(max = 160.dp)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = SvgOrange.copy(alpha = 0.9f)
+                                    ) {
+                                        Text(
+                                            text = event.category,
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontFamily = PlusJakartaSansFont,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                                if (event.viewCount > 0) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.White.copy(alpha = 0.25f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.FavoriteBorder,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                "${formatViewCount(event.viewCount)} x dilihat",
+                                                color = Color.White,
+                                                fontSize = 10.sp,
+                                                fontFamily = PlusJakartaSansFont
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -294,13 +325,22 @@ fun CategoryEventSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = categoryName,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = categoryName,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Gray900
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "(${events.size} event)",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray400
+                )
+            }
             TextButton(onClick = onSeeAll) {
                 Text("Lihat Semua →", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SvgOrange)
             }
@@ -325,7 +365,8 @@ fun CategoryEventSection(
 fun LocationPickerDialog(
     currentLocation: String,
     onDismiss: () -> Unit,
-    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit
+    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit,
+    onUseCurrentGps: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
     val scope = rememberCoroutineScope()
@@ -355,6 +396,29 @@ fun LocationPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp)
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Secondary100,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onUseCurrentGps() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.MyLocation, null, tint = Secondary500, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Gunakan Lokasi Saya",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary700
+                        )
+                    }
+                }
                 if (currentLocation.isNotBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(

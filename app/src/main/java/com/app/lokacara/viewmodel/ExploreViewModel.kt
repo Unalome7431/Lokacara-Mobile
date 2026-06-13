@@ -21,10 +21,33 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 
+enum class DateFilter(val label: String) {
+    SEMUA("Semua"),
+    HARI_INI("Hari Ini"),
+    BESOK("Besok"),
+    MINGGU_INI("Minggu Ini"),
+    BULAN_INI("Bulan Ini"),
+    KUSTOM("Pilih Tanggal")
+}
+
+enum class PriceFilter(val label: String) {
+    SEMUA("Semua"),
+    GRATIS("Gratis"),
+    DIBAWAH_50RB("< Rp50rb"),
+    LIMA_PULUH_SERATUS("Rp50rb-Rp100rb"),
+    DIATAS_100RB("> Rp100rb")
+}
+
 enum class SortOption(val label: String) {
     TERBARU("Terbaru"),
     TERPOPULER("Terpopuler"),
     TERMURAH("Termurah")
+}
+
+enum class ErrorType {
+    NETWORK,
+    SERVER,
+    NO_RESULT
 }
 
 @HiltViewModel
@@ -76,17 +99,75 @@ class ExploreViewModel @Inject constructor(
     private val _sortOption = MutableStateFlow(SortOption.TERBARU)
     val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
+    private val _dateFilter = MutableStateFlow(DateFilter.SEMUA)
+    val dateFilter: StateFlow<DateFilter> = _dateFilter.asStateFlow()
+
+    private val _priceFilter = MutableStateFlow(PriceFilter.SEMUA)
+    val priceFilter: StateFlow<PriceFilter> = _priceFilter.asStateFlow()
+
+    private val _isGridView = MutableStateFlow(false)
+    val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
+
+    private val _errorType = MutableStateFlow<ErrorType?>(null)
+    val errorType: StateFlow<ErrorType?> = _errorType.asStateFlow()
+
+    private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
+    val searchHistory: StateFlow<List<String>> = _searchHistory.asStateFlow()
+
+    private val _showDatePicker = MutableStateFlow(false)
+    val showDatePicker: StateFlow<Boolean> = _showDatePicker.asStateFlow()
+
+    private val _customDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
+
     val filteredEvents: StateFlow<List<Event>> = combine(
         combine(_allEvents, _eventName) { events, name -> events to name },
         combine(_eventLocation, _eventCategory) { loc, cat -> loc to cat },
-        combine(_selectedCategoryChip, _sortOption) { chip, sort -> chip to sort }
-    ) { (events, name), (loc, cat), (chip, sort) ->
+        combine(_selectedCategoryChip, _sortOption) { chip, sort -> chip to sort },
+        combine(_dateFilter, _priceFilter) { date, price -> date to price },
+        _customDateRange
+    ) { (events, name), (loc, cat), (chip, sort), (dateFilter, priceFilter), customRange ->
+        val now = java.util.Calendar.getInstance()
+        val todayStart = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val tomorrowEnd = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 23); set(java.util.Calendar.MINUTE, 59); set(java.util.Calendar.SECOND, 59)
+            add(java.util.Calendar.DAY_OF_MONTH, 1)
+        }.timeInMillis
+        val weekEnd = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.SATURDAY)
+            set(java.util.Calendar.HOUR_OF_DAY, 23); set(java.util.Calendar.MINUTE, 59); set(java.util.Calendar.SECOND, 59)
+            if (before(java.util.Calendar.getInstance())) add(java.util.Calendar.WEEK_OF_MONTH, 1)
+        }.timeInMillis
+        val monthEnd = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.DAY_OF_MONTH, getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+            set(java.util.Calendar.HOUR_OF_DAY, 23); set(java.util.Calendar.MINUTE, 59); set(java.util.Calendar.SECOND, 59)
+        }.timeInMillis
+
         val filtered = events.filter { event ->
             val matchName = name.isEmpty() || event.title.contains(name, ignoreCase = true)
             val matchLoc = loc.isEmpty() || event.location.contains(loc, ignoreCase = true)
             val matchCatText = cat.isEmpty() || event.category.contains(cat, ignoreCase = true)
             val matchChip = chip == "Semua" || event.category.equals(chip, ignoreCase = true)
-            matchName && matchLoc && matchCatText && matchChip
+            val matchDate = when (dateFilter) {
+                DateFilter.SEMUA -> true
+                DateFilter.HARI_INI -> parseDateMillis(event.date) in todayStart..tomorrowEnd
+                DateFilter.BESOK -> parseDateMillis(event.date) in tomorrowEnd..tomorrowEnd + 86400000L
+                DateFilter.MINGGU_INI -> parseDateMillis(event.date) in todayStart..weekEnd
+                DateFilter.BULAN_INI -> parseDateMillis(event.date) in todayStart..monthEnd
+                DateFilter.KUSTOM -> {
+                    val range = customRange
+                    if (range != null) parseDateMillis(event.date) in range.first..range.second else true
+                }
+            }
+            val matchPrice = when (priceFilter) {
+                PriceFilter.SEMUA -> true
+                PriceFilter.GRATIS -> event.price == "Gratis"
+                PriceFilter.DIBAWAH_50RB -> parsePrice(event.price) in 1..49999
+                PriceFilter.LIMA_PULUH_SERATUS -> parsePrice(event.price) in 50000..100000
+                PriceFilter.DIATAS_100RB -> parsePrice(event.price) > 100000
+            }
+            matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice
         }
         when (sort) {
             SortOption.TERBARU -> filtered.sortedByDescending { parseDateMillis(it.date) }
@@ -112,7 +193,6 @@ class ExploreViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var loadMoreJob: Job? = null
-    private var debounceJob: Job? = null
 
     init {
         analytics.logScreenView("Explore")
@@ -158,58 +238,83 @@ class ExploreViewModel @Inject constructor(
 
     fun updateEventName(value: String) {
         _eventName.value = value
-        debounceSearch()
     }
 
     fun clearEventName() {
         _eventName.value = ""
-        debounceSearch()
     }
 
     fun updateEventLocation(value: String) {
         _eventLocation.value = value
-        debounceSearch()
     }
 
     fun clearEventLocation() {
         _eventLocation.value = ""
-        debounceSearch()
     }
 
     fun updateEventCategory(value: String) {
         _eventCategory.value = value
-        debounceSearch()
     }
 
     fun clearEventCategory() {
         _eventCategory.value = ""
-        debounceSearch()
+    }
+
+    fun selectDateFilter(filter: DateFilter) {
+        if (filter == DateFilter.KUSTOM) {
+            _showDatePicker.value = true
+            return
+        }
+        _dateFilter.value = filter
+        _customDateRange.value = null
+        analytics.logEvent("date_filter_selected", mapOf("filter" to filter.label))
+    }
+
+    fun dismissDatePicker() {
+        _showDatePicker.value = false
+    }
+
+    fun setCustomDate(dateMillis: Long) {
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = dateMillis
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val startOfDay = cal.timeInMillis
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 23)
+        cal.set(java.util.Calendar.MINUTE, 59)
+        cal.set(java.util.Calendar.SECOND, 59)
+        val endOfDay = cal.timeInMillis
+        _customDateRange.value = Pair(startOfDay, endOfDay)
+        _dateFilter.value = DateFilter.KUSTOM
+        _showDatePicker.value = false
+        analytics.logEvent("date_filter_selected", mapOf("filter" to "custom"))
+    }
+
+    fun selectPriceFilter(filter: PriceFilter) {
+        _priceFilter.value = filter
+        analytics.logEvent("price_filter_selected", mapOf("filter" to filter.label))
+    }
+
+    fun toggleGridView() {
+        _isGridView.value = !_isGridView.value
+        analytics.logEvent("grid_view_toggled", mapOf("enabled" to _isGridView.value.toString()))
     }
 
     fun selectCategoryChip(category: String) {
         _selectedCategoryChip.value = category
         analytics.logEvent("category_chip_selected", mapOf("category" to category))
-        searchEvents(_eventName.value)
     }
 
     fun selectSortOption(option: SortOption) {
         _sortOption.value = option
         analytics.logEvent("sort_selected", mapOf("option" to option.label))
-        searchEvents(_eventName.value)
     }
 
     fun setInitialCategory(category: String) {
         if (category.isNotEmpty()) {
             _selectedCategoryChip.value = category
-            searchEvents(_eventName.value)
-        }
-    }
-
-    private fun debounceSearch() {
-        debounceJob?.cancel()
-        debounceJob = viewModelScope.launch {
-            delay(300)
-            searchEvents(_eventName.value)
         }
     }
 
@@ -235,6 +340,7 @@ class ExploreViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
+                    _errorType.value = if (result.message.contains("jaringan") || result.message.contains("koneksi")) ErrorType.NETWORK else ErrorType.SERVER
                     if (_allEvents.value.isEmpty()) {
                         _allEvents.value = emptyList()
                     }
@@ -280,7 +386,11 @@ class ExploreViewModel @Inject constructor(
             if (idLong != null) {
                 try {
                     if (wasBookmarked) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                    bookmarkManager.toggleBookmark(eventId)
+                    SnackbarManager.showError("Gagal menyimpan bookmark")
+                    return@launch
+                }
             }
             if (wasBookmarked) {
                 SnackbarManager.show("Event dihapus dari bookmark")
@@ -307,8 +417,16 @@ class ExploreViewModel @Inject constructor(
 
     fun onSearchSubmit() {
         _isSearchExpanded.value = false
-        searchEvents(_eventName.value)
-        analytics.logEvent("search_submit", mapOf("query" to _eventName.value))
+        val query = _eventName.value.trim()
+        if (query.isNotEmpty() && !_searchHistory.value.contains(query)) {
+            _searchHistory.value = (listOf(query) + _searchHistory.value).take(10)
+        }
+        searchEvents(query)
+        analytics.logEvent("search_submit", mapOf("query" to query))
+    }
+
+    fun clearSearchHistory() {
+        _searchHistory.value = emptyList()
     }
 
     fun resetFilters() {
@@ -316,6 +434,8 @@ class ExploreViewModel @Inject constructor(
         _eventLocation.value = ""
         _eventCategory.value = ""
         _selectedCategoryChip.value = "Semua"
+        _dateFilter.value = DateFilter.SEMUA
+        _priceFilter.value = PriceFilter.SEMUA
         _isSearchExpanded.value = false
         searchEvents("")
         analytics.logEvent("filters_reset")

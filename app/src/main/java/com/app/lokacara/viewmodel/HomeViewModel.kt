@@ -164,6 +164,11 @@ class HomeViewModel @Inject constructor(
         if (!city.isNullOrBlank()) currentLocationName.value = city
     }
 
+    fun useCurrentGps() {
+        isLocationPickerVisible.value = false
+        autoDetectLocation()
+    }
+
     fun showLocationPicker() {
         isLocationPickerVisible.value = true
     }
@@ -187,7 +192,7 @@ class HomeViewModel @Inject constructor(
             if (cachedEvents is ApiResult.Success && _allEvents.value.isEmpty()) {
                 val events = cachedEvents.data.map { it.toEvent(imageUrlProvider) }
                 if (events.isNotEmpty()) {
-                    _popularEvents.value = events.sortedByDescending { it.viewCount }.take(3)
+                    _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
                     _allEvents.value = events
                 }
                 _isLoading.value = false
@@ -207,7 +212,7 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val events = result.data.map { it.toEvent(imageUrlProvider) }
                     if (events.isNotEmpty()) {
-                        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(3)
+                        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
                         _allEvents.value = events
                         _feedError.value = null
                     }
