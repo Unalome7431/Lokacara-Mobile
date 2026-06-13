@@ -144,14 +144,7 @@ private fun RowScope.NavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .height(pillHeight)
-                .clip(pillShape)
-                .background(if (isSelected) Secondary500 else Color.Transparent)
-                .padding(horizontal = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             androidx.compose.animation.AnimatedVisibility(
                 visible = isSelected,
                 enter = scaleIn(initialScale = 0.85f, animationSpec = spring(dampingRatio = 0.5f)) + fadeIn(tween(200)),
@@ -159,9 +152,10 @@ private fun RowScope.NavItem(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .wrapContentWidth()
                         .clip(pillShape)
                         .background(Secondary500)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
 
@@ -169,7 +163,7 @@ private fun RowScope.NavItem(
                 imageVector = item.icon,
                 contentDescription = item.contentDescription,
                 tint = if (isSelected) Color.White else Gray500,
-                modifier = Modifier.size(24.dp).scale(iconScale)
+                modifier = Modifier.height(pillHeight).size(24.dp).scale(iconScale)
             )
         }
 

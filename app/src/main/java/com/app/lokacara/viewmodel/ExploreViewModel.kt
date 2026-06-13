@@ -117,6 +117,9 @@ class ExploreViewModel @Inject constructor(
     private val _showDatePicker = MutableStateFlow(false)
     val showDatePicker: StateFlow<Boolean> = _showDatePicker.asStateFlow()
 
+    private val _initialLoading = MutableStateFlow(true)
+    val initialLoading: StateFlow<Boolean> = _initialLoading.asStateFlow()
+
     private val _customDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
 
     val filteredEvents: StateFlow<List<Event>> = combine(
@@ -348,6 +351,7 @@ class ExploreViewModel @Inject constructor(
             }
 
             _isLoading.value = false
+            _initialLoading.value = false
         }
     }
 

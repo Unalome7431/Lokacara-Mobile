@@ -61,6 +61,7 @@ fun ExploreScreen(
     val locationSuggestions by viewModel.locationSuggestions.collectAsState()
     val categorySuggestions by viewModel.categorySuggestions.collectAsState()
     val showDatePicker by viewModel.showDatePicker.collectAsState()
+    val initialLoading by viewModel.initialLoading.collectAsState()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -83,7 +84,7 @@ fun ExploreScreen(
         }
     }
 
-    val allCategoryLabel = stringResource(R.string.category_all)
+    val allCategoryLabel = "Semua"
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
             eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel ||
             priceFilter != PriceFilter.SEMUA
@@ -260,7 +261,7 @@ fun ExploreScreen(
                         }
                     }
 
-                    if (events.isEmpty() && !isLoading) {
+                    if (events.isEmpty() && !isLoading && !initialLoading) {
                         item {
                             EmptyStateView(
                                 hasActiveFilter = hasActiveFilter,
