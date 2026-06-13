@@ -69,11 +69,6 @@ fun ExploreScreen(
         viewModel.setInitialCategory(initialCategory)
     }
 
-    DisposableEffect(Unit) {
-        viewModel.resetFilters()
-        onDispose { }
-    }
-
     val focusManager = LocalFocusManager.current
 
     val listState = rememberLazyListState()

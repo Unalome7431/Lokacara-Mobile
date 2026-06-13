@@ -71,7 +71,8 @@ fun BottomNavbar(navController: NavController) {
 
     val onNavigate: (String) -> Unit = remember(navController) {
         { route ->
-            navController.navigate(route) {
+            val targetRoute = if (route == Screen.Explore.route) Screen.Explore.createRoute("") else route
+            navController.navigate(targetRoute) {
                 popUpTo(navController.graph.findStartDestination().id) {
                     saveState = true
                 }
