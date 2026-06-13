@@ -113,20 +113,35 @@ fun HomeScreen(
 
             if (nearbyEvents.isNotEmpty()) {
                 item(key = "nearby_events") {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(nearbyEvents, key = { it.id }) { event ->
-                            EventCardCompact(event = event, onClick = { onEventClick(event) })
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(nearbyEvents, key = { it.id }) { event ->
+                                EventCardCompact(event = event, onClick = { onEventClick(event) })
+                            }
                         }
                     }
                 }
             }
 
+            // Category sections
             val sortedCategories = if (selectedCategory == "Semua") groupedEvents.keys.toList()
                 else listOf(selectedCategory)
+
+            if (sortedCategories.isNotEmpty()) {
+                item(key = "categories_title") {
+                    Text(
+                        text = "Kategori",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 4.dp)
+                    )
+                }
 
             items(items = sortedCategories, key = { it }) { categoryName ->
                 val events = groupedEvents[categoryName] ?: emptyList()
@@ -140,6 +155,7 @@ fun HomeScreen(
                         }
                     )
                 }
+            }
             }
 
             item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }

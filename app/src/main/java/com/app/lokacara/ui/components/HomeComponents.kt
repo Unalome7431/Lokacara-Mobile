@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastForEach
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -103,9 +105,22 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
     }
     val context = LocalContext.current
 
+    var paused by remember { mutableStateOf(false) }
+
+    // Pause auto-slide when user interacts with the pager
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collect { scrolling ->
+                if (scrolling) {
+                    paused = true
+                }
+            }
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
-            delay(4000)
+            delay(if (paused) 3000L else 4000L)
+            if (paused) { paused = false; continue }
             if (pageCount > 1) {
                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
             }
@@ -129,7 +144,8 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth(),
-            beyondViewportPageCount = 1
+            beyondViewportPageCount = 1,
+            userScrollEnabled = true
         ) { page ->
             key(page) {
                 val event = popularEvents[page % popularEvents.size]
@@ -232,9 +248,10 @@ fun NearbyEventsHeader(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
             Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(4.dp))
+            val displayText = if (currentLocation.isNotBlank()) "di $currentLocation" else "di Sekitar Anda"
             Text(
-                text = if (currentLocation.isNotBlank()) currentLocation else "Mendeteksi lokasi...",
-                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = if (currentLocation.isNotBlank()) Gray600 else Gray400)
+                text = displayText,
+                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
             )
         }
     }

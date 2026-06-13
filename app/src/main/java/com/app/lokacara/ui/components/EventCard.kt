@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -89,13 +90,17 @@ fun EventCard(
                     }
 
                     if (showBookmark) {
-                        val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
-                        Icon(
-                            imageVector = bookmarkIcon,
-                            contentDescription = "Bookmark",
-                            tint = Gray900,
-                            modifier = Modifier.size(24.dp).clickable { onBookmarkClick() }
-                        )
+                        Crossfade(
+                            targetState = event.isBookmarked,
+                            animationSpec = tween(200)
+                        ) { bookmarked ->
+                            Icon(
+                                imageVector = if (bookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription = "Bookmark",
+                                tint = Gray900,
+                                modifier = Modifier.size(24.dp).clickable { onBookmarkClick() }
+                            )
+                        }
                     }
                 }
             }
@@ -119,7 +124,7 @@ fun EventCardCompact(
             .clickable(interactionSource = interactionSource, indication = null) { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
-        shadowElevation = 2.dp
+        shadowElevation = 4.dp
     ) {
         Column {
             AsyncImage(
