@@ -152,10 +152,10 @@ private fun RowScope.NavItem(
             ) {
                 Box(
                     modifier = Modifier
+                        .height(pillHeight)
                         .width(36.dp)
                         .clip(pillShape)
                         .background(Secondary500)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
 
