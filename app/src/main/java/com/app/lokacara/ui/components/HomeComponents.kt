@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -92,7 +93,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
     val cardShape = remember { RoundedCornerShape(24.dp) }
     val gradientBrush = remember {
         Brush.verticalGradient(
-            colors = listOf(Color.Black.copy(0.3f), Color.Transparent, Color.Black.copy(0.5f)),
+            colors = listOf(Color.Black.copy(0.1f), Color.Transparent, Color.Black.copy(0.6f), Color.Black.copy(0.7f)),
             startY = 0f
         )
     }
@@ -132,7 +133,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .height(200.dp)
                         .clickable { onEventClick(event) },
                     shape = cardShape,
                     color = Color.Transparent,
@@ -154,37 +155,41 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
                         Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
 
-                        Box(
-                            modifier = Modifier.padding(12.dp).align(Alignment.TopStart)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = SvgOrange.copy(alpha = 0.9f)
-                            ) {
-                                Text(
-                                    text = event.category,
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontFamily = PlusJakartaSansFont,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = event.title,
-                            color = Color.White,
-                            style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                            modifier = Modifier.padding(16.dp).align(Alignment.TopStart)
-                        )
-
                         Column(
-                            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
-                            horizontalAlignment = Alignment.End
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = event.description, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp))
-                            Text(text = event.date, color = Color.White, style = TextStyle(fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                            Box(modifier = Modifier.align(Alignment.Start)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = SvgOrange.copy(alpha = 0.9f)
+                                ) {
+                                    Text(
+                                        text = event.category,
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Column {
+                                Text(
+                                    text = event.title,
+                                    color = Color.White,
+                                    style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = event.date, color = Color.White.copy(alpha = 0.8f), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
+                                }
+                            }
                         }
                     }
                 }

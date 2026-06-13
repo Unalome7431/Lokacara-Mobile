@@ -76,7 +76,7 @@ fun HomeScreen(
             if (todayEvents.isNotEmpty()) {
                 item(key = "today_title") {
                     Text(
-                        text = "🎯 Event Hari Ini",
+                        text = "Event Hari Ini",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 20.sp,
