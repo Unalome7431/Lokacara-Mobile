@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -18,7 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.model.Event
@@ -41,6 +40,7 @@ fun HomeScreen(
     val groupedEvents by viewModel.groupedEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
     val nearbyEvents by viewModel.nearbyEvents.collectAsState()
+    val todayEvents by viewModel.todayEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentLocation by viewModel.currentLocationName.collectAsState()
@@ -55,14 +55,6 @@ fun HomeScreen(
                 CircularProgressIndicator(color = Primary500)
             }
             error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
-            groupedEvents.isEmpty() -> PullToRefreshBox(
-                isRefreshing = isLoading,
-                onRefresh = { viewModel.refresh() }
-            ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Tidak ada event ditemukan", fontFamily = NunitoFont, color = Gray500)
-                }
-            }
             else -> PullToRefreshBox(
                 isRefreshing = isLoading,
                 onRefresh = { viewModel.refresh() }
@@ -78,6 +70,31 @@ fun HomeScreen(
                     popularEvents = popularEvents,
                     onEventClick = { onEventClick(it) }
                 )
+            }
+
+            // Event Hari Ini
+            if (todayEvents.isNotEmpty()) {
+                item(key = "today_title") {
+                    Text(
+                        text = "🎯 Event Hari Ini",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
+                    )
+                }
+                item(key = "today_events") {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(todayEvents, key = { it.id }) { event ->
+                            EventCardCompact(event = event, onClick = { onEventClick(event) })
+                        }
+                    }
+                }
             }
 
             item(key = "nearby_header") {

@@ -114,19 +114,39 @@ fun EventCardCompact(
         shadowElevation = 2.dp
     ) {
         Column {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(event.imageUrl)
-                    .size(150)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = event.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(event.imageUrl)
+                        .size(150)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = event.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                // Category badge
+                if (event.category.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        color = SvgPrimaryBlue.copy(alpha = 0.9f)
+                    ) {
+                        Text(
+                            text = event.category,
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontFamily = PlusJakartaSansFont,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
             Column(modifier = Modifier.padding(10.dp)) {
                 Text(
                     text = event.title,
@@ -138,14 +158,36 @@ fun EventCardCompact(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = event.date,
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 11.sp,
-                    color = Gray500,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Gray400, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = event.location,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 10.sp,
+                        color = Gray500,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = event.date,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 10.sp,
+                        color = Gray500,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = event.price,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (event.price == "Gratis") SemanticSuccessBase else Secondary500,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

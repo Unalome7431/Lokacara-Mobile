@@ -154,6 +154,24 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
                         Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
 
+                        Box(
+                            modifier = Modifier.padding(12.dp).align(Alignment.TopStart)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = SvgOrange.copy(alpha = 0.9f)
+                            ) {
+                                Text(
+                                    text = event.category,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
                         Text(
                             text = event.title,
                             color = Color.White,
@@ -170,6 +188,23 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                         }
                     }
                 }
+            }
+        }
+
+        // Page indicator dots
+        val currentPage = pagerState.currentPage % popularEvents.size
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            popularEvents.indices.forEach { index ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .size(if (index == currentPage) 24.dp else 8.dp, 8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (index == currentPage) SvgPrimaryBlue else Gray300)
+                )
             }
         }
     }
