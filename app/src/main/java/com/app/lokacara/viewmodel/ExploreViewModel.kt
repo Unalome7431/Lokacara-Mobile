@@ -199,7 +199,7 @@ class ExploreViewModel @Inject constructor(
 
     init {
         analytics.logScreenView("Explore")
-        searchEvents("")
+        resetFilters()
         loadFilterData()
     }
 
