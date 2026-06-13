@@ -317,7 +317,7 @@ fun CategoryEventSection(
     LaunchedEffect(Unit) { visible = true }
     val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
 
-    Column(modifier = Modifier.padding(top = 24.dp).graphicsLayer(alpha = alpha)) {
+    Column(modifier = Modifier.padding(top = 12.dp).graphicsLayer(alpha = alpha)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
