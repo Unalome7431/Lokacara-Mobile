@@ -147,10 +147,9 @@ private fun RowScope.NavItem(
         Box(
             modifier = Modifier
                 .height(pillHeight)
-                .widthIn(min = if (isSelected) 28.dp else 28.dp)
                 .clip(pillShape)
                 .background(if (isSelected) Secondary500 else Color.Transparent)
-                .padding(horizontal = 10.dp),
+                .padding(horizontal = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             androidx.compose.animation.AnimatedVisibility(
