@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.app.lokacara.model.Event
-import com.app.lokacara.data.remote.countdownLabel
 import com.app.lokacara.ui.theme.*
 
 @Composable
@@ -151,6 +150,21 @@ fun EventCardCompact(
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                     contentScale = ContentScale.Crop
                 )
+                Surface(
+                    shape = RoundedCornerShape(bottomEnd = 8.dp),
+                    color = Secondary500,
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Text(
+                        text = event.category,
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        maxLines = 1
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -198,14 +212,12 @@ fun EventCardCompact(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val cdLabel = if (event.startDatetime.isNotEmpty()) countdownLabel(event.startDatetime) else null
                     Text(
-                        text = cdLabel ?: event.date,
+                        text = event.date,
                         fontFamily = PlusJakartaSansFont,
                         fontSize = 11.sp,
-                        color = if (cdLabel != null) Secondary500 else Gray400,
-                        maxLines = 1,
-                        fontWeight = if (cdLabel != null) FontWeight.Bold else FontWeight.Normal
+                        color = Gray400,
+                        maxLines = 1
                     )
                     Text(
                         text = event.price,

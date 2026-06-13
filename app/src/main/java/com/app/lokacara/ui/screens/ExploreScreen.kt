@@ -84,7 +84,7 @@ fun ExploreScreen(
     val allCategoryLabel = stringResource(R.string.category_all)
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
             eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel ||
-            dateFilter != DateFilter.SEMUA || priceFilter != PriceFilter.SEMUA
+            priceFilter != PriceFilter.SEMUA
 
     BackHandler(enabled = isSearchExpanded || hasActiveFilter) {
         if (isSearchExpanded) {
@@ -187,14 +187,6 @@ fun ExploreScreen(
                             selectedCategory = selectedCategoryChip,
                             onCategorySelected = { viewModel.selectCategoryChip(it) },
                             allCategories = categorySuggestions
-                        )
-                    }
-
-                    item(key = "date_filter") {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        DateFilterChips(
-                            selected = dateFilter,
-                            onSelected = { viewModel.selectDateFilter(it) }
                         )
                     }
 

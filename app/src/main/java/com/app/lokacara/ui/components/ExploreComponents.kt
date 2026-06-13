@@ -110,7 +110,7 @@ fun ExpandedSearchSection(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = Primary500,
-        unfocusedBorderColor = Gray300,
+        unfocusedBorderColor = Secondary500,
         focusedTextColor = Gray900,
         unfocusedTextColor = Gray900
     )
@@ -119,7 +119,7 @@ fun ExpandedSearchSection(
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = eventName, onValueChange = onEventNameChange,
-                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Secondary500)) },
+                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray400)) },
                 textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(12.dp), colors = textFieldColors, singleLine = true,
@@ -242,7 +242,7 @@ private fun SearchAutocompleteField(
         OutlinedTextField(
             value = value,
             onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
-            placeholder = { Text(placeholder, fontSize = 12.sp, color = Secondary500) },
+            placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
                 Row {

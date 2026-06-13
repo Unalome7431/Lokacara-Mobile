@@ -188,9 +188,9 @@ fun HomeScreen(
                                 text = "Kategori",
                                 fontFamily = NunitoFont,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp,
+                                fontSize = 24.sp,
                                 color = Primary500,
-                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 4.dp)
+                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 2.dp)
                             )
                         }
 

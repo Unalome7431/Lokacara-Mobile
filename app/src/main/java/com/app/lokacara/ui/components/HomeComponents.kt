@@ -268,7 +268,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
-                        .size(if (index == currentPage) 24.dp else 8.dp, 8.dp)
+                        .size(if (index == currentPage) 14.dp else 8.dp, 8.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(if (index == currentPage) SvgPrimaryBlue else Gray300)
                 )
@@ -332,13 +332,6 @@ fun CategoryEventSection(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = Gray900
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "(${events.size} event)",
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 12.sp,
-                    color = Gray400
                 )
             }
             TextButton(onClick = onSeeAll) {
