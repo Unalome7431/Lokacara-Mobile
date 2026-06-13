@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.ripple
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,12 +53,20 @@ fun EventCard(
     onClick: (() -> Unit)? = null,
     showBookmark: Boolean = true
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (isPressed) 0.97f else 1f, animationSpec = spring(dampingRatio = 0.5f), label = "scale")
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 10.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
             .let { mod ->
-                if (onClick != null) mod.clickable { onClick() } else mod
+                if (onClick != null) mod.clickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(bounded = true, radius = 300.dp)
+                ) { onClick() } else mod
             },
         shape = RoundedCornerShape(20.dp),
         color = Color.White,
@@ -68,7 +77,6 @@ fun EventCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(event.imageUrl)
                     .size(110)
-                    .crossfade(true)
                     .build(),
                 contentDescription = event.title,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
@@ -123,7 +131,7 @@ fun EventCardCompact(
         modifier = Modifier
             .width(160.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale)
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
+            .clickable(interactionSource = interactionSource, indication = ripple(bounded = true, radius = 160.dp)) { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         shadowElevation = 4.dp
@@ -134,7 +142,6 @@ fun EventCardCompact(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(event.imageUrl)
                         .size(160)
-                        .crossfade(true)
                         .build(),
                     contentDescription = event.title,
                     modifier = Modifier

@@ -1,5 +1,13 @@
 package com.app.lokacara.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +26,19 @@ import androidx.navigation.navArgument
 import com.app.lokacara.ui.components.BottomNavbar
 import com.app.lokacara.ui.screens.*
 
+private val screenEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn(tween(250))
+}
+private val screenExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut(tween(150))
+}
+private val screenPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn(tween(250))
+}
+private val screenPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut(tween(150))
+}
+
 @Composable
 fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
     val rootNavController = rememberNavController()
@@ -28,7 +49,13 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
     }
 
     NavHost(navController = rootNavController, startDestination = startDestination) {
-        composable(Screen.Onboarding.route) {
+        composable(
+            Screen.Onboarding.route,
+            enterTransition = { fadeIn(tween(300)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(300)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) {
             OnboardingScreen(onFinish = {
                 val nextRoute = when {
                     isLoggedIn -> "main_container"
@@ -39,7 +66,13 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
                 }
             })
         }
-        composable(Screen.Register.route) {
+        composable(
+            Screen.Register.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
             RegisterScreen(
                 onNavigateToLogin = { rootNavController.navigate(Screen.Login.route) },
                 onLoginSuccess = {
@@ -49,7 +82,13 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
                 }
             )
         }
-        composable(Screen.Login.route) {
+        composable(
+            Screen.Login.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
             LoginScreen(
                 onNavigateToRegister = { rootNavController.navigate(Screen.Register.route) },
                 onLoginSuccess = {
@@ -60,7 +99,13 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             )
         }
 
-        composable("main_container") {
+        composable(
+            "main_container",
+            enterTransition = { fadeIn(tween(300)) },
+            exitTransition = { fadeOut(tween(200)) },
+            popEnterTransition = { fadeIn(tween(300)) },
+            popExitTransition = { fadeOut(tween(200)) }
+        ) {
             MainContainer(rootNavController)
         }
     }
@@ -89,25 +134,45 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 composable(Screen.Home.route) { HomeScreen(navController = internalNavController) }
                 composable(
                     Screen.EventDetail.route,
-                    arguments = listOf(navArgument("eventId") { type = NavType.LongType; defaultValue = 0L })
+                    arguments = listOf(navArgument("eventId") { type = NavType.LongType; defaultValue = 0L }),
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn(tween(250)) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 3 }) + fadeOut(tween(150)) },
+                    popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }) + fadeIn(tween(250)) },
+                    popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut(tween(150)) }
                 ) { backStackEntry ->
                     val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
                     EventDetailScreen(navController = internalNavController, eventId = eventId)
                 }
                 composable(
                     Screen.Explore.route,
-                    arguments = listOf(navArgument("category") { type = NavType.StringType; defaultValue = "" })
+                    arguments = listOf(navArgument("category") { type = NavType.StringType; defaultValue = "" }),
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
                 ) { backStackEntry ->
                     val initialCategory = backStackEntry.arguments?.getString("category") ?: ""
                     ExploreScreen(navController = internalNavController, initialCategory = initialCategory)
                 }
-                composable(Screen.Tickets.route) {
+                composable(
+                    Screen.Tickets.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) {
                     TicketsScreen(
                         navController = internalNavController,
                         rootNavController = rootNavController
                     )
                 }
-                composable(Screen.Profile.route) {
+                composable(
+                    Screen.Profile.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) {
                     ProfileScreen(
                         navController = internalNavController,
                         onLogout = {
@@ -117,7 +182,13 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                         }
                     )
                 }
-                composable(Screen.CreateEvent.route) {
+                composable(
+                    Screen.CreateEvent.route,
+                    enterTransition = { fadeIn(tween(300)) },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) }
+                ) {
                     CreateEventScreen(
                         onBack = { internalNavController.popBackStack() },
                         onPublish = {
@@ -131,33 +202,116 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                         }
                     )
                 }
-                composable(Screen.Notification.route) {
+                composable(
+                    Screen.Notification.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) {
                     NotificationScreen(navController = internalNavController)
                 }
-                composable(Screen.EditProfile.route) { EditProfileScreen(navController = internalNavController) }
-                composable(Screen.MyEvents.route) { MyEventsScreen(navController = internalNavController) }
-                composable(Screen.SavedEvents.route) { BookmarkScreen(navController = internalNavController) }
-                composable(Screen.Certificates.route) { CertificatesScreen(navController = internalNavController) }
-                composable(Screen.Settings.route) {
+                composable(
+                    Screen.EditProfile.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { EditProfileScreen(navController = internalNavController) }
+                composable(
+                    Screen.MyEvents.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { MyEventsScreen(navController = internalNavController) }
+                composable(
+                    Screen.SavedEvents.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { BookmarkScreen(navController = internalNavController) }
+                composable(
+                    Screen.Certificates.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { CertificatesScreen(navController = internalNavController) }
+                composable(
+                    Screen.Settings.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) {
                     SettingsScreen(
                         navController = internalNavController,
                         rootNavController = rootNavController
                     )
                 }
-                composable(Screen.About.route) { AboutScreen(navController = internalNavController) }
-                composable(Screen.Bookmark.route) {
+                composable(
+                    Screen.About.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { AboutScreen(navController = internalNavController) }
+                composable(
+                    Screen.Bookmark.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) {
                     BookmarkScreen(navController = internalNavController)
                 }
-                composable(Screen.ChangePassword.route) { ChangePasswordScreen(navController = internalNavController) }
-                composable(Screen.HelpCenter.route) { HelpCenterScreen(navController = internalNavController) }
-                composable(Screen.TermsConditions.route) { TermsConditionsScreen(navController = internalNavController) }
-                composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController = internalNavController) }
-
-                composable(Screen.Attendees.route) { backStackEntry ->
+                composable(
+                    Screen.ChangePassword.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { ChangePasswordScreen(navController = internalNavController) }
+                composable(
+                    Screen.HelpCenter.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { HelpCenterScreen(navController = internalNavController) }
+                composable(
+                    Screen.TermsConditions.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { TermsConditionsScreen(navController = internalNavController) }
+                composable(
+                    Screen.PrivacyPolicy.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { PrivacyPolicyScreen(navController = internalNavController) }
+                composable(
+                    Screen.Attendees.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { backStackEntry ->
                     val eventId = backStackEntry.arguments?.getString("eventId")?.toLongOrNull() ?: return@composable
                     AttendeesScreen(navController = internalNavController, eventId = eventId)
                 }
-                composable(Screen.QrScan.route) { backStackEntry ->
+                composable(
+                    Screen.QrScan.route,
+                    enterTransition = screenEnter,
+                    exitTransition = screenExit,
+                    popEnterTransition = screenPopEnter,
+                    popExitTransition = screenPopExit
+                ) { backStackEntry ->
                     val eventId = backStackEntry.arguments?.getString("eventId")?.toLongOrNull() ?: return@composable
                     QrScanScreen(navController = internalNavController, eventId = eventId)
                 }

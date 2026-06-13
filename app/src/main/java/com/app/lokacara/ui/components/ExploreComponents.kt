@@ -1,5 +1,11 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,15 +18,20 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -28,11 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.SortOption
 
 @Composable
 fun ExploreHeader() {
@@ -47,8 +58,17 @@ fun ExploreHeader() {
             contentDescription = "Logo",
             modifier = Modifier.height(34.dp)
         )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            "Jelajahi Event",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 20.sp,
+            color = Color.Black
+        )
     }
 }
+
 @Composable
 fun CollapsedSearchBar(onClick: () -> Unit) {
     Box(
@@ -56,7 +76,7 @@ fun CollapsedSearchBar(onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .height(52.dp)
-            .border(1.dp, Primary300, RoundedCornerShape(100.dp))
+            .border(1.dp, Gray300, RoundedCornerShape(100.dp))
             .background(Color.White, RoundedCornerShape(100.dp))
             .clickable { onClick() },
         contentAlignment = Alignment.CenterStart
@@ -66,104 +86,136 @@ fun CollapsedSearchBar(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(stringResource(R.string.explore_search_placeholder), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500))
+            Text("Cari event...", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray400))
             Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
         }
     }
 }
 
 @Composable
-fun HotLabelSection(selectedCategory: String, onCategorySelected: (String) -> Unit, allCategories: List<String>) {
-    var showMenu by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(stringResource(R.string.explore_hot_label), style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Primary500))
-
-        Box {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(Icons.Outlined.FilterList, "Filter", tint = Gray900)
-            }
-            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(Color.White)) {
-                allCategories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category, color = if(selectedCategory == category) Primary500 else Gray900, fontFamily = PlusJakartaSansFont) },
-                        onClick = { onCategorySelected(category); showMenu = false }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun ExpandedSearchSection(
-    eventName: String, onEventNameChange: (String) -> Unit,
-    eventLocation: String, onEventLocationChange: (String) -> Unit,
-    eventCategory: String, onEventCategoryChange: (String) -> Unit,
+    eventName: String, onEventNameChange: (String) -> Unit, onClearEventName: () -> Unit,
+    eventLocation: String, onEventLocationChange: (String) -> Unit, onClearEventLocation: () -> Unit,
+    eventCategory: String, onEventCategoryChange: (String) -> Unit, onClearEventCategory: () -> Unit,
     locationSuggestions: List<String>, categorySuggestions: List<String>,
-    onSearchSubmit: () -> Unit
+    onSearchSubmit: () -> Unit,
+    onCancel: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Secondary100, unfocusedContainerColor = Secondary100,
-        focusedBorderColor = Primary500, unfocusedBorderColor = Primary500,
-        focusedTextColor = Gray900, unfocusedTextColor = Gray900
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        focusedBorderColor = Primary500,
+        unfocusedBorderColor = Gray300,
+        focusedTextColor = Gray900,
+        unfocusedTextColor = Gray900
     )
 
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = eventName, onValueChange = onEventNameChange,
-                placeholder = { Text(stringResource(R.string.explore_search_name), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)) },
+                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray400)) },
                 textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
                 modifier = Modifier.weight(1f).height(56.dp),
-                shape = RoundedCornerShape(8.dp), colors = textFieldColors, singleLine = true,
+                shape = RoundedCornerShape(12.dp), colors = textFieldColors, singleLine = true,
+                trailingIcon = {
+                    if (eventName.isNotEmpty()) {
+                        IconButton(onClick = onClearEventName) {
+                            Icon(Icons.Filled.Close, "Hapus", tint = Gray400, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearchSubmit() })
             )
             Spacer(modifier = Modifier.width(12.dp))
             Box(
-                modifier = Modifier.size(56.dp).border(1.dp, Primary500, RoundedCornerShape(8.dp)).background(Color.White, RoundedCornerShape(8.dp)).clickable { onSearchSubmit() },
+                modifier = Modifier.size(56.dp).border(1.dp, Primary500, RoundedCornerShape(12.dp)).background(Primary500, RoundedCornerShape(12.dp)).clickable { onSearchSubmit() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
+                Icon(Icons.Outlined.Search, "Cari", tint = Color.White)
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        AutocompleteField(eventLocation, onEventLocationChange, stringResource(R.string.explore_search_location), Icons.Outlined.LocationOn, locationSuggestions, focusManager, textFieldColors)
-        Spacer(modifier = Modifier.height(16.dp))
-        AutocompleteField(eventCategory, onEventCategoryChange, stringResource(R.string.explore_search_category), Icons.AutoMirrored.Outlined.FormatListBulleted, categorySuggestions, focusManager, textFieldColors)
+        Spacer(modifier = Modifier.height(12.dp))
+        SearchAutocompleteField(
+            value = eventLocation,
+            onValueChange = onEventLocationChange,
+            onClear = onClearEventLocation,
+            placeholder = "Lokasi Event",
+            icon = Icons.Outlined.LocationOn,
+            suggestions = locationSuggestions,
+            textFieldColors = textFieldColors,
+            focusManager = focusManager
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        SearchAutocompleteField(
+            value = eventCategory,
+            onValueChange = onEventCategoryChange,
+            onClear = onClearEventCategory,
+            placeholder = "Kategori",
+            icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
+            suggestions = categorySuggestions,
+            textFieldColors = textFieldColors,
+            focusManager = focusManager
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = onCancel) {
+                Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray500, fontWeight = FontWeight.Medium)
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholder: String, icon: ImageVector, suggestions: List<String>, focusManager: androidx.compose.ui.focus.FocusManager, colors: TextFieldColors) {
+private fun SearchAutocompleteField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit,
+    placeholder: String,
+    icon: ImageVector,
+    suggestions: List<String>,
+    textFieldColors: TextFieldColors,
+    focusManager: androidx.compose.ui.focus.FocusManager
+) {
     var expanded by remember { mutableStateOf(false) }
     val filtered = remember(value) { suggestions.filter { it.contains(value, true) } }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
-            value = value, onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
-            placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray500) },
+            value = value,
+            onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
+            placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
-            trailingIcon = { Icon(icon, "Dropdown", tint = Primary500) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable), shape = RoundedCornerShape(8.dp),
-            colors = colors, singleLine = true,
+            trailingIcon = {
+                Row {
+                    if (value.isNotEmpty()) {
+                        IconButton(onClick = onClear) {
+                            Icon(Icons.Filled.Close, "Hapus", tint = Gray400, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                    Icon(icon, "Dropdown", tint = Primary500, modifier = Modifier.size(20.dp))
+                }
+            },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            shape = RoundedCornerShape(12.dp),
+            colors = textFieldColors,
+            singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
         if (expanded && filtered.isNotEmpty()) {
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Secondary100)) {
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
                 filtered.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option, color = Gray900) },
+                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
                         onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                        leadingIcon = { Icon(icon, null, modifier = Modifier.size(16.dp)) }
+                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
                     )
                 }
             }
@@ -172,30 +224,237 @@ fun AutocompleteField(value: String, onValueChange: (String) -> Unit, placeholde
 }
 
 @Composable
-fun ExploreCategories(selectedCategory: String, onCategorySelected: (String) -> Unit, allCategories: List<String>) {
+fun ExploreCategories(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
+    allCategories: List<String>
+) {
     val categories = listOf("Semua") + allCategories
-    LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-        items(categories) { cat -> CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) } }
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(bottom = 12.dp)
+    ) {
+        items(categories) { cat ->
+            CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) }
+        }
     }
 }
 
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(color = if (isSelected) Secondary500 else Gray200, shape = RoundedCornerShape(100.dp), modifier = Modifier.clickable { onClick() }) {
-        Text(text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = if (isSelected) Color.White else Gray900, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = if(isSelected) FontWeight.Bold else FontWeight.Medium))
+    Surface(
+        color = if (isSelected) Primary500 else Gray100,
+        shape = RoundedCornerShape(100.dp),
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
+            color = if (isSelected) Color.White else Gray700,
+            style = TextStyle(
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            )
+        )
+    }
+}
+
+@Composable
+fun SortDropdown(
+    selected: SortOption,
+    onOptionSelected: (SortOption) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val text = when {
+            selected == SortOption.TERBARU -> "Terbaru"
+            selected == SortOption.TERPOPULER -> "Terpopuler"
+            else -> "Termurah"
+        }
+
+        Box {
+            Surface(
+                shape = RoundedCornerShape(100.dp),
+                color = Gray100,
+                modifier = Modifier.clickable { expanded = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.FilterList, null, tint = Gray600, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text, fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray700, fontWeight = FontWeight.Medium)
+                }
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                SortOption.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(option.label, fontFamily = PlusJakartaSansFont, color = if (option == selected) Primary500 else Gray900)
+                            }
+                        },
+                        onClick = { onOptionSelected(option); expanded = false },
+                        leadingIcon = {
+                            if (option == selected) {
+                                Icon(Icons.Outlined.FilterList, null, tint = Primary500, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExploreShimmer() {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+        repeat(4) {
+            ExploreShimmerCard()
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun ExploreShimmerCard() {
+    val shimmerColors = listOf(
+        Gray200.copy(alpha = 0.6f),
+        Gray100.copy(alpha = 0.3f),
+        Gray200.copy(alpha = 0.6f)
+    )
+    val transition = rememberInfiniteTransition(label = "explore_shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 600f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslate"
+    )
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(translateAnim.value, translateAnim.value)
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(110.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(brush)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(11.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.4f)
+                    .height(11.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(11.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(50.dp)
+                        .height(11.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun EmptyStateView(
     title: String? = null,
-    subtitle: String? = null
+    subtitle: String? = null,
+    hasActiveFilter: Boolean = false,
+    onResetFilters: () -> Unit = {}
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Outlined.SentimentDissatisfied, "Tidak Ditemukan", tint = Gray400, modifier = Modifier.size(64.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Outlined.SentimentDissatisfied,
+            "Tidak Ditemukan",
+            tint = Gray300,
+            modifier = Modifier.size(72.dp)
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(title ?: stringResource(R.string.empty_events_not_found), fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray600)
-        Text(subtitle ?: stringResource(R.string.empty_events_try_other), textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 40.dp, vertical = 8.dp), color = Gray500, fontSize = 14.sp)
+        Text(
+            title ?: if (hasActiveFilter) "Event tidak ditemukan" else "Belum ada event",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray600
+        )
+        Text(
+            subtitle ?: if (hasActiveFilter) "Coba gunakan kata kunci atau filter lain" else "Event akan muncul di sini",
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 40.dp, vertical = 8.dp),
+            color = Gray400,
+            fontSize = 14.sp,
+            fontFamily = PlusJakartaSansFont
+        )
+        if (hasActiveFilter) {
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(onClick = onResetFilters) {
+                Icon(Icons.Outlined.Clear, null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Reset Filter", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
