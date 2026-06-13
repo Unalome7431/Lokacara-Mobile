@@ -147,7 +147,7 @@ private fun RowScope.NavItem(
         Box(
             modifier = Modifier
                 .height(pillHeight)
-                .widthIn(min = if (isSelected) 32.dp else 28.dp)
+                .widthIn(min = if (isSelected) 28.dp else 28.dp)
                 .clip(pillShape)
                 .background(if (isSelected) Secondary500 else Color.Transparent)
                 .padding(horizontal = 10.dp),
@@ -170,7 +170,7 @@ private fun RowScope.NavItem(
                 imageVector = item.icon,
                 contentDescription = item.contentDescription,
                 tint = if (isSelected) Color.White else Gray500,
-                modifier = Modifier.size(22.dp).scale(iconScale)
+                modifier = Modifier.size(24.dp).scale(iconScale)
             )
         }
 
