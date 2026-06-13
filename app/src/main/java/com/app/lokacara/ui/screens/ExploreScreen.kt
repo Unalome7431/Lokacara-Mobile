@@ -26,6 +26,7 @@ import com.app.lokacara.viewmodel.ExploreViewModel
 @Composable
 fun ExploreScreen(
     navController: NavController,
+    initialCategory: String = "",
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
     val isSearchExpanded by viewModel.isSearchExpanded.collectAsState()
@@ -38,6 +39,13 @@ fun ExploreScreen(
     val categorySuggestions by viewModel.categorySuggestions.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    LaunchedEffect(initialCategory) {
+        if (initialCategory.isNotEmpty()) {
+            viewModel.selectedCategoryChip.value = initialCategory
+            viewModel.searchWithDebounce(viewModel.eventName.value)
+        }
+    }
 
     val focusManager = LocalFocusManager.current
 

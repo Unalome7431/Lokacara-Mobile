@@ -67,11 +67,6 @@ class HomeViewModel @Inject constructor(
         }.take(5)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val todayEvents: StateFlow<List<Event>> = _allEvents.map { events ->
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-        events.filter { it.date == today }.take(5)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val selectedCategory = MutableStateFlow("Semua")
 
     val groupedEvents: StateFlow<Map<String, List<Event>>> = combine(

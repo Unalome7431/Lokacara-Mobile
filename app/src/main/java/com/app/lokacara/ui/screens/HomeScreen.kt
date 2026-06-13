@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -16,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,7 +44,6 @@ fun HomeScreen(
     val groupedEvents by viewModel.groupedEvents.collectAsState()
     val popularEvents by viewModel.popularEvents.collectAsState()
     val nearbyEvents by viewModel.nearbyEvents.collectAsState()
-    val todayEvents by viewModel.todayEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentLocation by viewModel.currentLocationName.collectAsState()
@@ -55,6 +58,21 @@ fun HomeScreen(
                 CircularProgressIndicator(color = Primary500)
             }
             error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
+            groupedEvents.isEmpty() -> PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
+                        Button(
+                            onClick = { navController.navigate(Screen.Explore.route) },
+                            colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
+                            shape = RoundedCornerShape(12.dp)
+                        ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
+                    }
+                }
+            }
             else -> PullToRefreshBox(
                 isRefreshing = isLoading,
                 onRefresh = { viewModel.refresh() }
@@ -70,31 +88,6 @@ fun HomeScreen(
                     popularEvents = popularEvents,
                     onEventClick = { onEventClick(it) }
                 )
-            }
-
-            // Event Hari Ini
-            if (todayEvents.isNotEmpty()) {
-                item(key = "today_title") {
-                    Text(
-                        text = "Event Hari Ini",
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 20.sp,
-                        color = Color.Black,
-                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
-                    )
-                }
-                item(key = "today_events") {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(todayEvents, key = { it.id }) { event ->
-                            EventCardCompact(event = event, onClick = { onEventClick(event) })
-                        }
-                    }
-                }
             }
 
             item(key = "nearby_header") {
@@ -121,15 +114,13 @@ fun HomeScreen(
             items(items = sortedCategories, key = { it }) { categoryName ->
                 val events = groupedEvents[categoryName] ?: emptyList()
                 if (events.isNotEmpty()) {
-                    val onSeeAll = {
-                        viewModel.updateCategory(categoryName)
-                        navController.navigate(Screen.Explore.route)
-                    }
                     CategoryEventSection(
                         categoryName = categoryName,
                         events = events,
                         onEventClick = onEventClick,
-                        onSeeAll = onSeeAll
+                        onSeeAll = {
+                            navController.navigate(Screen.Explore.createRoute(categoryName))
+                        }
                     )
                 }
             }

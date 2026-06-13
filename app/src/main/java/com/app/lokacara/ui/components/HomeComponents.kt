@@ -221,19 +221,17 @@ fun NearbyEventsHeader(
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
-            text = "Event terdekat di sekitar anda",
+            text = "Event di Sekitar Anda",
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
-        if (currentLocation.isNotBlank()) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
-                Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "di $currentLocation",
-                    style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray600)
-                )
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
+            Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = if (currentLocation.isNotBlank()) currentLocation else "Mendeteksi lokasi...",
+                style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = if (currentLocation.isNotBlank()) Gray600 else Gray400)
+            )
         }
     }
 }

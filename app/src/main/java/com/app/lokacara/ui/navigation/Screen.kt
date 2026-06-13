@@ -5,7 +5,9 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object Login : Screen("login")
     object Home : Screen("home")
-    object Explore : Screen("explore")
+    object Explore : Screen("explore?category={category}") {
+        fun createRoute(category: String = "") = "explore?category=$category"
+    }
     object CreateEvent : Screen("create_event")
     object Tickets : Screen("tickets")
     object Profile : Screen("profile")
