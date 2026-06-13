@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -60,16 +61,18 @@ fun HomeScreen(
     }
 
     // Load more when reaching the end
-    LaunchedEffect(listState) {
-        snapshotFlow {
+    val shouldLoadMore by remember {
+        derivedStateOf {
             val layoutInfo = listState.layoutInfo
-            val totalItems = layoutInfo.totalItemsCount
             val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            lastVisible to totalItems
-        }.collect { (lastVisible, totalItems) ->
-            if (lastVisible >= totalItems - 3 && hasMorePages && !isLoadingMore && !isLoading) {
-                viewModel.loadMore()
-            }
+            val totalItems = layoutInfo.totalItemsCount
+            lastVisible >= totalItems - 3
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && hasMorePages && !isLoadingMore && !isLoading) {
+            viewModel.loadMore()
         }
     }
 
@@ -119,12 +122,12 @@ fun HomeScreen(
                     state = listState
                 ) {
 
-                    item(key = "header") {
+                    item(key = "header", contentType = "header") {
                         HomeHeader(navController = navController)
                     }
 
                     // ── Popular Events ──
-                    item(key = "popular_section") {
+                    item(key = "popular_section", contentType = "popular") {
                         if (popularEvents.isNotEmpty()) {
                             PopularEventSection(
                                 popularEvents = popularEvents,
@@ -134,7 +137,7 @@ fun HomeScreen(
                     }
 
                     // ── Nearby Events ──
-                    item(key = "nearby_header") {
+                    item(key = "nearby_header", contentType = "nearby_header") {
                         NearbyEventsHeader(
                             currentLocation = currentLocation,
                             onLocationClick = { viewModel.showLocationPicker() }
@@ -142,7 +145,7 @@ fun HomeScreen(
                     }
 
                     if (nearbyEvents.isNotEmpty()) {
-                        item(key = "nearby_events") {
+                        item(key = "nearby_events", contentType = "nearby_row") {
                             LazyRow(
                                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                                 contentPadding = PaddingValues(horizontal = 24.dp),
@@ -158,7 +161,7 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        item(key = "nearby_empty") {
+                        item(key = "nearby_empty", contentType = "nearby_empty") {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -179,7 +182,7 @@ fun HomeScreen(
                         else listOf(selectedCategory)
 
                     if (sortedCategories.isNotEmpty()) {
-                        item(key = "categories_title") {
+                        item(key = "categories_title", contentType = "section_title") {
                             Text(
                                 text = "Kategori",
                                 fontFamily = NunitoFont,
@@ -190,7 +193,7 @@ fun HomeScreen(
                             )
                         }
 
-                        items(items = sortedCategories, key = { it }) { categoryName ->
+                        items(items = sortedCategories, key = { it }, contentType = { "category" }) { categoryName ->
                             val events = groupedEvents[categoryName] ?: emptyList()
                             if (events.isNotEmpty()) {
                                 CategoryEventSection(
@@ -208,7 +211,7 @@ fun HomeScreen(
 
                     // ── Category error ──
                     if (categoryError != null) {
-                        item(key = "category_error") {
+                        item(key = "category_error", contentType = "error") {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -226,7 +229,7 @@ fun HomeScreen(
 
                     // ── Load more indicator ──
                     if (isLoadingMore) {
-                        item(key = "loading_more") {
+                        item(key = "loading_more", contentType = "loading") {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 contentAlignment = Alignment.Center
@@ -240,7 +243,7 @@ fun HomeScreen(
                         }
                     }
 
-                    item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
+                    item(key = "bottom_spacer", contentType = "spacer") { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }

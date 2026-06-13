@@ -1,7 +1,19 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,16 +23,21 @@ import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -32,6 +49,7 @@ import com.app.lokacara.ui.theme.*
 data class NavigationItem(
     val route: String,
     val icon: ImageVector,
+    val label: String,
     val contentDescription: String
 )
 
@@ -42,11 +60,11 @@ fun BottomNavbar(navController: NavController) {
 
     val items = remember {
         listOf(
-            NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Beranda"),
-            NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Jelajahi"),
-            NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Buat Event"),
-            NavigationItem(Screen.Tickets.route, Icons.Outlined.ConfirmationNumber, "Tiket"),
-            NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profil")
+            NavigationItem(Screen.Home.route, Icons.Outlined.Home, "Beranda", "Beranda"),
+            NavigationItem(Screen.Explore.route, Icons.Outlined.Explore, "Jelajahi", "Jelajahi"),
+            NavigationItem(Screen.CreateEvent.route, Icons.Default.Add, "Buat", "Buat Event"),
+            NavigationItem(Screen.Tickets.route, Icons.Outlined.ConfirmationNumber, "Tiket", "Tiket"),
+            NavigationItem(Screen.Profile.route, Icons.Outlined.Person, "Profil", "Profil")
         )
     }
 
@@ -62,14 +80,16 @@ fun BottomNavbar(navController: NavController) {
         }
     }
 
-    val indicatorShape = remember { RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp) }
-    val highlightColor = remember { Secondary500.copy(alpha = 0.12f) }
-
-    Column(modifier = Modifier.fillMaxWidth().background(Color.White).navigationBarsPadding()) {
-        HorizontalDivider(thickness = 0.5.dp, color = Gray200)
-
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .navigationBarsPadding()
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(64.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -85,8 +105,6 @@ fun BottomNavbar(navController: NavController) {
                     NavItem(
                         item = item,
                         isSelected = isSelected,
-                        highlightColor = highlightColor,
-                        indicatorShape = indicatorShape,
                         onClick = {
                             if (!isSelected) onNavigate(item.route)
                         }
@@ -101,46 +119,104 @@ fun BottomNavbar(navController: NavController) {
 private fun RowScope.NavItem(
     item: NavigationItem,
     isSelected: Boolean,
-    highlightColor: Color,
-    indicatorShape: RoundedCornerShape,
     onClick: () -> Unit
 ) {
-    Box(
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
+        label = "navIconScale"
+    )
+
+    val pillShape = RoundedCornerShape(14.dp)
+
+    Column(
         modifier = Modifier
             .fillMaxHeight()
             .weight(1f)
-            .background(if (isSelected) highlightColor else Color.Transparent)
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(0.5f)
-                    .height(3.dp)
-                    .background(Secondary500, indicatorShape)
+        Box(
+            modifier = Modifier
+                .height(32.dp)
+                .widthIn(min = 48.dp)
+                .clip(pillShape)
+                .background(if (isSelected) Primary500 else Color.Transparent)
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isSelected,
+                enter = scaleIn(initialScale = 0.85f, animationSpec = spring(dampingRatio = 0.5f)) + fadeIn(tween(200)),
+                exit = scaleOut(targetScale = 0.85f, animationSpec = spring(dampingRatio = 0.5f)) + fadeOut(tween(150))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(pillShape)
+                        .background(Primary500)
+                )
+            }
+
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.contentDescription,
+                tint = if (isSelected) Color.White else Gray500,
+                modifier = Modifier.size(22.dp).scale(iconScale)
             )
         }
 
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.contentDescription,
-            tint = if (isSelected) Secondary600 else Gray500,
-            modifier = Modifier.size(26.dp)
-        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isSelected,
+            enter = fadeIn(tween(200)) + slideInVertically(
+                animationSpec = tween(200),
+                initialOffsetY = { it }
+            ),
+            exit = fadeOut(tween(150)) + slideOutVertically(
+                animationSpec = tween(150),
+                targetOffsetY = { it }
+            )
+        ) {
+            Text(
+                text = item.label,
+                style = TextStyle(
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Primary600
+                )
+            )
+        }
+
+        if (!isSelected) {
+            Spacer(modifier = Modifier.height(14.dp))
+        }
     }
 }
 
 @Composable
 private fun CenterActionButton(onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = 0.5f),
+        label = "fabScale"
+    )
+
     Box(
         modifier = Modifier
-            .padding(horizontal = 8.dp)
-            .size(48.dp)
+            .padding(horizontal = 4.dp)
+            .size(56.dp)
+            .scale(scale)
+            .shadow(elevation = 8.dp, shape = CircleShape)
+            .border(3.dp, Color.White, CircleShape)
             .clip(CircleShape)
             .background(Secondary500)
-            .clickable { onClick() },
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Icon(

@@ -3,7 +3,6 @@ package com.app.lokacara.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -25,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -154,7 +154,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth(),
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 0,
             userScrollEnabled = true
         ) { page ->
             key(page) {
@@ -176,7 +176,6 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                             model = ImageRequest.Builder(context)
                                 .data(event.imageUrl)
                                 .size(400)
-                                .crossfade(true)
                                 .build(),
                             contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
@@ -283,7 +282,7 @@ fun CategoryEventSection(
     onSeeAll: () -> Unit,
     onBookmarkClick: (String) -> Unit = {}
 ) {
-    var visible by remember { mutableStateOf(false) }
+    var visible by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
     val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
 
@@ -319,8 +318,8 @@ fun CategoryEventSection(
                 )
             }
         }
-        }
-    }
+}
+}
 
 @Composable
 fun LocationPickerDialog(
