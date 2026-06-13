@@ -40,7 +40,8 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         isBookmarked = false,
         penyelenggara = penyelenggara,
         latitude = latitude,
-        longitude = longitude
+        longitude = longitude,
+        viewCount = view_count
     )
 }
 

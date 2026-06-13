@@ -111,7 +111,9 @@ fun EventCard(
 @Composable
 fun EventCardCompact(
     event: Event,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    isBookmarked: Boolean = event.isBookmarked,
+    onBookmarkClick: () -> Unit = {}
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -127,19 +129,38 @@ fun EventCardCompact(
         shadowElevation = 4.dp
     ) {
         Column {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(event.imageUrl)
-                    .size(160)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = event.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(event.imageUrl)
+                        .size(160)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = event.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(110.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.85f))
+                        .clickable { onBookmarkClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Bookmark",
+                        tint = if (isBookmarked) Secondary500 else Gray500,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
             Column(modifier = Modifier.padding(10.dp)) {
                 Text(
                     text = event.title,

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -48,8 +49,13 @@ import coil.request.ImageRequest
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
+import android.location.Geocoder
 import com.app.lokacara.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
 fun HomeHeader(navController: NavController) {
@@ -243,7 +249,8 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
 @Composable
 fun NearbyEventsHeader(
-    currentLocation: String = ""
+    currentLocation: String = "",
+    onLocationClick: () -> Unit = {}
 ) {
     Column(modifier = Modifier.padding(top = 28.dp)) {
         Text(
@@ -251,7 +258,12 @@ fun NearbyEventsHeader(
             style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = 24.dp, top = 4.dp)
+                .clickable { onLocationClick() }
+        ) {
             Icon(Icons.Outlined.LocationOn, contentDescription = "Lokasi", tint = Secondary500, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(4.dp))
             val displayText = if (currentLocation.isNotBlank()) "di $currentLocation" else "di Sekitar Anda"
@@ -268,7 +280,8 @@ fun CategoryEventSection(
     categoryName: String,
     events: List<Event>,
     onEventClick: (Event) -> Unit,
-    onSeeAll: () -> Unit
+    onSeeAll: () -> Unit,
+    onBookmarkClick: (String) -> Unit = {}
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -299,8 +312,124 @@ fun CategoryEventSection(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(events, key = { it.id }) { event ->
-                EventCardCompact(event = event, onClick = { onEventClick(event) })
+                EventCardCompact(
+                    event = event,
+                    onClick = { onEventClick(event) },
+                    onBookmarkClick = { onBookmarkClick(event.id.toString()) }
+                )
             }
         }
         }
     }
+
+@Composable
+fun LocationPickerDialog(
+    currentLocation: String,
+    onDismiss: () -> Unit,
+    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Pilih Lokasi", fontFamily = NunitoFont, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text(
+                    "Masukkan nama kota untuk melihat event di sekitar lokasi tersebut",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 13.sp,
+                    color = Gray500,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Cari kota...", fontFamily = PlusJakartaSansFont) },
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, "Lokasi", tint = Secondary500) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp)
+                )
+                if (currentLocation.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Lokasi saat ini",
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 12.sp,
+                        color = Gray400,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Secondary100,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDismiss() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Outlined.MyLocation, null, tint = Secondary500, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "di $currentLocation",
+                                fontFamily = PlusJakartaSansFont,
+                                fontSize = 14.sp,
+                                color = Gray900
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val city = searchQuery.text.trim()
+                    if (city.isNotBlank()) {
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                try {
+                                    val geocoder = Geocoder(context)
+                                    val addresses = geocoder.getFromLocationName(city, 1)
+                                    if (!addresses.isNullOrEmpty()) {
+                                        val loc = addresses[0]
+                                        Result.success(Triple(
+                                            loc.locality ?: loc.subAdminArea ?: loc.adminArea ?: city,
+                                            loc.latitude,
+                                            loc.longitude
+                                        ))
+                                    } else {
+                                        Result.failure(Exception("Lokasi tidak ditemukan"))
+                                    }
+                                } catch (e: Exception) {
+                                    Result.failure(e)
+                                }
+                            }
+                            result.onSuccess { (cityName, lat, lng) ->
+                                onLocationSelected(cityName, lat, lng)
+                            }.onFailure {
+                                SnackbarManager.show("Lokasi tidak ditemukan")
+                            }
+                        }
+                    }
+                },
+                enabled = searchQuery.text.isNotBlank()
+            ) {
+                Text("Gunakan", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray500)
+            }
+        }
+    )
+}
