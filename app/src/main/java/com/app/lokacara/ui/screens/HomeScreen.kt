@@ -26,16 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.model.Event
-import com.app.lokacara.ui.components.EventCardCompact
-import com.app.lokacara.ui.components.HomeHeader
-import com.app.lokacara.ui.components.PopularEventSection
-import com.app.lokacara.ui.components.NearbyEventsHeader
-import com.app.lokacara.ui.components.CategoryEventSection
-import com.app.lokacara.ui.components.ErrorStateView
-import com.app.lokacara.ui.components.EventCard
-import com.app.lokacara.ui.components.ShimmerSkeletonCard
-import com.app.lokacara.ui.theme.*
+import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.HomeViewModel
 
 @Composable
