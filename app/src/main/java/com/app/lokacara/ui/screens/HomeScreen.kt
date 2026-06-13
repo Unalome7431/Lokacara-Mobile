@@ -1,10 +1,11 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -113,15 +114,16 @@ fun HomeScreen(
 
             if (nearbyEvents.isNotEmpty()) {
                 item(key = "nearby_events") {
-                    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(nearbyEvents, key = { it.id }) { event ->
-                                EventCardCompact(event = event, onClick = { onEventClick(event) })
-                            }
+                    val nearbyScrollState = rememberScrollState()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(nearbyScrollState)
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        nearbyEvents.forEach { event ->
+                            EventCardCompact(event = event, onClick = { onEventClick(event) })
                         }
                     }
                 }

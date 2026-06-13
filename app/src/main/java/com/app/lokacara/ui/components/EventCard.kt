@@ -164,13 +164,27 @@ fun EventCardCompact(
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = event.date,
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 11.sp,
-                    color = Gray400,
-                    maxLines = 1
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = event.date,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 11.sp,
+                        color = Gray400,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = event.price,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (event.price == "Gratis") SemanticSuccessBase else Secondary500,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

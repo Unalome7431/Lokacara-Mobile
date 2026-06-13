@@ -43,7 +43,6 @@ fun ExploreScreen(
     LaunchedEffect(initialCategory) {
         if (initialCategory.isNotEmpty()) {
             viewModel.selectedCategoryChip.value = initialCategory
-            viewModel.searchWithDebounce(viewModel.eventName.value)
         }
     }
 

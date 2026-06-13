@@ -7,7 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -179,7 +181,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                             modifier = Modifier.fillMaxSize().padding(16.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(modifier = Modifier.align(Alignment.Start)) {
+                            Box(modifier = Modifier.align(Alignment.Start).widthIn(max = 200.dp)) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
                                     color = SvgOrange.copy(alpha = 0.9f)
@@ -190,7 +192,9 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                                         fontSize = 11.sp,
                                         fontFamily = PlusJakartaSansFont,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
@@ -290,12 +294,15 @@ fun CategoryEventSection(
                 Text("Lihat Semua →", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SvgOrange)
             }
         }
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+        val scrollState = rememberScrollState()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(events, key = { it.id }) { event ->
+            events.forEach { event ->
                 EventCardCompact(event = event, onClick = { onEventClick(event) })
             }
         }
