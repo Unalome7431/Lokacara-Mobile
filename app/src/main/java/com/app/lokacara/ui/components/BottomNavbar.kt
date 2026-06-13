@@ -129,7 +129,7 @@ private fun RowScope.NavItem(
     )
 
     val pillHeight by animateDpAsState(
-        targetValue = if (isSelected) 22.dp else 18.dp,
+        targetValue = if (isSelected) 24.dp else 20.dp,
         animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
         label = "pillHeight"
     )
@@ -153,7 +153,7 @@ private fun RowScope.NavItem(
                 Box(
                     modifier = Modifier
                         .height(pillHeight)
-                        .width(36.dp)
+                        .width(40.dp)
                         .clip(pillShape)
                         .background(Secondary500)
                 )
