@@ -1,5 +1,9 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -241,10 +245,16 @@ fun CategoryEventSection(
     categoryName: String,
     events: List<Event>,
     onEventClick: (Event) -> Unit,
-    onSeeAll: () -> Unit,
-    animated: Boolean = true
+    onSeeAll: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(top = 24.dp)) {
+    val visible = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible.value = true }
+
+    AnimatedVisibility(
+        visible = visible.value,
+        enter = fadeIn(animationSpec = tween(300)) + slideInVertically { it / 2 }
+    ) {
+        Column(modifier = Modifier.padding(top = 24.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -271,6 +281,7 @@ fun CategoryEventSection(
             items(events, key = { it.id }) { event ->
                 EventCardCompact(event = event, onClick = { onEventClick(event) })
             }
+        }
         }
     }
 }

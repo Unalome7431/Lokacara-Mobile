@@ -1,7 +1,17 @@
 package com.app.lokacara.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,10 +22,15 @@ import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -75,14 +90,11 @@ fun EventCard(
 
                     if (showBookmark) {
                         val bookmarkIcon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
-
                         Icon(
                             imageVector = bookmarkIcon,
                             contentDescription = "Bookmark",
                             tint = Gray900,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clickable { onBookmarkClick() }
+                            modifier = Modifier.size(24.dp).clickable { onBookmarkClick() }
                         )
                     }
                 }
@@ -92,23 +104,19 @@ fun EventCard(
 }
 
 @Composable
-private fun DetailItem(icon: ImageVector, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text, color = Gray600, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
-    }
-}
-
-@Composable
 fun EventCardCompact(
     event: Event,
     onClick: () -> Unit = {}
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (isPressed) 0.95f else 1f, animationSpec = spring(dampingRatio = 0.5f), label = "scale")
+
     Surface(
         modifier = Modifier
             .width(160.dp)
-            .clickable { onClick() },
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         shadowElevation = 2.dp
@@ -162,14 +170,78 @@ fun EventCardCompact(
         }
     }
 }
+
 @Composable
-private fun EventCardPreview() {
-    LokacaraMobileTheme {
-        EventCard(
-            event = Event(
-                id = 1L, title = "Test Event", description = "Desc", date = "12 Jun 2026",
-                location = "Surakarta", price = "Gratis", imageUrl = null, category = "Teknologi"
+fun ShimmerSkeletonCard() {
+    val shimmerColors = listOf(
+        Gray200.copy(alpha = 0.6f),
+        Gray100.copy(alpha = 0.3f),
+        Gray200.copy(alpha = 0.6f)
+    )
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 600f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslate"
+    )
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(translateAnim.value, translateAnim.value)
+    )
+
+    Surface(
+        modifier = Modifier.width(160.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(brush)
             )
-        )
+            Column(modifier = Modifier.padding(10.dp).fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .height(13.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.35f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailItem(icon: ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+        Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text, color = Gray600, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
     }
 }

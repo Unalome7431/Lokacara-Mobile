@@ -22,6 +22,7 @@ import com.app.lokacara.ui.components.SnackbarManager
 import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,6 +108,14 @@ class HomeViewModel @Inject constructor(
             if (location != null && _currentLatLng.value == null) {
                 _currentLatLng.value = Pair(location.latitude, location.longitude)
                 resolveCityName(location.latitude, location.longitude)
+            }
+
+            // GPS timeout — after 10s, stop showing "Mendeteksi lokasi..."
+            if (currentLocationName.value.isBlank()) {
+                delay(10000)
+                if (currentLocationName.value.isBlank()) {
+                    currentLocationName.value = ""
+                }
             }
         }
     }

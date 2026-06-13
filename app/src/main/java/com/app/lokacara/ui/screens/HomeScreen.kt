@@ -31,6 +31,8 @@ import com.app.lokacara.ui.components.PopularEventSection
 import com.app.lokacara.ui.components.NearbyEventsHeader
 import com.app.lokacara.ui.components.CategoryEventSection
 import com.app.lokacara.ui.components.ErrorStateView
+import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.components.ShimmerSkeletonCard
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.HomeViewModel
@@ -54,8 +56,23 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         when {
-            isLoading && groupedEvents.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Primary500)
+            isLoading && groupedEvents.isEmpty() -> Column(
+                modifier = Modifier.fillMaxSize().padding(top = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    repeat(3) { ShimmerSkeletonCard() }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    repeat(2) { ShimmerSkeletonCard() }
+                }
             }
             error != null -> ErrorStateView(message = error!!, onRetry = { viewModel.refresh() })
             groupedEvents.isEmpty() -> PullToRefreshBox(
