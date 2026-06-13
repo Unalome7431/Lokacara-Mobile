@@ -12,11 +12,13 @@ import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -49,18 +51,37 @@ class BookmarkViewModel @Inject constructor(
                 return@launch
             }
 
-            // Fetch from feed and filter by local bookmarked IDs
-            when (val result = safeApiCall { apiService.getFeedEvents() }) {
-                is ApiResult.Success -> {
-                    _savedEvents.value = result.data.data
-                        .filter { it.id.toString() in bookmarkedIds }
-                        .map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
-                }
-                is ApiResult.Error -> {
-                    _savedEvents.value = emptyList()
+            // Try server bookmarks first — returns events that server knows about
+            val loaded = mutableListOf<Event>()
+            val fromServer = safeApiCall { apiService.getBookmarks() }
+            if (fromServer is ApiResult.Success) {
+                val serverEvents = fromServer.data.data.map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
+                loaded.addAll(serverEvents)
+            }
+
+            // Fetch remaining events by individual IDs (for locally-bookmarked events not known to server)
+            val loadedIds = loaded.map { it.id }.toSet()
+            val missingIds = bookmarkedIds
+                .mapNotNull { it.toLongOrNull() }
+                .filter { it !in loadedIds }
+
+            if (missingIds.isNotEmpty()) {
+                withContext(Dispatchers.IO) {
+                    missingIds.forEach { id ->
+                        when (val detail = safeApiCall { apiService.getEventDetail(id) }) {
+                            is ApiResult.Success -> {
+                                detail.data.event?.let { dto ->
+                                    val event = dto.toEvent(imageUrlProvider).copy(isBookmarked = true)
+                                    loaded.add(event)
+                                }
+                            }
+                            is ApiResult.Error -> { /* event not found or inaccessible */ }
+                        }
+                    }
                 }
             }
 
+            _savedEvents.value = loaded
             _isLoading.value = false
         }
     }
@@ -70,23 +91,22 @@ class BookmarkViewModel @Inject constructor(
             val currentIds = bookmarkManager.bookmarkedIds.first()
             val isRemoving = eventId in currentIds
 
+            // Update local DataStore immediately (optimistic UI)
+            bookmarkManager.toggleBookmark(eventId)
+
+            // Update local list immediately
             if (isRemoving) {
                 _savedEvents.value = _savedEvents.value.filter { it.id.toString() != eventId }
             }
-            bookmarkManager.toggleBookmark(eventId)
+            // If adding, we'll load the event on next refresh()
+
+            // Sync to server (fire-and-forget — gak undo kalau gagal)
             val idLong = eventId.toLongOrNull()
             if (idLong != null) {
-                val synced = try {
-                    if (isRemoving) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
-                    true
-                } catch (_: Exception) {
-                    false
-                }
-                if (!synced) {
-                    bookmarkManager.toggleBookmark(eventId)
-                    loadBookmarkedEvents()
-                    SnackbarManager.showError("Gagal menyinkronkan bookmark")
-                }
+                try {
+                    if (isRemoving) apiService.removeBookmark(idLong)
+                    else apiService.addBookmark(idLong)
+                } catch (_: Exception) { /* server sync gagal — lokal tetap tersimpan */ }
             }
         }
     }

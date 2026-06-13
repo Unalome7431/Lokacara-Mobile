@@ -1,5 +1,7 @@
 # Fix: Google Login Error 500 — Email Null
 
+✅ **Status: Implemented** — `fix/google-login-null-email`
+
 ## Masalah
 
 User login dengan Google mendapatkan error "server error".  
@@ -25,16 +27,20 @@ Ketika `Socialite::driver('google')->userFromToken($token)` dipanggil, Google me
 | `id` (google_id) | "116748881137786409507" | ✅ OK |
 | `avatar` | URL foto profil | ✅ OK |
 
-Kode backend saat ini melakukan `User::updateOrCreate(['email' => $email], ...)` dengan `$email = null`, menyebabkan PostgreSQL reject karena kolom `email` memiliki constraint `NOT NULL`.
+Kode backend sebelumnya melakukan `User::updateOrCreate(['email' => $email], ...)` dengan `$email = null`, menyebabkan database reject karena kolom `email` memiliki constraint `NOT NULL`.
 
 ## Solusi
 
-### 1. Ganti unique key dari `email` ke `google_id`
+### 1. Ganti lookup key dari `email` ke `provider` + `provider_id`
 
-Cari/find user berdasarkan `google_id`, bukan `email`.  
-Ini mencegah duplikasi dan gak bergantung pada email.
+Repo ini menggunakan skema multi-provider (kolom `provider` + `provider_id`), bukan `google_id`.  
+Cari user berdasarkan `provider='google'` + `provider_id`, bukan email.
 
-### 2. Fallback untuk email null
+### 2. Hybrid lookup — bridging akun email existing
+
+Selain lookup by provider_id, jika tidak ketemu dan email tersedia, coba cari by email untuk menghubungkan akun yang sebelumnya daftar via email.
+
+### 3. Fallback untuk email null
 
 Kalau `$googleUser->getEmail()` return `null`, generate placeholder email:
 
@@ -42,7 +48,11 @@ Kalau `$googleUser->getEmail()` return `null`, generate placeholder email:
 $email = $googleUser->getEmail() ?: 'google_' . $googleUser->getId() . '@placeholder.local';
 ```
 
-### 3. Full method `googleLogin()` — Sesudah Fix
+### 4. Tidak perlu migration baru
+
+Repo sudah punya kolom `provider_id` di tabel `users` sejak migration awal — tidak ada perubahan database.
+
+### 5. Full method `googleLogin()` — Sesudah Fix
 
 **File:** `app/Http/Controllers/Api/AuthController.php`
 
@@ -58,7 +68,7 @@ public function googleLogin(Request $request)
     } catch (\Exception $e) {
         return response()->json([
             'message' => 'Invalid Google token'
-        ], 422);
+        ], 401);
     }
 
     $email = $googleUser->getEmail();
@@ -66,55 +76,63 @@ public function googleLogin(Request $request)
         $email = 'google_' . $googleUser->getId() . '@placeholder.local';
     }
 
-    $user = User::where('google_id', $googleUser->getId())->first();
+    // 1. Cari by provider + provider_id (Google-only users, atau returning Google users)
+    $user = User::where('provider', 'google')
+        ->where('provider_id', $googleUser->getId())
+        ->first();
 
-    // Cek suspended
-    if ($user && $user->suspended_at) {
+    // 2. Fallback: cari by email (bridging akun web yang daftar via email)
+    if (!$user && $googleUser->getEmail()) {
+        $user = User::where('email', $googleUser->getEmail())->first();
+    }
+
+    // 3. Tidak ditemukan sama sekali → create baru
+    if (!$user) {
+        $user = User::create([
+            'name'              => $googleUser->getName() ?? 'User',
+            'email'             => $email,
+            'provider'          => 'google',
+            'provider_id'       => $googleUser->getId(),
+            'email_verified_at' => now(),
+            'password'          => bcrypt(Str::random(32)),
+            'avatar_url'        => $googleUser->getAvatar(),
+        ]);
+    }
+
+    if ($user->suspended_at) {
         return response()->json([
             'message' => 'Your account has been suspended. Please contact support.'
         ], 403);
     }
 
-    if (!$user) {
-        $user = User::create([
-            'name'              => $googleUser->getName() ?? 'User',
-            'email'             => $email,
-            'google_id'         => $googleUser->getId(),
-            'email_verified_at' => now(),
-            'provider'          => 'google',
-            'password'          => bcrypt(Str::random(32)),
-        ]);
-    }
-
-    // Hapus token lama (opsional)
-    $user->tokens()->delete();
-
-    $token = $user->createToken('mobile')->plainTextToken;
+    $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
         'message' => 'Login successful',
         'user'    => $user->fresh(),
         'token'   => $token,
-    ]);
+    ], 200);
 }
 ```
 
-> **Catatan:** Gunakan `User::where('google_id', ...)->first()` + `User::create()` 
-> alih-alih `User::updateOrCreate()` agar lebih eksplisit dan gak conflict.
+## Perbedaan dari Proposal Awal
 
-### 4. Pastikan migration `users` punya field `google_id`
-
-```php
-// Di migration create_users_table.php atau migration tambahan
-$table->string('google_id')->nullable()->unique()->after('remember_token');
-```
+| Aspek | Proposal (docs) | Aktual (repo) |
+|-------|-----------------|---------------|
+| Lookup key | `google_id` | `provider` + `provider_id` |
+| Migration baru | Tambah kolom `google_id` | **Tidak perlu** — `provider_id` sudah ada |
+| Bridging akun email | Tidak ada → bisa duplicate | Hybrid: coba by email dulu |
+| Daftar email terdaftar | Bisa crash duplicate key | Aman — `updateOrCreate` by email |
+| `avatar_url` | Tidak di-set | Di-set dari Google |
+| Token name | `'mobile'` | `'auth_token'` (konsisten) |
+| `tokens()->delete()` | Ada (opsional) | Tidak dilakukan |
 
 ## Dampak ke Web
 
 **Tidak ada.** Web login Google tetap berjalan normal karena:
 
 - Web menggunakan flow redirect (`GET /auth/google/callback`), bukan API
-- Logika `firstOrCreate` / `updateOrCreate` di controller web terpisah
+- Logika `updateOrCreate` di `GoogleController` web terpisah — tidak diubah
 - Perubahan hanya di `AuthController@googleLogin` (khusus API)
 - Email tidak null pada sebagian besar akun — fallback hanya jalan pada edge case
 
@@ -125,11 +143,13 @@ $table->string('google_id')->nullable()->unique()->after('remember_token');
    - User dibuat dengan email `google_{google_id}@placeholder.local`
 2. Login Google menggunakan akun normal (email shared)
    - Harus tetap jalan seperti biasa
-3. Login via Web
+3. User daftar via email, lalu login Google dengan email yang sama
+   - Akun terlink (bukan duplikat)
+4. Login via Web
    - Tidak terpengaruh
 
 ## File yang Diubah
 
 | File | Perubahan |
 |------|-----------|
-| `app/Http/Controllers/Api/AuthController.php` | `googleLogin()` — cari by google_id, fallback email null |
+| `app/Http/Controllers/Api/AuthController.php` | `googleLogin()` — lookup by provider+provider_id, hybrid fallback, null email fix |
