@@ -120,7 +120,6 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
 
     var paused by remember { mutableStateOf(false) }
 
-    // Pause auto-slide when user interacts with the pager
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.isScrollInProgress }
             .collect { scrolling ->
@@ -133,7 +132,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                delay(if (paused) 3000L else 4000L)
+                delay(if (paused) 5000L else 4000L)
                 if (paused) { paused = false; continue }
                 if (pageCount > 1) {
                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
