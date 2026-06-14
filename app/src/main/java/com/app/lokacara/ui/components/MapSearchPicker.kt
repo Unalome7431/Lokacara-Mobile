@@ -62,6 +62,8 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
@@ -220,6 +222,10 @@ fun MapSearchPicker(
         GoogleMap(
             modifier = Modifier.fillMaxWidth().height(200.dp),
             cameraPositionState = cameraPositionState,
+            properties = MapProperties(
+                isMyLocationEnabled = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            ),
+            uiSettings = MapUiSettings(zoomControlsEnabled = true),
             onMapClick = { latLng ->
                 markerState.position = latLng
                 onLocationSelected(MapLocation(name = "", address = "", latitude = latLng.latitude, longitude = latLng.longitude))

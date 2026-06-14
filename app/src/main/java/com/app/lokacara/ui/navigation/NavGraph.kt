@@ -120,7 +120,14 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (currentRoute != Screen.Notification.route && currentRoute != Screen.CreateEvent.route) {
+            val hideNavbar = currentRoute == Screen.Notification.route ||
+                    currentRoute == Screen.CreateEvent.route ||
+                    currentRoute?.startsWith("edit_event") == true ||
+                    currentRoute?.startsWith(Screen.EventDetail.route.split("?")[0]) == true ||
+                    currentRoute?.startsWith(Screen.Attendees.route.split("/")[0]) == true ||
+                    currentRoute?.startsWith(Screen.QrScan.route.split("/")[0]) == true
+
+            if (!hideNavbar) {
                 BottomNavbar(navController = internalNavController)
             }
         }
@@ -190,6 +197,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     popExitTransition = { fadeOut(tween(200)) }
                 ) {
                     CreateEventScreen(
+                        eventId = null, // Mode Buat Baru
                         onBack = { internalNavController.popBackStack() },
                         onPublish = {
                             internalNavController.navigate(Screen.Home.route) {
@@ -202,6 +210,26 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                         }
                     )
                 }
+                // --- RUTE BARU UNTUK EDIT EVENT ---
+                composable(
+                    route = "edit_event/{eventId}",
+                    arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
+                    enterTransition = { fadeIn(tween(300)) },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) }
+                ) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
+                    CreateEventScreen(
+                        eventId = eventId, // Melempar ID agar masuk mode Edit
+                        onBack = { internalNavController.popBackStack() },
+                        onPublish = {
+                            // Saat berhasil diedit, kembali ke halaman detail acaranya
+                            internalNavController.popBackStack()
+                        }
+                    )
+                }
+                // ----------------------------------
                 composable(
                     Screen.Notification.route,
                     enterTransition = screenEnter,
