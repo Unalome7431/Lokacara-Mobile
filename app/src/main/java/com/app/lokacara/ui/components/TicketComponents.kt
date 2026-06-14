@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -388,6 +389,7 @@ fun HistoryDetailDialog(
 
 @Composable
 fun QrCodeDialog(qrData: String, onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(28.dp),
@@ -438,6 +440,28 @@ fun QrCodeDialog(qrData: String, onDismiss: () -> Unit) {
                     fontSize = 12.sp,
                     color = Gray500
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        val bitmap = createQrBitmap(qrData.ifEmpty { "lokacara" })
+                        val file = java.io.File(context.cacheDir, "qr_checkin.png")
+                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "image/png"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(shareIntent, "Bagikan QR Code"))
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Share, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Bagikan QR", color = Color.White, fontWeight = FontWeight.Bold, fontFamily = PlusJakartaSansFont)
+                }
             }
         }
     }
