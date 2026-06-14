@@ -161,6 +161,7 @@ class CreateEventViewModel @Inject constructor(
     }
 
     fun publish() {
+        val eventIsOnline = isOnline.value
         val title = namaEvent.value.trim()
         if (title.isBlank()) {
             _errorMessage.value = "Nama event harus diisi"
@@ -191,12 +192,14 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Kuota peserta harus di antara 1 sampai 100000"
             return
         }
-        if (isOnline.value) {
-            if (aplikasiTempat.value.isBlank()) {
+        val venueOrPlatform = aplikasiTempat.value.trim()
+        val addressOrLink = alamat.value.trim()
+        if (eventIsOnline) {
+            if (venueOrPlatform.isBlank()) {
                 _errorMessage.value = "Aplikasi/platform harus diisi untuk event online"
                 return
             }
-            if (alamat.value.isBlank()) {
+            if (addressOrLink.isBlank()) {
                 _errorMessage.value = "Link event harus diisi untuk event online"
                 return
             }
@@ -227,16 +230,30 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Latitude dan longitude harus diisi keduanya atau dikosongkan"
             return
         }
-        if (!isOnline.value && (latStr.isBlank() || lngStr.isBlank())) {
+        if (!eventIsOnline && (latStr.isBlank() || lngStr.isBlank())) {
             _errorMessage.value = "Untuk lokasi offline belum dipilih. Gunakan peta atau tombol 'Gunakan Lokasi Saat Ini'"
             return
+        }
+        val offlineLocationName = if (!eventIsOnline) {
+            venueOrPlatform.ifBlank { "Lokasi Event" }
+        } else ""
+        val offlineAddress = if (!eventIsOnline) {
+            addressOrLink.ifBlank { coordinateFallbackAddress(latStr, lngStr) }
+        } else ""
+        if (!eventIsOnline && (offlineLocationName.isBlank() || offlineAddress.isBlank())) {
+            _errorMessage.value = "Detail lokasi offline belum lengkap. Pilih lokasi dari peta atau gunakan lokasi saat ini."
+            return
+        }
+        if (!eventIsOnline) {
+            aplikasiTempat.value = offlineLocationName
+            alamat.value = offlineAddress
         }
 
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
-            val type = if (isOnline.value) "online" else "offline"
+            val type = if (eventIsOnline) "online" else "offline"
 
             val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
             val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -246,14 +263,14 @@ class CreateEventViewModel @Inject constructor(
 
             val catPart = selectedCategoryId.value?.toString()
                 ?.toRequestBody("text/plain".toMediaTypeOrNull())
-            val locPart = if (!isOnline.value && aplikasiTempat.value.isNotBlank())
-                aplikasiTempat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
-            val addrPart = if (!isOnline.value && alamat.value.isNotBlank())
-                alamat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
-            val platPart = if (isOnline.value && aplikasiTempat.value.isNotBlank())
-                aplikasiTempat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
-            val linkPart = if (isOnline.value && alamat.value.isNotBlank())
-                alamat.value.trim().toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val locPart = if (!eventIsOnline)
+                offlineLocationName.toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val addrPart = if (!eventIsOnline)
+                offlineAddress.toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val platPart = if (eventIsOnline)
+                venueOrPlatform.toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val linkPart = if (eventIsOnline)
+                addressOrLink.toRequestBody("text/plain".toMediaTypeOrNull()) else null
             val capPart = kuota.value.takeIf { it > 0 }
                 ?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
 
@@ -338,7 +355,7 @@ class CreateEventViewModel @Inject constructor(
         return input
     }
 
-    /* end start closer to +1hr if not set */
+    /* Keep end time one hour after start when it has to be inferred. */
     private fun formatEndApiDatetime(startInput: String, endInput: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
@@ -351,7 +368,7 @@ class CreateEventViewModel @Inject constructor(
         if (endInput.isBlank()) {
             if (startInput.isNotBlank()) {
                 try {
-                    val startDate = sdf.parse(startInput)
+                    val startDate = sdf.parse(startInput) ?: throw IllegalArgumentException()
                     val cal = java.util.Calendar.getInstance()
                     cal.time = startDate
                     cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
@@ -370,18 +387,67 @@ class CreateEventViewModel @Inject constructor(
     val longitude = MutableStateFlow("")
 
     fun setLocationFromMap(location: MapLocation) {
-        aplikasiTempat.value = location.name
-        alamat.value = location.address
-        latitude.value = location.latitude.toString()
-        longitude.value = location.longitude.toString()
+        val lat = location.latitude.toString()
+        val lng = location.longitude.toString()
+        aplikasiTempat.value = location.name.trim().ifBlank { "Lokasi Event" }
+        alamat.value = location.address.trim().ifBlank { coordinateFallbackAddress(lat, lng) }
+        latitude.value = lat
+        longitude.value = lng
+    }
+
+    fun setEventMode(online: Boolean) {
+        if (isOnline.value == online) return
+        isOnline.value = online
+        aplikasiTempat.value = ""
+        alamat.value = ""
+        latitude.value = ""
+        longitude.value = ""
+        _errorMessage.value = null
+    }
+
+    private fun coordinateFallbackAddress(latStr: String, lngStr: String): String {
+        val lat = latStr.toDoubleOrNull()
+        val lng = lngStr.toDoubleOrNull()
+        return if (lat != null && lng != null) {
+            String.format(Locale.US, "Koordinat %.5f, %.5f", lat, lng)
+        } else {
+            ""
+        }
     }
 
     fun setDateTime(isStart: Boolean, date: String, time: String) {
         val formatted = "$date $time"
         if (isStart) {
             waktuMulai.value = formatted
+            if (waktuSelesai.value.isBlank() || !isEndAfterStart(formatted, waktuSelesai.value)) {
+                waktuSelesai.value = addHours(formatted, 1)
+            }
         } else {
             waktuSelesai.value = formatted
+        }
+    }
+
+    private fun addHours(input: String, hours: Int): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        return try {
+            val date = sdf.parse(input) ?: return input
+            val cal = java.util.Calendar.getInstance()
+            cal.time = date
+            cal.add(java.util.Calendar.HOUR_OF_DAY, hours)
+            sdf.format(cal.time)
+        } catch (_: Exception) {
+            input
+        }
+    }
+
+    private fun isEndAfterStart(startInput: String, endInput: String): Boolean {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        return try {
+            val start = sdf.parse(startInput)?.time ?: return false
+            val end = sdf.parse(endInput)?.time ?: return false
+            end > start
+        } catch (_: Exception) {
+            false
         }
     }
 

@@ -8,7 +8,11 @@ import android.location.LocationManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,16 +30,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +56,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,15 +78,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.DpOffset
@@ -116,6 +132,8 @@ fun CreateEventScreen(
     val isOnline by viewModel.isOnline.collectAsState()
     val aplikasiTempat by viewModel.aplikasiTempat.collectAsState()
     val alamat by viewModel.alamat.collectAsState()
+    val latitude by viewModel.latitude.collectAsState()
+    val longitude by viewModel.longitude.collectAsState()
     val deskripsi by viewModel.deskripsi.collectAsState()
     val kuota by viewModel.kuota.collectAsState()
     val posterUri by viewModel.posterUri.collectAsState()
@@ -123,6 +141,23 @@ fun CreateEventScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val hasDraft by viewModel.hasDraft.collectAsState()
+    val scheduleReady = waktuMulai.isNotBlank() && waktuSelesai.isNotBlank()
+    val locationReady = if (isOnline) {
+        aplikasiTempat.isNotBlank() && alamat.isNotBlank()
+    } else {
+        aplikasiTempat.isNotBlank() && alamat.isNotBlank() && latitude.isNotBlank() && longitude.isNotBlank()
+    }
+    val requiredChecks = listOf(
+        namaEvent.isNotBlank(),
+        selectedCategoryName.isNotBlank(),
+        scheduleReady,
+        locationReady,
+        deskripsi.isNotBlank(),
+        kuota in 1..100_000
+    )
+    val completedRequirements = requiredChecks.count { it }
+    val totalRequirements = requiredChecks.size
+    val formProgress = completedRequirements / totalRequirements.toFloat()
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -329,6 +364,15 @@ fun CreateEventScreen(
             }
         }
 
+        EventReadinessCard(
+            completed = completedRequirements,
+            total = totalRequirements,
+            progress = formProgress,
+            isOnline = isOnline,
+            scheduleReady = scheduleReady,
+            locationReady = locationReady
+        )
+
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = "Poster Event",
@@ -337,10 +381,15 @@ fun CreateEventScreen(
                 fontSize = 18.sp,
                 color = Gray800
             )
+            val posterElevation by animateDpAsState(
+                targetValue = if (posterUri != null) 5.dp else 0.dp,
+                label = "posterElevation"
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(188.dp)
+                    .shadow(posterElevation, RoundedCornerShape(20.dp))
                     .background(Color.White, RoundedCornerShape(20.dp))
                     .then(
                         if (posterUri == null) Modifier.drawBehind {
@@ -365,6 +414,45 @@ fun CreateEventScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.45f)
+                                    )
+                                )
+                            )
+                    )
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(14.dp),
+                        color = Color.White.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.PhotoCamera,
+                                contentDescription = "Ganti poster",
+                                tint = SvgOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Ganti Poster",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Gray900
+                            )
+                        }
+                    }
                 } else {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -393,7 +481,7 @@ fun CreateEventScreen(
                 }
             }
             Text(
-                text = "ukuran maksimal 5mb, png jpg svg",
+                text = "Poster akan dikompresi otomatis. Maksimal 10 MB.",
                 style = MaterialTheme.typography.labelSmall,
                 color = Gray500,
                 modifier = Modifier.fillMaxWidth(),
@@ -406,7 +494,9 @@ fun CreateEventScreen(
             onValueChange = { viewModel.namaEvent.value = it },
             label = "Nama Event",
             placeholder = "Nama Event",
-            containerColor = lightBlueBg
+            containerColor = lightBlueBg,
+            supportingText = "${namaEvent.length}/255",
+            supportingColor = if (namaEvent.length > 255) SemanticErrorBase else Gray500
         )
 
         CategoryDropdownField(
@@ -455,10 +545,11 @@ fun CreateEventScreen(
 
             SectionContainer(
                 title = "Detail Event",
+                subtitle = if (isOnline) "Platform dan tautan event" else "Venue dan alamat dari peta",
                 backgroundColor = lightBlueBg,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                 trailingContent = {
-                    CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.isOnline.value = it })
+                    CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.setEventMode(it) })
                 }
             ) {
                 if (isOnline) {
@@ -480,6 +571,10 @@ fun CreateEventScreen(
                     )
                 } else {
                     MapSearchPicker(
+                        selectedLocationName = aplikasiTempat,
+                        selectedLocationAddress = alamat,
+                        selectedLatitude = latitude.toDoubleOrNull(),
+                        selectedLongitude = longitude.toDoubleOrNull(),
                         onLocationSelected = { location ->
                             viewModel.setLocationFromMap(location)
                         }
@@ -517,37 +612,46 @@ fun CreateEventScreen(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium
                 )
+                Text(
+                    text = "${deskripsi.length}/5000",
+                    fontFamily = NunitoFont,
+                    fontSize = 11.sp,
+                    color = if (deskripsi.length > 5000) SemanticErrorBase else Gray600,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
             }
         }
 
         SectionContainer(
             title = "Kuota Peserta",
             backgroundColor = lightBlueBg,
-            subtitle = "Batas maksimal pendaftar",
-            trailingContent = {
-                Stepper(value = kuota, onValueChange = { viewModel.kuota.value = it })
-            }
-        )
+            subtitle = "Batas maksimal pendaftar"
+        ) {
+            CapacityControl(
+                value = kuota,
+                onValueChange = { nextValue ->
+                    viewModel.kuota.value = nextValue.coerceIn(1, 100_000)
+                }
+            )
+        }
 
         errorMessage?.let { msg ->
-            Text(
-                text = msg,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = SemanticErrorBase,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            ErrorMessageBanner(message = msg)
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        val publishElevation by animateDpAsState(
+            targetValue = if (isLoading) 0.dp else 4.dp,
+            label = "publishElevation"
+        )
         Button(
             onClick = { viewModel.publish() },
             enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .shadow(publishElevation, RoundedCornerShape(28.dp)),
             colors = ButtonDefaults.buttonColors(
                 containerColor = SvgPrimaryBlue,
                 disabledContainerColor = SvgPrimaryBlue.copy(alpha = 0.6f)
@@ -570,7 +674,7 @@ fun CreateEventScreen(
                 )
             } else {
                 Text(
-                    text = "Terbitkan Event",
+                    text = if (formProgress >= 1f) "Terbitkan Event" else "Cek dan Terbitkan",
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -619,6 +723,289 @@ fun DatePickerField(
                 fontFamily = NunitoFont
             )
         }
+    }
+}
+
+@Composable
+fun EventReadinessCard(
+    completed: Int,
+    total: Int,
+    progress: Float,
+    isOnline: Boolean,
+    scheduleReady: Boolean,
+    locationReady: Boolean
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(18.dp)),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Kelengkapan Event",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Gray900
+                    )
+                    Text(
+                        text = "$completed/$total detail wajib terisi",
+                        fontFamily = NunitoFont,
+                        fontSize = 12.sp,
+                        color = Gray600
+                    )
+                }
+                Surface(
+                    color = if (completed == total) SvgOrange.copy(alpha = 0.14f) else SvgPrimaryBlue.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        text = if (completed == total) "Siap" else "${(progress * 100).toInt()}%",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (completed == total) SvgOrange else SvgPrimaryBlue
+                    )
+                }
+            }
+
+            LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(50)),
+                color = if (completed == total) SvgOrange else SvgPrimaryBlue,
+                trackColor = Color(0xFFE7ECF7)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusPill(
+                    label = if (isOnline) "Online" else "Offline",
+                    isComplete = true,
+                    icon = if (isOnline) Icons.Outlined.FileUpload else Icons.Outlined.Place,
+                    modifier = Modifier.weight(1f)
+                )
+                StatusPill(
+                    label = if (scheduleReady) "Jadwal OK" else "Jadwal",
+                    isComplete = scheduleReady,
+                    icon = Icons.Outlined.DateRange,
+                    modifier = Modifier.weight(1f)
+                )
+                StatusPill(
+                    label = if (locationReady) "Lokasi OK" else "Lokasi",
+                    isComplete = locationReady,
+                    icon = if (isOnline) Icons.Outlined.FileUpload else Icons.Outlined.MyLocation,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatusPill(
+    label: String,
+    isComplete: Boolean,
+    icon: ImageVector,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isComplete) SvgPrimaryBlue.copy(alpha = 0.11f) else Color(0xFFF2F4F8),
+        label = "statusPillBackground"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isComplete) SvgPrimaryBlue else Gray600,
+        label = "statusPillContent"
+    )
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(backgroundColor)
+            .padding(horizontal = 9.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isComplete) Icons.Outlined.CheckCircle else icon,
+            contentDescription = label,
+            tint = contentColor,
+            modifier = Modifier.size(15.dp)
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = label,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun ErrorMessageBanner(message: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = SemanticErrorBase.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, SemanticErrorBase.copy(alpha = 0.18f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.ErrorOutline,
+                contentDescription = "Error",
+                tint = SemanticErrorBase,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = message,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = SemanticErrorBase,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun CapacityControl(value: Int, onValueChange: (Int) -> Unit) {
+    var textValue by remember { mutableStateOf(value.toString()) }
+
+    LaunchedEffect(value) {
+        val normalized = value.toString()
+        if (textValue != normalized) {
+            textValue = normalized
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CapacityIconButton(
+                icon = Icons.Default.Remove,
+                enabled = value > 1,
+                onClick = { onValueChange((value - 1).coerceAtLeast(1)) }
+            )
+            TextField(
+                value = textValue,
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }.take(6)
+                    textValue = digits
+                    digits.toIntOrNull()?.let { parsed ->
+                        onValueChange(parsed.coerceIn(1, 100_000))
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                ),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFF6F8FC),
+                    unfocusedContainerColor = Color(0xFFF6F8FC),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Gray900,
+                    unfocusedTextColor = Gray900
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+            CapacityIconButton(
+                icon = Icons.Default.Add,
+                enabled = value < 100_000,
+                onClick = { onValueChange((value + 1).coerceAtMost(100_000)) }
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(25, 50, 100, 250).forEach { preset ->
+                val selected = value == preset
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onValueChange(preset) },
+                    shape = RoundedCornerShape(50),
+                    color = if (selected) SvgPrimaryBlue else Color.White,
+                    border = BorderStroke(1.dp, if (selected) SvgPrimaryBlue else Color.White.copy(alpha = 0.8f))
+                ) {
+                    Text(
+                        text = preset.toString(),
+                        modifier = Modifier.padding(vertical = 9.dp),
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (selected) Color.White else Gray800,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CapacityIconButton(
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val background by animateColorAsState(
+        targetValue = if (enabled) SvgOrange else Gray500.copy(alpha = 0.25f),
+        label = "capacityButtonBackground"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .clip(CircleShape)
+            .background(background)
+            .clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -708,8 +1095,10 @@ fun SectionContainer(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .shadow(2.dp, shape)
             .clip(shape)
             .background(backgroundColor)
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)), shape)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -754,7 +1143,9 @@ fun CreateEventTextField(
     label: String,
     placeholder: String,
     containerColor: Color = Color(0xFFD6E4FF),
-    labelSize: androidx.compose.ui.unit.TextUnit = 16.sp
+    labelSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+    supportingText: String? = null,
+    supportingColor: Color = Gray500
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         if (label.isNotEmpty()) {
@@ -791,29 +1182,57 @@ fun CreateEventTextField(
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium
         )
+        if (supportingText != null) {
+            Text(
+                text = supportingText,
+                fontFamily = NunitoFont,
+                fontSize = 11.sp,
+                color = supportingColor,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
 
 @Composable
 fun CustomToggleSwitch(isOnline: Boolean, onToggle: (Boolean) -> Unit) {
+    val onlineBackground by animateColorAsState(
+        targetValue = if (isOnline) SvgPrimaryBlue else Color.Transparent,
+        label = "onlineToggleBackground"
+    )
+    val offlineBackground by animateColorAsState(
+        targetValue = if (!isOnline) SvgPrimaryBlue else Color.Transparent,
+        label = "offlineToggleBackground"
+    )
+    val onlineTextColor by animateColorAsState(
+        targetValue = if (isOnline) Color.White else Gray800,
+        label = "onlineToggleText"
+    )
+    val offlineTextColor by animateColorAsState(
+        targetValue = if (!isOnline) Color.White else Gray800,
+        label = "offlineToggleText"
+    )
+
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(Color.White)
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)), RoundedCornerShape(50))
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(if (isOnline) SvgPrimaryBlue else Color.Transparent)
+                .background(onlineBackground)
                 .clickable { onToggle(true) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "Online",
-                color = if (isOnline) Color.White else Gray800,
+                color = onlineTextColor,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -821,14 +1240,14 @@ fun CustomToggleSwitch(isOnline: Boolean, onToggle: (Boolean) -> Unit) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(if (!isOnline) SvgPrimaryBlue else Color.Transparent)
+                .background(offlineBackground)
                 .clickable { onToggle(false) }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "Offline",
-                color = if (!isOnline) Color.White else Gray800,
+                color = offlineTextColor,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )
