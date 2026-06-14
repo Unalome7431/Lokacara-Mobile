@@ -41,7 +41,3 @@ GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
 ```
 
 `connectedDebugAndroidTest` requires a running Android device or emulator.
-
-## Documentation
-
-Full technical documentation is available in `docs/`, covering repository inventory, architecture, database/storage, backend API contracts, frontend/mobile structure, infrastructure, business rules, hidden risks, and the development guide.
