@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,10 +104,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
+    eventId: Long? = null, // Parameter penentu mode Edit/Create
     onBack: () -> Unit = {},
     onPublish: () -> Unit = {},
     viewModel: CreateEventViewModel = hiltViewModel()
 ) {
+    val isEditMode = eventId != null && eventId > 0L
+
     val namaEvent by viewModel.namaEvent.collectAsState()
     val selectedCategoryName by viewModel.selectedCategoryName.collectAsState()
     val categories by viewModel.categories.collectAsState()
@@ -128,6 +132,12 @@ fun CreateEventScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.posterUri.value = it } }
 
+    LaunchedEffect(eventId) {
+        if (isEditMode) {
+            // viewModel.loadEventForEditing(eventId!!)
+        }
+    }
+
     LaunchedEffect(publishSuccess) {
         if (publishSuccess) {
             viewModel.resetPublishSuccess()
@@ -136,7 +146,11 @@ fun CreateEventScreen(
     }
 
     BackHandler {
-        viewModel.saveDraftAndExit(onBack)
+        if (isEditMode) {
+            onBack()
+        } else {
+            viewModel.saveDraftAndExit(onBack)
+        }
     }
 
     val lightBlueBg = Color(0xFFD6E4FF)
@@ -263,33 +277,40 @@ fun CreateEventScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Tutup",
+                imageVector = if (isEditMode) Icons.Rounded.ArrowBackIosNew else Icons.Default.Close,
+                contentDescription = if (isEditMode) "Kembali" else "Tutup",
                 modifier = Modifier
-                    .size(28.dp)
-                    .clickable { viewModel.saveDraftAndExit(onBack) },
+                    .size(if (isEditMode) 20.dp else 28.dp)
+                    .clickable {
+                        if (isEditMode) onBack() else viewModel.saveDraftAndExit(onBack)
+                    },
                 tint = Gray900
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Buat Event Baru",
+                text = if (isEditMode) "Edit Detail Acara" else "Buat Event Baru",
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
                 fontSize = 17.sp,
                 color = Gray900
             )
             Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Simpan Draf",
-                style = MaterialTheme.typography.bodySmall,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = SvgOrange,
-                modifier = Modifier.clickable { viewModel.saveDraft() }
-            )
+
+            if (!isEditMode) {
+                Text(
+                    text = "Simpan Draf",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SvgOrange,
+                    modifier = Modifier.clickable { viewModel.saveDraft() }
+                )
+            } else {
+                Spacer(modifier = Modifier.width(48.dp))
+            }
         }
 
-        if (hasDraft) {
+        if (hasDraft && !isEditMode) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = SvgOrange.copy(alpha = 0.1f),
@@ -562,7 +583,7 @@ fun CreateEventScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Menerbitkan...",
+                    text = "Memproses...",
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -570,19 +591,21 @@ fun CreateEventScreen(
                 )
             } else {
                 Text(
-                    text = "Terbitkan Event",
+                    text = if (isEditMode) "Simpan Perubahan" else "Terbitkan Event",
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Outlined.FileUpload,
-                    contentDescription = "Publish",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
+                if (!isEditMode) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.FileUpload,
+                        contentDescription = "Publish",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
 
@@ -878,6 +901,7 @@ fun Stepper(value: Int, onValueChange: (Int) -> Unit) {
 fun CreateEventScreenPreview() {
     com.app.lokacara.ui.theme.LokacaraMobileTheme {
         CreateEventScreen(
+            eventId = null, // Set null untuk preview Create mode
             onBack = {},
             onPublish = {},
             viewModel = hiltViewModel()

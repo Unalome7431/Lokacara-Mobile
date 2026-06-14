@@ -16,5 +16,10 @@ data class Event(
     val penyelenggara: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val viewCount: Int = 0
+    val viewCount: Int = 0,
+
+    // --- TAMBAHAN UNTUK MOCK DATA ANALITIK ---
+    val kuota: Int = 100,          // Default 100
+    val pendaftarCount: Int = 80,  // Default 80
+    val hadirCount: Int = 40       // Default 40
 )

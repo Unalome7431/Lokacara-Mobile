@@ -18,10 +18,13 @@
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.LokacaraMobile">
 
-        <!-- Google Maps API Key — set via local.properties (MAPS_API_KEY) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
 
         <activity
             android:name=".MainActivity"
