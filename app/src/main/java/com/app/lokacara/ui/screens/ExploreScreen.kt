@@ -7,9 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -19,12 +23,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
@@ -61,7 +67,6 @@ fun ExploreScreen(
     val locationSuggestions by viewModel.locationSuggestions.collectAsState()
     val categorySuggestions by viewModel.categorySuggestions.collectAsState()
     val showDatePicker by viewModel.showDatePicker.collectAsState()
-    val initialLoading by viewModel.initialLoading.collectAsState()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -72,10 +77,18 @@ fun ExploreScreen(
     val focusManager = LocalFocusManager.current
 
     val listState = rememberLazyListState()
-    val shouldLoadMore = remember {
+    val gridState = rememberLazyGridState()
+    val shouldLoadMore = remember(isGridView) {
         derivedStateOf {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            lastVisibleItem != null && lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 3
+            if (isGridView) {
+                val layoutInfo = gridState.layoutInfo
+                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                lastVisible >= layoutInfo.totalItemsCount - 6
+            } else {
+                val layoutInfo = listState.layoutInfo
+                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                lastVisible >= layoutInfo.totalItemsCount - 3
+            }
         }
     }
     LaunchedEffect(shouldLoadMore.value) {
@@ -88,6 +101,14 @@ fun ExploreScreen(
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
             eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel ||
             priceFilter != PriceFilter.SEMUA
+    val activeFilterCount = listOf(
+        eventName.isNotEmpty(),
+        eventLocation.isNotEmpty(),
+        eventCategory.isNotEmpty(),
+        selectedCategoryChip != allCategoryLabel,
+        priceFilter != PriceFilter.SEMUA,
+        dateFilter != DateFilter.SEMUA
+    ).count { it }
 
     BackHandler(enabled = isSearchExpanded || hasActiveFilter) {
         if (isSearchExpanded) {
@@ -116,7 +137,7 @@ fun ExploreScreen(
             "loading" -> {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item { ExploreHeader() }
-                    item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }, onFilterClick = {}) }
+                    item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }, onFilterClick = {}, activeFilterCount = activeFilterCount) }
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         ExploreCategories(
@@ -151,138 +172,89 @@ fun ExploreScreen(
                 isRefreshing = isLoading,
                 onRefresh = { viewModel.refresh() }
             ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = listState
-                ) {
-
-                    item(key = "header") {
-                        ExploreHeader()
-                    }
-
-                    item(key = "search_bar") {
-                        AnimatedVisibility(
-                            visible = isSearchExpanded,
-                            enter = expandVertically(tween(300)) + fadeIn(tween(300)),
-                            exit = shrinkVertically(tween(200)) + fadeOut(tween(200))
-                        ) {
-                            ExpandedSearchSection(
-                                eventName = eventName,
-                                onEventNameChange = { viewModel.updateEventName(it) },
-                                onClearEventName = { viewModel.clearEventName() },
-                                eventLocation = eventLocation,
-                                onEventLocationChange = { viewModel.updateEventLocation(it) },
-                                onClearEventLocation = { viewModel.clearEventLocation() },
-                                locationSuggestions = locationSuggestions,
-                                categorySuggestions = categorySuggestions,
-                                searchHistory = searchHistory,
-                                onClearHistory = { viewModel.clearSearchHistory() },
-                                onSearchSubmit = {
-                                    viewModel.onSearchSubmit()
-                                    focusManager.clearFocus()
-                                },
-                                onCancel = {
-                                    viewModel.collapseSearch()
-                                    focusManager.clearFocus()
-                                }
-                            )
-                        }
-                    }
-
-                    if (!isSearchExpanded) {
-                        item(key = "collapsed_search") {
-                            CollapsedSearchBar(
-                                onClick = { viewModel.expandSearch() },
-                                onFilterClick = { showBottomSheet = true }
-                            )
-                        }
-                    }
-
-                    item(key = "categories") {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ExploreCategories(
-                            selectedCategory = selectedCategoryChip,
-                            onCategorySelected = { viewModel.selectCategoryChip(it) },
-                            allCategories = categorySuggestions
-                        )
-                    }
-
-                    item(key = "sort_row") {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "${events.size} event ditemukan",
-                                fontFamily = PlusJakartaSansFont,
-                                fontSize = 13.sp,
-                                color = Gray500
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(
-                                    onClick = { viewModel.toggleGridView() },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (isGridView) Icons.Outlined.ViewList else Icons.Outlined.GridView,
-                                        contentDescription = "Toggle view",
-                                        tint = Gray500,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                SortDropdown(
-                                    selected = sortOption,
-                                    onOptionSelected = { viewModel.selectSortOption(it) }
-                                )
-                            }
-                        }
-                    }
-
-                    if (error != null && events.isNotEmpty()) {
-                        item(key = "error_banner") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 4.dp)
-                                    .background(SemanticErrorLight, RoundedCornerShape(8.dp))
-                                    .padding(12.dp)
+                if (isGridView && events.isNotEmpty()) {
+                    LazyVerticalGrid(
+                        modifier = Modifier.fillMaxSize(),
+                        state = gridState,
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item(key = "header", span = { GridItemSpan(2) }) { ExploreHeader() }
+                        item(key = "search_bar", span = { GridItemSpan(2) }) {
+                            AnimatedVisibility(
+                                visible = isSearchExpanded,
+                                enter = expandVertically(tween(300)) + fadeIn(tween(300)),
+                                exit = shrinkVertically(tween(200)) + fadeOut(tween(200))
                             ) {
-                                Text(
-                                    error ?: "",
-                                    fontFamily = PlusJakartaSansFont,
-                                    fontSize = 12.sp,
-                                    color = SemanticErrorBase
+                                ExpandedSearchSection(
+                                    eventName = eventName,
+                                    onEventNameChange = { viewModel.updateEventName(it) },
+                                    onClearEventName = { viewModel.clearEventName() },
+                                    eventLocation = eventLocation,
+                                    onEventLocationChange = { viewModel.updateEventLocation(it) },
+                                    onClearEventLocation = { viewModel.clearEventLocation() },
+                                    locationSuggestions = locationSuggestions,
+                                    categorySuggestions = categorySuggestions,
+                                    searchHistory = searchHistory,
+                                    onClearHistory = { viewModel.clearSearchHistory() },
+                                    onSearchSubmit = {
+                                        viewModel.onSearchSubmit()
+                                        focusManager.clearFocus()
+                                    },
+                                    onCancel = {
+                                        viewModel.collapseSearch()
+                                        focusManager.clearFocus()
+                                    }
                                 )
                             }
                         }
-                    }
-
-                    if (events.isEmpty() && !isLoading && !initialLoading) {
-                        item {
-                            EmptyStateView(
-                                hasActiveFilter = hasActiveFilter,
-                                onResetFilters = { viewModel.resetFilters() }
+                        if (!isSearchExpanded) {
+                            item(key = "collapsed_search", span = { GridItemSpan(2) }) {
+                                CollapsedSearchBar(
+                                    onClick = { viewModel.expandSearch() },
+                                    onFilterClick = { showBottomSheet = true },
+                                    activeFilterCount = activeFilterCount
+                                )
+                            }
+                        }
+                        item(key = "categories", span = { GridItemSpan(2) }) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ExploreCategories(
+                                selectedCategory = selectedCategoryChip,
+                                onCategorySelected = { viewModel.selectCategoryChip(it) },
+                                allCategories = categorySuggestions
                             )
                         }
-                    } else if (isGridView) {
-                        item(key = "grid_events") {
+                        item(key = "sort_row", span = { GridItemSpan(2) }) {
                             Spacer(modifier = Modifier.height(4.dp))
-                                Crossfade(targetState = events, animationSpec = tween(300), label = "grid_crossfade") { currentEvents ->
-                                LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height((((currentEvents.size + 1) / 2) * 280).dp),
-                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                userScrollEnabled = false
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                items(currentEvents, key = { it.id }) { event ->
+                                Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
+                                        Icon(Icons.Outlined.ViewList, "List view", tint = Gray500, modifier = Modifier.size(18.dp))
+                                    }
+                                    SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
+                                }
+                            }
+                        }
+                        if (error != null && events.isNotEmpty()) {
+                            item(key = "error_banner", span = { GridItemSpan(2) }) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
+                                        .background(SemanticErrorLight, RoundedCornerShape(8.dp)).padding(12.dp)
+                                ) {
+                                    Text(error ?: "", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = SemanticErrorBase)
+                                }
+                            }
+                        }
+                            items(events, key = { it.id }, contentType = { "event_grid" }) { event ->
+                                Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "grid_crossfade") {
                                     EventCardCompact(
                                         event = event,
                                         onClick = {
@@ -293,37 +265,126 @@ fun ExploreScreen(
                                     )
                                 }
                             }
+                        if (isLoadingMore) {
+                            item(key = "loading_more", span = { GridItemSpan(2) }) {
+                                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                                    LoadMoreSkeleton()
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    LoadMoreSkeleton()
+                                }
                             }
                         }
-                    } else {
-                        items(items = events, key = { it.id }) { event ->
-                            EventCard(
-                                event = event,
-                                onClick = {
-                                    viewModel.onEventClick(event.id)
-                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                },
-                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                            )
-                        }
+                        item(key = "bottom_spacer", span = { GridItemSpan(2) }) { Spacer(modifier = Modifier.height(80.dp)) }
                     }
-
-                    if (isLoadingMore) {
-                        item(key = "loading_more") {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        state = listState
+                    ) {
+                        item(key = "header") { ExploreHeader() }
+                        item(key = "search_bar") {
+                            AnimatedVisibility(
+                                visible = isSearchExpanded,
+                                enter = expandVertically(tween(300)) + fadeIn(tween(300)),
+                                exit = shrinkVertically(tween(200)) + fadeOut(tween(200))
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = Primary500,
-                                    strokeWidth = 2.dp
+                                ExpandedSearchSection(
+                                    eventName = eventName,
+                                    onEventNameChange = { viewModel.updateEventName(it) },
+                                    onClearEventName = { viewModel.clearEventName() },
+                                    eventLocation = eventLocation,
+                                    onEventLocationChange = { viewModel.updateEventLocation(it) },
+                                    onClearEventLocation = { viewModel.clearEventLocation() },
+                                    locationSuggestions = locationSuggestions,
+                                    categorySuggestions = categorySuggestions,
+                                    searchHistory = searchHistory,
+                                    onClearHistory = { viewModel.clearSearchHistory() },
+                                    onSearchSubmit = {
+                                        viewModel.onSearchSubmit()
+                                        focusManager.clearFocus()
+                                    },
+                                    onCancel = {
+                                        viewModel.collapseSearch()
+                                        focusManager.clearFocus()
+                                    }
                                 )
                             }
                         }
+                        if (!isSearchExpanded) {
+                            item(key = "collapsed_search") {
+                                CollapsedSearchBar(
+                                    onClick = { viewModel.expandSearch() },
+                                    onFilterClick = { showBottomSheet = true },
+                                    activeFilterCount = activeFilterCount
+                                )
+                            }
+                        }
+                        item(key = "categories") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ExploreCategories(
+                                selectedCategory = selectedCategoryChip,
+                                onCategorySelected = { viewModel.selectCategoryChip(it) },
+                                allCategories = categorySuggestions
+                            )
+                        }
+                        item(key = "sort_row") {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
+                                        Icon(
+                                            imageVector = if (isGridView) Icons.Outlined.ViewList else Icons.Outlined.GridView,
+                                            contentDescription = "Toggle view", tint = Gray500, modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
+                                }
+                            }
+                        }
+                        if (error != null && events.isNotEmpty()) {
+                            item(key = "error_banner") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
+                                        .background(SemanticErrorLight, RoundedCornerShape(8.dp)).padding(12.dp)
+                                ) {
+                                    Text(error ?: "", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = SemanticErrorBase)
+                                }
+                            }
+                        }
+                        if (events.isEmpty() && !isLoading) {
+                            item { EmptyStateView(hasActiveFilter = hasActiveFilter, onResetFilters = { viewModel.resetFilters() }) }
+                        } else {
+                            itemsIndexed(items = events, key = { _, event -> event.id }, contentType = { _, _ -> "event_list" }) { index, event ->
+                                Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "list_crossfade") {
+                                    StaggeredCardItem(index = index) {
+                                        EventCard(
+                                            event = event,
+                                            onClick = {
+                                                viewModel.onEventClick(event.id)
+                                                navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                            },
+                                            onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (isLoadingMore) {
+                            item(key = "loading_more") {
+                                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                                    LoadMoreSkeleton()
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    LoadMoreSkeleton()
+                                }
+                            }
+                        }
+                        item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
                     }
-
-                    item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }
@@ -363,6 +424,65 @@ fun ExploreScreen(
             onReset = { viewModel.resetFilters() },
             onDismiss = { showBottomSheet = false }
         )
+    }
+}
+
+@Composable
+private fun StaggeredCardItem(index: Int, content: @Composable () -> Unit) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(index.coerceAtMost(8) * 24L)
+        visible = true
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 }
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun LoadMoreSkeleton() {
+    val brush = shimmerBrush()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .padding(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(110.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(brush)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(11.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.4f)
+                    .height(11.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+        }
     }
 }
 

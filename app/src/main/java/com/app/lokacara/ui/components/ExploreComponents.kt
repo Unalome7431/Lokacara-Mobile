@@ -3,11 +3,6 @@ package com.app.lokacara.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,8 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
@@ -76,7 +69,7 @@ fun ExploreHeader() {
 }
 
 @Composable
-fun CollapsedSearchBar(onClick: () -> Unit, onFilterClick: () -> Unit = {}) {
+fun CollapsedSearchBar(onClick: () -> Unit, onFilterClick: () -> Unit = {}, activeFilterCount: Int = 0) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,11 +86,31 @@ fun CollapsedSearchBar(onClick: () -> Unit, onFilterClick: () -> Unit = {}) {
         ) {
             Text("Cari event...", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray400))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = onFilterClick,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = Primary500, modifier = Modifier.size(18.dp))
+                Box {
+                    IconButton(
+                        onClick = onFilterClick,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = Primary500, modifier = Modifier.size(18.dp))
+                    }
+                    if (activeFilterCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(16.dp)
+                                .offset(x = 2.dp, y = (-2).dp)
+                                .background(SemanticErrorBase, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "$activeFilterCount",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = PlusJakartaSansFont
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
@@ -337,11 +350,7 @@ fun SortDropdown(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val text = when {
-            selected == SortOption.TERBARU -> "Terbaru"
-            selected == SortOption.TERPOPULER -> "Terpopuler"
-            else -> "Termurah"
-        }
+        val text = selected.label
 
         Box {
             Surface(
@@ -395,26 +404,7 @@ fun ExploreShimmer() {
 
 @Composable
 private fun ExploreShimmerCard() {
-    val shimmerColors = listOf(
-        Gray200.copy(alpha = 0.6f),
-        Gray100.copy(alpha = 0.3f),
-        Gray200.copy(alpha = 0.6f)
-    )
-    val transition = rememberInfiniteTransition(label = "explore_shimmer")
-    val translateAnim = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 600f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslate"
-    )
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(translateAnim.value, translateAnim.value)
-    )
+    val brush = shimmerBrush()
 
     Row(
         modifier = Modifier
@@ -746,7 +736,12 @@ fun ErrorStateView(
         else -> null
     }
     Column(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Outlined.ErrorOutline, "Error", tint = SemanticErrorBase, modifier = Modifier.size(64.dp))
+        val icon = when (errorType) {
+            ErrorType.NETWORK -> Icons.Outlined.SignalWifiOff
+            ErrorType.SERVER -> Icons.Outlined.CloudOff
+            else -> Icons.Outlined.ErrorOutline
+        }
+        Icon(icon, "Error", tint = SemanticErrorBase, modifier = Modifier.size(64.dp))
         Spacer(modifier = Modifier.height(16.dp))
         if (title != null) {
             Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray600)

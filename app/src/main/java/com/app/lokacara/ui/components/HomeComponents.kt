@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -45,13 +46,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
 import android.location.Geocoder
 import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -103,8 +105,8 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val pageCount = popularEvents.size * 10
-    val initialPage = pageCount / 2
+    val pageCount = Int.MAX_VALUE
+    val initialPage = Int.MAX_VALUE / 2
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pageCount })
 
     val cardShape = remember { RoundedCornerShape(24.dp) }
@@ -114,7 +116,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             startY = 0f
         )
     }
-    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var paused by remember { mutableStateOf(false) }
 
@@ -128,12 +130,14 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(if (paused) 3000L else 4000L)
-            if (paused) { paused = false; continue }
-            if (pageCount > 1) {
-                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(if (paused) 3000L else 4000L)
+                if (paused) { paused = false; continue }
+                if (pageCount > 1) {
+                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                }
             }
         }
     }
@@ -174,10 +178,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                         modifier = Modifier.fillMaxSize().clip(cardShape)
                     ) {
                         AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(event.imageUrl)
-                                .size(400)
-                                .build(),
+                            model = rememberEventImageRequest(event.imageUrl, 400),
                             contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -316,6 +317,7 @@ fun CategoryEventSection(
     var visible by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
     val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
+    val previewEvents = remember(events) { events.take(10) }
 
     Column(modifier = Modifier.padding(top = 12.dp).graphicsLayer(alpha = alpha)) {
         Row(
@@ -343,7 +345,7 @@ fun CategoryEventSection(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(events, key = { it.id }) { event ->
+            items(previewEvents, key = { it.id }, contentType = { "category_event" }) { event ->
                 EventCardCompact(
                     event = event,
                     onClick = { onEventClick(event) },
