@@ -1,15 +1,7 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,25 +65,29 @@ fun BottomNavbar(navController: NavController) {
         { route ->
             val targetRoute = if (route == Screen.Explore.route) Screen.Explore.createRoute("") else route
             navController.navigate(targetRoute) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
+                popUpTo(0) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
             }
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
             .navigationBarsPadding()
+            .padding(start = 18.dp, top = 0.dp, end = 18.dp, bottom = 10.dp)
     ) {
+        val barShape = RoundedCornerShape(26.dp)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp),
+                .height(62.dp)
+                .shadow(elevation = 5.dp, shape = barShape, clip = false)
+                .clip(barShape)
+                .background(Color.White.copy(alpha = 0.97f))
+                .border(width = 1.dp, color = Gray100, shape = barShape)
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -100,9 +96,17 @@ fun BottomNavbar(navController: NavController) {
                 val isCenter = index == 2
 
                 if (isCenter) {
-                    CenterActionButton(onClick = {
-                        if (!isSelected) onNavigate(item.route)
-                    })
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .offset(y = (-2).dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CenterActionButton(onClick = {
+                            if (!isSelected) onNavigate(item.route)
+                        })
+                    }
                 } else {
                     NavItem(
                         item = item,
@@ -123,78 +127,71 @@ private fun RowScope.NavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.15f else 1f,
-        animationSpec = spring(dampingRatio = 0.3f, stiffness = 600f),
+        targetValue = if (isPressed) 0.94f else 1f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 700f),
         label = "navIconScale"
     )
-
-    val pillHeight by animateDpAsState(
-        targetValue = if (isSelected) 24.dp else 20.dp,
-        animationSpec = spring(dampingRatio = 0.4f, stiffness = 400f),
-        label = "pillHeight"
-    )
-
-    val pillShape = RoundedCornerShape(14.dp)
+    val pillColor = if (isSelected) Primary500.copy(alpha = 0.11f) else Color.Transparent
+    val iconTint = if (isSelected) Primary500 else Gray500
+    val labelColor = if (isSelected) Gray800 else Gray500
 
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .weight(1f)
-            .clickable(onClick = onClick),
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(top = 7.dp, bottom = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = isSelected,
-                enter = scaleIn(initialScale = 0.85f, animationSpec = spring(dampingRatio = 0.5f)) + fadeIn(tween(200)),
-                exit = scaleOut(targetScale = 0.85f, animationSpec = spring(dampingRatio = 0.5f)) + fadeOut(tween(150))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .height(pillHeight)
-                        .width(40.dp)
-                        .clip(pillShape)
-                        .background(Secondary500)
-                )
-            }
-
+        Box(
+            modifier = Modifier
+                .width(42.dp)
+                .height(29.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(pillColor),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.contentDescription,
-                tint = if (isSelected) Color.White else Gray500,
-                modifier = Modifier.height(pillHeight).size(24.dp).scale(iconScale)
+                tint = iconTint,
+                modifier = Modifier
+                    .size(23.dp)
+                    .scale(iconScale)
             )
         }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = item.label,
+            style = TextStyle(
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = labelColor
+            )
+        )
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        androidx.compose.animation.AnimatedVisibility(
-            visible = isSelected,
-            enter = fadeIn(tween(200)) + slideInVertically(
-                animationSpec = tween(200),
-                initialOffsetY = { it }
-            ),
-            exit = fadeOut(tween(150)) + slideOutVertically(
-                animationSpec = tween(150),
-                targetOffsetY = { it }
-            )
-        ) {
-            Text(
-                text = item.label,
-                style = TextStyle(
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Secondary600
-                )
-            )
-        }
-
-        if (!isSelected) {
-            Spacer(modifier = Modifier.height(14.dp))
-        }
+        Box(
+            modifier = Modifier
+                .width(16.dp)
+                .height(3.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(if (isSelected) Primary500 else Color.Transparent)
+        )
     }
 }
 
@@ -203,17 +200,16 @@ private fun CenterActionButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f),
+        targetValue = if (isPressed) 0.94f else 1f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 700f),
         label = "fabScale"
     )
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 4.dp)
-            .size(56.dp)
+            .size(50.dp)
             .scale(scale)
-            .shadow(elevation = 8.dp, shape = CircleShape)
+            .shadow(elevation = 5.dp, shape = CircleShape, clip = false)
             .border(3.dp, Color.White, CircleShape)
             .clip(CircleShape)
             .background(Secondary500)

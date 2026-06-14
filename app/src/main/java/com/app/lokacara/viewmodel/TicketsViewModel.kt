@@ -21,10 +21,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import okhttp3.ResponseBody
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -44,6 +42,12 @@ class TicketsViewModel @Inject constructor(
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
+    private val _isAuthChecked = MutableStateFlow(false)
+    val isAuthChecked: StateFlow<Boolean> = _isAuthChecked.asStateFlow()
+
+    private val _userName = MutableStateFlow("")
+    val userName: StateFlow<String> = _userName.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -53,6 +57,9 @@ class TicketsViewModel @Inject constructor(
     private val _upcomingEvents = MutableStateFlow<List<UpcomingEvent>>(emptyList())
     val upcomingEvents: StateFlow<List<UpcomingEvent>> = _upcomingEvents.asStateFlow()
 
+    private val _todayEvents = MutableStateFlow<List<UpcomingEvent>>(emptyList())
+    val todayEvents: StateFlow<List<UpcomingEvent>> = _todayEvents.asStateFlow()
+
     private val _historyEvents = MutableStateFlow<List<HistoryEvent>>(emptyList())
     val historyEvents: StateFlow<List<HistoryEvent>> = _historyEvents.asStateFlow()
 
@@ -61,14 +68,25 @@ class TicketsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _isLoggedIn.value = userSessionManager.userSession.first().isLoggedIn
-        }
-        viewModelScope.launch {
-            userSessionManager.userSession.map { it.isLoggedIn }.collect { loggedIn ->
+            userSessionManager.userSession.collect { session ->
+                val loggedIn = session.isLoggedIn
                 _isLoggedIn.value = loggedIn
+                _isAuthChecked.value = true
+                _userName.value = session.name
+                if (loggedIn) {
+                    if (_upcomingEvents.value.isEmpty() && _historyEvents.value.isEmpty()) {
+                        loadDashboard()
+                    }
+                } else {
+                    _userName.value = ""
+                    _todayEvents.value = emptyList()
+                    _upcomingEvents.value = emptyList()
+                    _historyEvents.value = emptyList()
+                    _error.value = null
+                    _isLoading.value = false
+                }
             }
         }
-        loadDashboard()
     }
 
     fun refresh() {
@@ -76,6 +94,7 @@ class TicketsViewModel @Inject constructor(
     }
 
     fun loadDashboard() {
+        if (!_isLoggedIn.value) return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -83,23 +102,46 @@ class TicketsViewModel @Inject constructor(
             when (val result = repository.getDashboard()) {
                 is ApiResult.Success -> {
                     val dashboard = result.data
-                    val now = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                    val nowMillis = System.currentTimeMillis()
 
+                    val today = mutableListOf<UpcomingEvent>()
                     val upcoming = mutableListOf<UpcomingEvent>()
                     val history = mutableListOf<HistoryEvent>()
 
                     dashboard.joined_events.forEach { reg ->
                         val e = reg.event ?: return@forEach
-                        val eventDate = e.start_datetime.take(10)
-                        if (eventDate >= now) {
-                            reg.toUpcomingEvent(imageUrlProvider)?.let { upcoming.add(it) }
+                        val startMillis = parseEventTimeMillis(e.start_datetime)
+                        val endMillis = parseEventTimeMillis(e.end_datetime).takeIf { it > 0 }
+                            ?: startMillis
+                        if (endMillis < nowMillis) {
+                            reg.toHistoryEvent(imageUrlProvider)?.let {
+                                history.add(
+                                    it.copy(
+                                        date = formatTicketDate(e.start_datetime),
+                                        time = formatTicketTime(e.start_datetime),
+                                        location = readableLocation(e.location_name, e.platform_name, e.type)
+                                    )
+                                )
+                            }
                         } else {
-                            reg.toHistoryEvent(imageUrlProvider)?.let { history.add(it) }
+                            reg.toUpcomingEvent(imageUrlProvider)?.let {
+                                val uiEvent = it.copy(
+                                    date = formatTicketDate(e.start_datetime),
+                                    time = formatTicketTime(e.start_datetime),
+                                    location = readableLocation(e.location_name, e.platform_name, e.type)
+                                )
+                                if (isSameDay(startMillis, nowMillis) || isSameDay(endMillis, nowMillis)) {
+                                    today.add(uiEvent)
+                                } else {
+                                    upcoming.add(uiEvent)
+                                }
+                            }
                         }
                     }
 
-                    _upcomingEvents.value = upcoming
-                    _historyEvents.value = history
+                    _todayEvents.value = today.sortedBy { parseDisplayDateMillis(it.date, it.time) }
+                    _upcomingEvents.value = upcoming.sortedBy { parseDisplayDateMillis(it.date, it.time) }
+                    _historyEvents.value = history.sortedByDescending { parseDisplayDateMillis(it.date, it.time) }
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
@@ -143,5 +185,57 @@ class TicketsViewModel @Inject constructor(
                 _error.value = "Gagal mengunduh sertifikat"
             }
         }
+    }
+
+    private fun readableLocation(locationName: String?, platformName: String?, type: String): String {
+        return locationName?.takeIf { it.isNotBlank() }
+            ?: platformName?.takeIf { it.isNotBlank() }
+            ?: if (type.equals("online", ignoreCase = true)) "Online" else "Lokasi belum tersedia"
+    }
+
+    private fun parseEventTimeMillis(input: String): Long {
+        val value = input.trim()
+        if (value.isBlank()) return 0L
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        return patterns.firstNotNullOfOrNull { pattern ->
+            runCatching {
+                SimpleDateFormat(pattern, Locale.US).parse(value)?.time
+            }.getOrNull()
+        } ?: 0L
+    }
+
+    private fun formatTicketDate(input: String): String {
+        val millis = parseEventTimeMillis(input)
+        if (millis == 0L) return input.take(10)
+        return SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID")).format(Date(millis))
+    }
+
+    private fun formatTicketTime(input: String): String {
+        val millis = parseEventTimeMillis(input)
+        if (millis == 0L) {
+            return input.substringAfter("T", input).substringAfter(" ").take(5)
+        }
+        return SimpleDateFormat("HH:mm", Locale.US).format(Date(millis))
+    }
+
+    private fun parseDisplayDateMillis(date: String, time: String): Long {
+        val value = "$date $time"
+        return runCatching {
+            SimpleDateFormat("dd MMM yyyy HH:mm", Locale.forLanguageTag("id-ID")).parse(value)?.time
+        }.getOrNull() ?: 0L
+    }
+
+    private fun isSameDay(firstMillis: Long, secondMillis: Long): Boolean {
+        if (firstMillis <= 0L || secondMillis <= 0L) return false
+        val first = java.util.Calendar.getInstance().apply { timeInMillis = firstMillis }
+        val second = java.util.Calendar.getInstance().apply { timeInMillis = secondMillis }
+        return first.get(java.util.Calendar.YEAR) == second.get(java.util.Calendar.YEAR) &&
+            first.get(java.util.Calendar.DAY_OF_YEAR) == second.get(java.util.Calendar.DAY_OF_YEAR)
     }
 }

@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.BookmarkViewModel
@@ -64,7 +65,10 @@ fun BookmarkScreen(
         ) {
             if (savedEvents.isEmpty() && !isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Belum ada event tersimpan", fontFamily = NunitoFont, color = Gray500)
+                    EmptyEventState(
+                        text = "Belum Ada Event Tersimpan\nCari Event Disini",
+                        onClick = { navController.navigate(Screen.Explore.createRoute("")) { launchSingleTop = true } }
+                    )
                 }
             } else {
                 LazyColumn(

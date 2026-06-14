@@ -37,7 +37,7 @@ fun NotificationScreen(
         stringResource(R.string.tab_notifications_info)
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
+    Column(modifier = Modifier.fillMaxSize().background(SvgBackground).systemBarsPadding()) {
 
         Box(
             modifier = Modifier

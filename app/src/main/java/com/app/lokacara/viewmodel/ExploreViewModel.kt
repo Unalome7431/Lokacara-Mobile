@@ -3,7 +3,7 @@ package com.app.lokacara.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.AnalyticsTracker
-import com.app.lokacara.data.BookmarkManager
+import com.app.lokacara.data.BookmarkSyncHelper
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.ImageUrlProvider
@@ -14,10 +14,8 @@ import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 
@@ -54,7 +52,7 @@ enum class ErrorType {
 class ExploreViewModel @Inject constructor(
     private val repository: ExploreRepository,
     private val imageUrlProvider: ImageUrlProvider,
-    private val bookmarkManager: BookmarkManager,
+    private val bookmarkSyncHelper: BookmarkSyncHelper,
     private val apiService: ApiService,
     private val analytics: AnalyticsTracker
 ) : ViewModel() {
@@ -117,9 +115,6 @@ class ExploreViewModel @Inject constructor(
     private val _showDatePicker = MutableStateFlow(false)
     val showDatePicker: StateFlow<Boolean> = _showDatePicker.asStateFlow()
 
-    private val _initialLoading = MutableStateFlow(true)
-    val initialLoading: StateFlow<Boolean> = _initialLoading.asStateFlow()
-
     private val _customDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
 
     val filteredEvents: StateFlow<List<Event>> = combine(
@@ -154,13 +149,13 @@ class ExploreViewModel @Inject constructor(
             val matchChip = chip == "Semua" || event.category.equals(chip, ignoreCase = true)
             val matchDate = when (dateFilter) {
                 DateFilter.SEMUA -> true
-                DateFilter.HARI_INI -> parseDateMillis(event.date) in todayStart..tomorrowEnd
-                DateFilter.BESOK -> parseDateMillis(event.date) in tomorrowEnd..tomorrowEnd + 86400000L
-                DateFilter.MINGGU_INI -> parseDateMillis(event.date) in todayStart..weekEnd
-                DateFilter.BULAN_INI -> parseDateMillis(event.date) in todayStart..monthEnd
+                DateFilter.HARI_INI -> event.dateEpoch in todayStart..tomorrowEnd
+                DateFilter.BESOK -> event.dateEpoch in tomorrowEnd..tomorrowEnd + 86400000L
+                DateFilter.MINGGU_INI -> event.dateEpoch in todayStart..weekEnd
+                DateFilter.BULAN_INI -> event.dateEpoch in todayStart..monthEnd
                 DateFilter.KUSTOM -> {
                     val range = customRange
-                    if (range != null) parseDateMillis(event.date) in range.first..range.second else true
+                    if (range != null) event.dateEpoch in range.first..range.second else true
                 }
             }
             val matchPrice = when (priceFilter) {
@@ -173,18 +168,11 @@ class ExploreViewModel @Inject constructor(
             matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice
         }
         when (sort) {
-            SortOption.TERBARU -> filtered.sortedByDescending { parseDateMillis(it.date) }
+            SortOption.TERBARU -> filtered.sortedByDescending { it.dateEpoch }
             SortOption.TERPOPULER -> filtered.sortedByDescending { it.viewCount }
             SortOption.TERMURAH -> filtered.sortedBy { parsePrice(it.price) }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private fun parseDateMillis(dateStr: String): Long {
-        return try {
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
-            sdf.parse(dateStr)?.time ?: 0L
-        } catch (_: Exception) { 0L }
-    }
 
     private fun parsePrice(price: String): Int {
         return when {
@@ -209,6 +197,9 @@ class ExploreViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _categories.value = result.data
                     _categorySuggestions.value = result.data.map { it.name }
+                    if (_selectedCategoryChip.value != DEFAULT_CATEGORY) {
+                        searchEvents(_eventName.value)
+                    }
                 }
                 is ApiResult.Error -> {
                     SnackbarManager.show("Gagal memuat kategori")
@@ -316,9 +307,27 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun setInitialCategory(category: String) {
-        if (category.isNotEmpty()) {
-            _selectedCategoryChip.value = category
-        }
+        val targetCategory = category.trim().ifEmpty { DEFAULT_CATEGORY }
+        val alreadyDefault = targetCategory == DEFAULT_CATEGORY &&
+                _eventName.value.isEmpty() &&
+                _eventLocation.value.isEmpty() &&
+                _eventCategory.value.isEmpty() &&
+                _selectedCategoryChip.value == DEFAULT_CATEGORY &&
+                _dateFilter.value == DateFilter.SEMUA &&
+                _priceFilter.value == PriceFilter.SEMUA &&
+                !_isSearchExpanded.value
+
+        if (alreadyDefault) return
+
+        _eventName.value = ""
+        _eventLocation.value = ""
+        _eventCategory.value = ""
+        _selectedCategoryChip.value = targetCategory
+        _dateFilter.value = DateFilter.SEMUA
+        _priceFilter.value = PriceFilter.SEMUA
+        _customDateRange.value = null
+        _isSearchExpanded.value = false
+        searchEvents("")
     }
 
     private fun searchEvents(query: String) {
@@ -337,8 +346,8 @@ class ExploreViewModel @Inject constructor(
                     val events = result.data.data.map { it.toEvent(imageUrlProvider) }
                     _allEvents.value = events
                     hasMorePages = result.data.current_page < result.data.last_page
-                    bookmarkJob?.cancel()
-                    syncBookmarks()
+                    bookmarkSyncHelper.cancel()
+                    bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
                     analytics.logEvent("search_results", mapOf("count" to events.size.toString(), "query" to query))
                 }
                 is ApiResult.Error -> {
@@ -351,7 +360,6 @@ class ExploreViewModel @Inject constructor(
             }
 
             _isLoading.value = false
-            _initialLoading.value = false
         }
     }
 
@@ -369,8 +377,8 @@ class ExploreViewModel @Inject constructor(
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
                     _allEvents.value = _allEvents.value + newEvents
                     hasMorePages = result.data.current_page < result.data.last_page
-                    bookmarkJob?.cancel()
-                    syncBookmarks()
+                    bookmarkSyncHelper.cancel()
+                    bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
                 }
                 is ApiResult.Error -> {
                     currentPage--
@@ -382,47 +390,13 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun toggleBookmark(eventId: String) {
-        viewModelScope.launch {
-            val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            val wasBookmarked = bookmarkedIds.contains(eventId)
-            bookmarkManager.toggleBookmark(eventId)
-            val idLong = eventId.toLongOrNull()
-            if (idLong != null) {
-                try {
-                    if (wasBookmarked) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
-                } catch (_: Exception) {
-                    bookmarkManager.toggleBookmark(eventId)
-                    SnackbarManager.showError("Gagal menyimpan bookmark")
-                    return@launch
-                }
-            }
-            if (wasBookmarked) {
-                SnackbarManager.show("Event dihapus dari bookmark")
-                analytics.logEvent("bookmark_removed", mapOf("event_id" to eventId))
-            } else {
-                SnackbarManager.show("Event disimpan")
-                analytics.logEvent("bookmark_added", mapOf("event_id" to eventId))
-            }
-        }
-    }
-
-    private var bookmarkJob: Job? = null
-
-    private fun syncBookmarks() {
-        bookmarkJob = viewModelScope.launch {
-            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
-                _allEvents.value = _allEvents.value.map { event ->
-                    val bookmarked = event.id.toString() in bookmarkedIds
-                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
-                }
-            }
-        }
+        bookmarkSyncHelper.toggleBookmark(viewModelScope, eventId)
     }
 
     fun onSearchSubmit() {
         _isSearchExpanded.value = false
         val query = _eventName.value.trim()
-        if (query.isNotEmpty() && !_searchHistory.value.contains(query)) {
+        if (query.isNotEmpty() && !_searchHistory.value.any { it.equals(query, ignoreCase = true) }) {
             _searchHistory.value = (listOf(query) + _searchHistory.value).take(10)
         }
         searchEvents(query)
@@ -437,9 +411,10 @@ class ExploreViewModel @Inject constructor(
         _eventName.value = ""
         _eventLocation.value = ""
         _eventCategory.value = ""
-        _selectedCategoryChip.value = "Semua"
+        _selectedCategoryChip.value = DEFAULT_CATEGORY
         _dateFilter.value = DateFilter.SEMUA
         _priceFilter.value = PriceFilter.SEMUA
+        _customDateRange.value = null
         _isSearchExpanded.value = false
         searchEvents("")
         analytics.logEvent("filters_reset")
@@ -452,5 +427,9 @@ class ExploreViewModel @Inject constructor(
 
     fun onEventClick(eventId: Long) {
         analytics.logClick("explore_event_card", mapOf("event_id" to eventId.toString()))
+    }
+
+    private companion object {
+        const val DEFAULT_CATEGORY = "Semua"
     }
 }

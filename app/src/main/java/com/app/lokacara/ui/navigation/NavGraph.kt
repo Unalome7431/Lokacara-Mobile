@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.EnterTransition
@@ -9,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -16,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -116,16 +121,24 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
     val internalNavController = rememberNavController()
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (currentRoute != Screen.Notification.route && currentRoute != Screen.CreateEvent.route) {
-                BottomNavbar(navController = internalNavController)
-            }
+            BottomNavbar(navController = internalNavController)
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = 0.dp
+                )
+                .fillMaxSize()
+        ) {
             NavHost(
                 navController = internalNavController,
                 startDestination = Screen.Home.route,
@@ -151,7 +164,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     popEnterTransition = screenPopEnter,
                     popExitTransition = screenPopExit
                 ) { backStackEntry ->
-                    val initialCategory = backStackEntry.arguments?.getString("category") ?: ""
+                    val initialCategory = Uri.decode(backStackEntry.arguments?.getString("category").orEmpty())
                     ExploreScreen(navController = internalNavController, initialCategory = initialCategory)
                 }
                 composable(
@@ -175,11 +188,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 ) {
                     ProfileScreen(
                         navController = internalNavController,
-                        onLogout = {
-                            rootNavController.navigate(Screen.Login.route) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
+                        rootNavController = rootNavController
                     )
                 }
                 composable(
@@ -192,7 +201,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     CreateEventScreen(
                         onBack = { internalNavController.popBackStack() },
                         onPublish = {
-                            internalNavController.navigate(Screen.Home.route) {
+                            internalNavController.navigate(Screen.MyEvents.route) {
                                 popUpTo(internalNavController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -231,7 +240,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     exitTransition = screenExit,
                     popEnterTransition = screenPopEnter,
                     popExitTransition = screenPopExit
-                ) { BookmarkScreen(navController = internalNavController) }
+                ) { SavedEventsScreen(navController = internalNavController) }
                 composable(
                     Screen.Certificates.route,
                     enterTransition = screenEnter,

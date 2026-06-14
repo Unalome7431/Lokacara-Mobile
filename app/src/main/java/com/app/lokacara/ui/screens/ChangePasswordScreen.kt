@@ -30,6 +30,7 @@ import com.app.lokacara.ui.theme.*
 import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
 @Composable
@@ -57,34 +58,10 @@ fun ChangePasswordScreen(
 
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
+    ProfilePageScaffold(
+        title = stringResource(R.string.change_password_button),
+        onBack = { navController.popBackStack() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = stringResource(R.string.change_password_button),
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()

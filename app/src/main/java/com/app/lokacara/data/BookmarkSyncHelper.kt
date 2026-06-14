@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
 class BookmarkSyncHelper @Inject constructor(
     private val bookmarkManager: BookmarkManager,
     private val apiService: ApiService,

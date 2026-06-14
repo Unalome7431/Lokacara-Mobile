@@ -5,9 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
@@ -44,6 +47,106 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material.icons.outlined.Group
+import androidx.compose.foundation.layout.statusBarsPadding
+
+@Composable
+fun ProfilePageScaffold(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    backgroundColor: Color = Gray50,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .statusBarsPadding()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 24.dp)
+        ) {
+            if (onBack != null) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBackIosNew,
+                        contentDescription = "Kembali",
+                        tint = Gray900
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.size(28.dp))
+            }
+
+            Text(
+                text = title,
+                modifier = Modifier.align(Alignment.Center),
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Gray900
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(28.dp)
+            )
+        }
+
+        content()
+    }
+}
+
+@Composable
+fun ProfileStatChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(Gray50, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = value,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray900
+        )
+        Text(
+            text = label,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
+            color = Gray500
+        )
+    }
+}
+
+@Composable
+fun ProfileAvatarPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(Primary100, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = "Profile Picture",
+            tint = Primary500,
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
 
 @Composable
 fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {

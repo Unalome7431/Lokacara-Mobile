@@ -331,13 +331,22 @@ fun EventDetailScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showJoinDialog = false; viewModel.clearMessages() }) {
-                    Text(
-                        text = stringResource(R.string.ok),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary500
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        showJoinDialog = false
+                        viewModel.clearMessages()
+                        navController.navigate(Screen.Tickets.route)
+                    }) {
+                        Text("Lihat Tiket", fontWeight = FontWeight.Bold, color = Secondary500, fontFamily = NunitoFont)
+                    }
+                    TextButton(onClick = { showJoinDialog = false; viewModel.clearMessages() }) {
+                        Text(
+                            text = stringResource(R.string.ok),
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            color = Primary500
+                        )
+                    }
                 }
             },
             shape = RoundedCornerShape(20.dp),

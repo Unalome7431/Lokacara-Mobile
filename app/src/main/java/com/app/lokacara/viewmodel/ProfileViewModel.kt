@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.FileStorageManager
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
@@ -28,7 +29,8 @@ class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
-    private val imageUrlProvider: ImageUrlProvider
+    private val imageUrlProvider: ImageUrlProvider,
+    private val fileStorageManager: FileStorageManager
 ) : AndroidViewModel(application) {
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
@@ -61,12 +63,18 @@ class ProfileViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val user = result.data.user
                         if (user != null) {
+                            val session = userSessionManager.userSession.first()
+                            val email = when {
+                                user.email.isDisplayableEmail() -> user.email.trim()
+                                session.email.isDisplayableEmail() -> session.email.trim()
+                                else -> ""
+                            }
                             _userProfile.value = UserProfile(
                                 name = user.name,
-                                email = user.email,
+                                email = email,
                                 phone = user.phone ?: "",
                                 location = user.location ?: "",
-                                profileImageUrl = user.avatar_url
+                                profileImageUrl = user.avatar_url ?: resolveLocalProfileImagePath()
                             )
                         } else {
                             loadFallbackProfile()
@@ -84,17 +92,23 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun loadFallbackProfile() {
         val session = userSessionManager.userSession.first()
+        val localProfileImage = session.profileImagePath.ifBlank { resolveLocalProfileImagePath().orEmpty() }
         _userProfile.value = UserProfile(
             name = session.name.ifEmpty { "Pengguna" },
-            email = session.email,
+            email = session.email.toDisplayEmail(),
             phone = session.phone,
             location = session.location,
-            profileImageUrl = null
+            profileImageUrl = localProfileImage.ifBlank { null }
         )
     }
 
     fun refresh() {
+        loadUserProfile()
         loadDashboard()
+    }
+
+    private fun resolveLocalProfileImagePath(): String? {
+        return fileStorageManager.getProfilePhoto()?.absolutePath
     }
 
     private fun loadDashboard() {
@@ -152,9 +166,16 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun updateProfile(profile: UserProfile, updatedField: UserSessionManager.Field) {
         try {
+            val session = userSessionManager.userSession.first()
+            val resolvedEmail = profile.email.ifBlank { session.email }.trim()
+            if (resolvedEmail.isBlank() || !isValidEmail(resolvedEmail)) {
+                _errorMessage.value = "Email tidak valid"
+                SnackbarManager.showError("Email tidak valid")
+                return
+            }
             val body = mutableMapOf(
                 "name" to profile.name,
-                "email" to profile.email
+                "email" to resolvedEmail
             )
             if (profile.phone.isNotBlank()) body["phone"] = profile.phone
             if (profile.location.isNotBlank()) body["location"] = profile.location
@@ -165,12 +186,12 @@ class ProfileViewModel @Inject constructor(
                         field = updatedField,
                         value = when (updatedField) {
                             UserSessionManager.Field.NAME -> profile.name
-                            UserSessionManager.Field.EMAIL -> profile.email
+                            UserSessionManager.Field.EMAIL -> resolvedEmail
                             UserSessionManager.Field.PHONE -> profile.phone
                             UserSessionManager.Field.LOCATION -> profile.location
                         }
                     )
-                    _userProfile.value = profile
+                    _userProfile.value = profile.copy(email = resolvedEmail.toDisplayEmail())
                     loadUserProfile()
                     SnackbarManager.show("Profil berhasil diperbarui")
                 }
@@ -189,12 +210,28 @@ class ProfileViewModel @Inject constructor(
         return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(value)
     }
 
+    private fun String.isSyntheticEmail(): Boolean {
+        return trim().endsWith("@placeholder.local", ignoreCase = true)
+    }
+
+    private fun String.isDisplayableEmail(): Boolean {
+        val value = trim()
+        return value.isNotBlank() && !value.isSyntheticEmail()
+    }
+
+    private fun String.toDisplayEmail(): String {
+        return if (isDisplayableEmail()) trim() else ""
+    }
+
     fun saveProfilePhoto(uri: Uri) {
         viewModelScope.launch {
             _errorMessage.value = null
             val context = getApplication<Application>()
             when (val result = repository.uploadAvatar(context, uri)) {
                 is ApiResult.Success -> {
+                    fileStorageManager.saveProfilePhoto(uri)?.let { path ->
+                        userSessionManager.updateProfileImagePath(path)
+                    }
                     loadUserProfile()
                     SnackbarManager.show("Foto profil diperbarui")
                 }

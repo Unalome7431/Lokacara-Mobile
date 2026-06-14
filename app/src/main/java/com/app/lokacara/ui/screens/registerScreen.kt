@@ -88,6 +88,7 @@ fun RegisterScreen(
         val googleWebClientId = stringResource(R.string.google_web_client_id)
         val googleSignInOptions = remember(googleWebClientId) {
             GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
+                requestEmail()
                 if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
             }.build()
         }
@@ -99,7 +100,7 @@ fun RegisterScreen(
                 val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 account.result?.let { acct ->
                     acct.idToken?.let { idToken ->
-                        viewModel.loginWithGoogle(idToken)
+                        viewModel.loginWithGoogle(idToken, acct.email)
                     }
                 }
             } catch (e: Exception) {

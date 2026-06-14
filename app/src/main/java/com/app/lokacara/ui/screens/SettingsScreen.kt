@@ -2,40 +2,79 @@ package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.PrivacyTip
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
+import com.app.lokacara.R
+import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.theme.Gray500
+import com.app.lokacara.ui.theme.Gray900
+import com.app.lokacara.ui.theme.Gray50
+import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.Primary100
+import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.SemanticErrorBase
+import com.app.lokacara.ui.theme.SemanticErrorLight
+import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
-import com.app.lokacara.ui.theme.*
-import com.app.lokacara.ui.navigation.Screen
 import androidx.compose.ui.res.stringResource
-import com.app.lokacara.R
 
 @Composable
 fun SettingsScreen(
@@ -49,7 +88,7 @@ fun SettingsScreen(
     val deleteSuccess by viewModel.deleteSuccess.collectAsState()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
-    
+
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(deleteSuccess) {
@@ -107,9 +146,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        viewModel.deleteAccount(password)
-                    },
+                    onClick = { viewModel.deleteAccount(password) },
                     enabled = !isDeleting && password.isNotBlank()
                 ) {
                     if (isDeleting) {
@@ -143,41 +180,14 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "Pengaturan",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
+    ProfilePageScaffold(title = "Pengaturan", onBack = { navController.popBackStack() }) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .verticalScroll(scrollState)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             SettingsSectionTitle(title = stringResource(R.string.settings_preferences))
             SettingsCard {
@@ -185,9 +195,7 @@ fun SettingsScreen(
                     icon = Icons.Rounded.Notifications,
                     title = stringResource(R.string.settings_notifications),
                     isChecked = notificationsEnabled,
-                    onCheckedChange = { 
-                        viewModel.setNotificationsEnabled(it) 
-                    }
+                    onCheckedChange = { viewModel.setNotificationsEnabled(it) }
                 )
             }
 
@@ -197,7 +205,7 @@ fun SettingsScreen(
             SettingsCard {
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
-                    title = stringResource(R.string.settings_change_password), 
+                    title = stringResource(R.string.settings_change_password),
                     onClick = { navController.navigate(Screen.ChangePassword.route) }
                 )
             }
@@ -208,19 +216,19 @@ fun SettingsScreen(
             SettingsCard {
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.HelpOutline,
-                    title = stringResource(R.string.settings_help_center), 
+                    title = stringResource(R.string.settings_help_center),
                     onClick = { navController.navigate(Screen.HelpCenter.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.Article,
-                    title = stringResource(R.string.settings_terms_conditions), 
+                    title = stringResource(R.string.settings_terms_conditions),
                     onClick = { navController.navigate(Screen.TermsConditions.route) }
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
-                    title = stringResource(R.string.settings_privacy_policy), 
+                    title = stringResource(R.string.settings_privacy_policy),
                     onClick = { navController.navigate(Screen.PrivacyPolicy.route) }
                 )
             }
@@ -258,7 +266,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Keluar",
+                        text = stringResource(R.string.profile_logout),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
@@ -288,7 +296,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Hapus Akun",
+                        text = stringResource(R.string.settings_delete_account),
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
@@ -327,7 +335,7 @@ fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun SettingsToggleRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,8 +371,8 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Primary500, 
-                uncheckedThumbColor = Gray400,
+                checkedTrackColor = Primary500,
+                uncheckedThumbColor = Gray500,
                 uncheckedTrackColor = Gray100
             )
         )
@@ -372,7 +380,7 @@ fun SettingsToggleRow(icon: ImageVector, title: String, isChecked: Boolean, onCh
 }
 
 @Composable
-fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+fun SettingsActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -391,7 +399,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Primary500, 
+                    tint = Primary500,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -407,7 +415,7 @@ fun SettingsActionRow(icon: ImageVector, title: String, onClick: () -> Unit) {
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
             contentDescription = "Navigasi",
-            tint = Gray400,
+            tint = Gray500,
             modifier = Modifier.size(20.dp)
         )
     }

@@ -10,6 +10,13 @@ import java.util.Locale
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+private fun parseDateEpoch(dateStr: String): Long {
+    return try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        sdf.parse(dateStr.take(10))?.time ?: 0L
+    } catch (_: Exception) { 0L }
+}
+
 private fun formatDate(dateStr: String): String {
     return try {
         val inputSdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -67,12 +74,14 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
     val penyelenggara = user?.name ?: "Penyelenggara"
     val location = location_name ?: platform_name ?: ""
     val dateDisplay = formatDate(start_datetime)
+    val epoch = parseDateEpoch(start_datetime)
 
     return Event(
         id = id,
         title = title,
         description = description,
         date = dateDisplay,
+        dateEpoch = epoch,
         location = location,
         price = when {
             price == null || price == 0 -> "Gratis"

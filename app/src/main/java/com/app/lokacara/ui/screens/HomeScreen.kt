@@ -88,9 +88,9 @@ fun HomeScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
         when {
-            isLoading && groupedEvents.isEmpty() && feedError == null -> LoadingShimmer()
+            isLoading && groupedEvents.isEmpty() && feedError == null && popularEvents.isEmpty() -> LoadingShimmer()
             feedError != null && groupedEvents.isEmpty() -> {
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -107,7 +107,7 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
                         Button(
-                            onClick = { navController.navigate(Screen.Explore.route) },
+                            onClick = { navController.navigate(Screen.Explore.createRoute("")) { launchSingleTop = true } },
                             colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
@@ -188,7 +188,7 @@ fun HomeScreen(
                                 text = "Kategori",
                                 fontFamily = NunitoFont,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 28.sp,
+                                fontSize = 22.sp,
                                 color = Primary500,
                                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 0.dp)
                             )
@@ -202,7 +202,7 @@ fun HomeScreen(
                                     events = events,
                                     onEventClick = onEventClick,
                                     onSeeAll = {
-                                        navController.navigate(Screen.Explore.createRoute(categoryName))
+                                        navController.navigate(Screen.Explore.createRoute(categoryName)) { launchSingleTop = true }
                                     },
                                     onBookmarkClick = { eventId -> viewModel.toggleBookmark(eventId) }
                                 )
@@ -230,16 +230,9 @@ fun HomeScreen(
 
                     // ── Load more indicator ──
                     if (isLoadingMore) {
-                        item(key = "loading_more", contentType = "loading") {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = SvgPrimaryBlue,
-                                    strokeWidth = 2.dp
-                                )
+                        item(key = "loading_more") {
+                            Column(modifier = Modifier.padding(top = 8.dp)) {
+                                ShimmerSkeletonCardRow(cardCount = 3, height = 110)
                             }
                         }
                     }
@@ -253,11 +246,11 @@ fun HomeScreen(
 
 @Composable
 private fun LoadingShimmer() {
+    val brush = shimmerBrush()
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 80.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header shimmer
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -267,14 +260,14 @@ private fun LoadingShimmer() {
                 modifier = Modifier
                     .width(120.dp)
                     .height(34.dp)
-                    .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .background(brush, RoundedCornerShape(8.dp))
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(2) {
                     Box(
                         modifier = Modifier
                             .size(34.dp)
-                            .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .background(brush, RoundedCornerShape(8.dp))
                     )
                 }
             }
@@ -295,6 +288,7 @@ private fun LoadingShimmer() {
 
 @Composable
 private fun ShimmerSkeletonCardRow(cardCount: Int, height: Int) {
+    val brush = shimmerBrush()
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         horizontalArrangement = if (cardCount == 1) Arrangement.Start else Arrangement.spacedBy(12.dp)
@@ -304,7 +298,7 @@ private fun ShimmerSkeletonCardRow(cardCount: Int, height: Int) {
                 modifier = Modifier
                     .then(if (cardCount == 1) Modifier.fillMaxWidth() else Modifier.width(if (height > 100) 160.dp else 80.dp))
                     .height(height.dp)
-                    .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                    .background(brush, RoundedCornerShape(12.dp))
             )
         }
     }

@@ -100,7 +100,7 @@ fun ExploreScreen(
     val allCategoryLabel = "Semua"
     val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
             eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel ||
-            priceFilter != PriceFilter.SEMUA
+            priceFilter != PriceFilter.SEMUA || dateFilter != DateFilter.SEMUA
     val activeFilterCount = listOf(
         eventName.isNotEmpty(),
         eventLocation.isNotEmpty(),
@@ -121,7 +121,7 @@ fun ExploreScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
         AnimatedContent(
             targetState = when {
                 isLoading && events.isEmpty() && error == null -> "loading"

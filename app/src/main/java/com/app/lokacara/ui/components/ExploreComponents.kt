@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.navigation.NavController
 import com.app.lokacara.R
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.SortOption
@@ -712,7 +713,7 @@ fun FilterBottomSheet(
                         )
                     }
                     Button(
-                        onClick = onDismiss,
+                        onClick = { onDismiss(); SnackbarManager.show("Filter diterapkan") },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500)
                     ) {

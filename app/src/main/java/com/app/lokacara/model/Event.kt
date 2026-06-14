@@ -8,6 +8,7 @@ data class Event(
     val title: String,
     val description: String,
     val date: String,
+    val dateEpoch: Long = 0L,
     val location: String,
     val price: String,
     val imageUrl: String? = null,

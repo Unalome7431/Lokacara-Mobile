@@ -232,9 +232,10 @@ class HomeViewModel @Inject constructor(
                 }
             }
 
+            bookmarkSyncHelper.cancel()
+            bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
             _isLoading.value = false
             _isRefreshing.value = false
-            bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
         }
     }
 
