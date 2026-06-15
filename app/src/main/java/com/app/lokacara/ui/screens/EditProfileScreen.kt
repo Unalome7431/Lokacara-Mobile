@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -68,7 +69,9 @@ import com.app.lokacara.ui.theme.Gray600
 import com.app.lokacara.ui.theme.Gray900
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.Primary100
 import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.Secondary100
 import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
@@ -132,79 +135,99 @@ fun EditProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            Box(contentAlignment = Alignment.BottomEnd) {
-                val avatarModifier = Modifier
-                    .size(104.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    }
-
-                ProfileAvatarImage(
-                    imageModel = profileImageUri ?: userProfile.profileImageUrl,
-                    modifier = avatarModifier
-                )
-
-                Box(
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
                     modifier = Modifier
-                        .size(30.dp)
-                        .background(Color.White, CircleShape),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color.White, Primary100.copy(alpha = 0.42f), Secondary100.copy(alpha = 0.34f))
+                            )
+                        )
+                        .padding(vertical = 22.dp, horizontal = 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.CameraAlt,
-                        contentDescription = "Edit Photo",
-                        tint = Gray600,
-                        modifier = Modifier
-                            .size(16.dp)
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        val avatarModifier = Modifier
+                            .size(104.dp)
+                            .clip(CircleShape)
                             .clickable {
                                 photoPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
                             }
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                        ProfileAvatarImage(
+                            imageModel = profileImageUri ?: userProfile.profileImageUrl,
+                            modifier = avatarModifier
+                        )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = userProfile.name.ifBlank { "Pengguna" },
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Gray900,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = "Edit Name",
-                    tint = Gray600,
-                    modifier = Modifier
-                        .size(18.dp)
-                        .clickable {
-                            editField = UserSessionManager.Field.NAME
-                            editFieldValue = userProfile.name
-                            editKeyboardType = KeyboardType.Text
-                            showDialog = true
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color.White, CircleShape)
+                                .clickable {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CameraAlt,
+                                contentDescription = "Edit Photo",
+                                tint = Primary500,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-                )
-            }
+                    }
 
-            if (userProfile.email.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = userProfile.email,
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp,
-                    color = Gray500
-                )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = userProfile.name.ifBlank { "Pengguna" },
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Gray900,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit Name",
+                            tint = Primary500,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    editField = UserSessionManager.Field.NAME
+                                    editFieldValue = userProfile.name
+                                    editKeyboardType = KeyboardType.Text
+                                    showDialog = true
+                                }
+                        )
+                    }
+
+                    if (userProfile.email.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = userProfile.email,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            color = Gray500,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -259,10 +282,10 @@ fun EditProfileScreen(
 @Composable
 fun ProfileDetailRow(label: String, value: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -273,13 +296,28 @@ fun ProfileDetailRow(label: String, value: String, onClick: () -> Unit) {
             fontSize = 14.sp,
             color = Gray500
         )
-        Text(
-            text = value.ifBlank { "-" },
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = Gray900
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = value.ifBlank { "-" },
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = Gray900,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Rounded.Edit,
+                contentDescription = null,
+                tint = Gray500,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 

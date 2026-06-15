@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray900
@@ -119,7 +120,8 @@ fun AboutScreen(navController: NavController) {
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:support@lokacara.my.id")
                                 }
-                                context.startActivity(intent)
+                                runCatching { context.startActivity(intent) }
+                                    .onFailure { SnackbarManager.showError("Aplikasi email tidak tersedia") }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                             shape = RoundedCornerShape(24.dp)

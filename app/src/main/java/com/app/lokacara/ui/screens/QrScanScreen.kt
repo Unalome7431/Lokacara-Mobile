@@ -12,6 +12,7 @@ import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -73,6 +75,7 @@ import com.app.lokacara.R
 import com.app.lokacara.data.remote.dto.ScanResponse
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.theme.Gray200
 import com.app.lokacara.ui.theme.Gray400
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray600
@@ -139,33 +142,15 @@ fun QrScanScreen(
     ) {
         QrTopBar(onBack = { navController.navigateBackOrHome() })
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 14.dp)) {
-            QrMode.entries.forEach { item ->
-                FilterChip(
-                    selected = mode == item,
-                    onClick = {
-                        mode = item
-                        viewModel.clearError()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (item == QrMode.CAMERA) Icons.Outlined.PhotoCamera else Icons.Outlined.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    label = { Text(item.label, fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Primary500,
-                        selectedLabelColor = Color.White,
-                        selectedLeadingIconColor = Color.White,
-                        containerColor = Color.White,
-                        labelColor = Gray600,
-                        iconColor = Gray600
-                    )
-                )
+        QrModeSelector(
+            selectedMode = mode,
+            onModeSelected = {
+                mode = it
+                viewModel.clearError()
             }
-        }
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         if (mode == QrMode.CAMERA) {
             if (hasCameraPermission) {
@@ -214,28 +199,93 @@ fun QrScanScreen(
 
 @Composable
 private fun QrTopBar(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+            .height(62.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color.White, Primary100.copy(alpha = 0.48f), Secondary100.copy(alpha = 0.42f))
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(22.dp))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.material3.IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = stringResource(R.string.back),
+                    modifier = Modifier.size(21.dp),
+                    tint = Primary500
+                )
+            }
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.qr_scan_title),
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = Gray900
+                )
+                Text(
+                    text = "Validasi kehadiran peserta",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 11.sp,
+                    color = Gray500
+                )
+            }
+            Spacer(modifier = Modifier.size(44.dp))
+        }
+    }
+}
+
+@Composable
+private fun QrModeSelector(
+    selectedMode: QrMode,
+    onModeSelected: (QrMode) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White.copy(alpha = 0.88f))
+            .border(1.dp, Gray100, RoundedCornerShape(18.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(
-            imageVector = Icons.Rounded.ArrowBackIosNew,
-            contentDescription = stringResource(R.string.back),
-            modifier = Modifier.size(22.dp).clickable(onClick = onBack),
-            tint = Gray900
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = stringResource(R.string.qr_scan_title),
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            color = Gray900
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Spacer(modifier = Modifier.width(22.dp))
+        QrMode.entries.forEach { item ->
+            val selected = selectedMode == item
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (selected) Primary500 else Color.Transparent)
+                    .clickable { onModeSelected(item) },
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (item == QrMode.CAMERA) Icons.Outlined.PhotoCamera else Icons.Outlined.Edit,
+                    contentDescription = null,
+                    tint = if (selected) Color.White else Gray500,
+                    modifier = Modifier.size(17.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    item.label,
+                    fontFamily = PlusJakartaSansFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = if (selected) Color.White else Gray600
+                )
+            }
+        }
     }
 }
 
@@ -247,7 +297,7 @@ private fun QrCameraScanner(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(430.dp),
+            .height(360.dp),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Black),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -257,9 +307,10 @@ private fun QrCameraScanner(
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(238.dp)
+                    .size(214.dp)
                     .clip(RoundedCornerShape(28.dp))
                     .background(Color.White.copy(alpha = 0.08f))
+                    .border(2.dp, Color.White.copy(alpha = 0.74f), RoundedCornerShape(28.dp))
             )
             Column(
                 modifier = Modifier

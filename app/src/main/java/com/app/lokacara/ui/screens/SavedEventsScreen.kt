@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -22,12 +24,14 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.ProfileSubpageSummaryCard
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.Secondary500
 import com.app.lokacara.viewmodel.BookmarkViewModel
 
 @Composable
@@ -57,6 +61,16 @@ fun SavedEventsScreen(
                         .background(Gray50),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
+                    item {
+                        ProfileSubpageSummaryCard(
+                            title = "Event Tersimpan",
+                            subtitle = "Event favorit yang bisa kamu akses lagi nanti.",
+                            value = savedEvents.size.toString(),
+                            valueLabel = "event",
+                            icon = Icons.Rounded.Bookmark,
+                            accentColor = Secondary500
+                        )
+                    }
                     if (savedEvents.isEmpty()) {
                         item {
                             EmptyEventState(

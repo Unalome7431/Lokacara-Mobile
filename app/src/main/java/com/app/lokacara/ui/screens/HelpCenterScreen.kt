@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 
@@ -118,9 +119,16 @@ fun HelpCenterScreen(navController: NavController) {
                 )
             }
 
-            faqs.forEach { (question, answer) ->
-                FAQItem(question = question, answer = answer)
-                Spacer(modifier = Modifier.height(12.dp))
+            if (faqs.isEmpty()) {
+                HelpEmptySearchCard(
+                    query = searchQuery,
+                    onReset = { searchQuery = "" }
+                )
+            } else {
+                faqs.forEach { (question, answer) ->
+                    FAQItem(question = question, answer = answer)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -164,7 +172,8 @@ fun HelpCenterScreen(navController: NavController) {
                             val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
                                 data = android.net.Uri.parse("mailto:support@lokacara.my.id")
                             }
-                            context.startActivity(intent)
+                            runCatching { context.startActivity(intent) }
+                                .onFailure { SnackbarManager.showError("Aplikasi email tidak tersedia") }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                         shape = RoundedCornerShape(28.dp),
@@ -182,6 +191,36 @@ fun HelpCenterScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun HelpEmptySearchCard(query: String, onReset: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Rounded.SearchOff, contentDescription = null, tint = Gray400, modifier = Modifier.size(34.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Tidak ada hasil untuk \"$query\"",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Gray900,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onReset) {
+                Text("Reset pencarian", color = Primary500, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

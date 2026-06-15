@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,11 +23,13 @@ import com.app.lokacara.model.CertificateData
 import com.app.lokacara.ui.components.CertificateCard
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.ProfileSubpageSummaryCard
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.SvgOrange
 import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
@@ -44,28 +49,43 @@ fun CertificatesScreen(
                 CircularProgressIndicator(color = Primary500)
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Gray50),
-                contentPadding = PaddingValues(bottom = 100.dp)
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
             ) {
-                if (certificates.isEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Gray50),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
                     item {
-                        EmptyEventState(
-                            text = "Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya",
-                            onClick = { navController.navigateToExplore() }
+                        ProfileSubpageSummaryCard(
+                            title = "Sertifikat",
+                            subtitle = "Sertifikat event yang sudah kamu selesaikan.",
+                            value = certificates.size.toString(),
+                            valueLabel = "file",
+                            icon = Icons.Rounded.WorkspacePremium,
+                            accentColor = SvgOrange
                         )
                     }
-                } else {
-                    items(
-                        items = certificates,
-                        key = { cert: CertificateData -> cert.id }
-                    ) { cert ->
-                        CertificateCard(
-                            cert = cert,
-                            onDownload = { viewModel.downloadCertificate(it) }
-                        )
+                    if (certificates.isEmpty()) {
+                        item {
+                            EmptyEventState(
+                                text = "Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya",
+                                onClick = { navController.navigateToExplore() }
+                            )
+                        }
+                    } else {
+                        items(
+                            items = certificates,
+                            key = { cert: CertificateData -> cert.id }
+                        ) { cert ->
+                            CertificateCard(
+                                cert = cert,
+                                onDownload = { viewModel.downloadCertificate(it) }
+                            )
+                        }
                     }
                 }
             }
