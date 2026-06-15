@@ -215,7 +215,7 @@ fun ExploreScreen(
                             }
                         }
                         item(key = "categories", span = { GridItemSpan(2) }) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             ExploreCategories(
                                 selectedCategory = selectedCategoryChip,
                                 onCategorySelected = { viewModel.selectCategoryChip(it) },
@@ -223,26 +223,16 @@ fun ExploreScreen(
                             )
                         }
                         item(key = "sort_row", span = { GridItemSpan(2) }) {
+                            Spacer(modifier = Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "${events.size} event ditemukan", 
-                                    fontFamily = PlusJakartaSansFont, 
-                                    fontSize = 13.sp, 
-                                    fontWeight = FontWeight.Bold,
-                                    color = Gray500
-                                )
+                                Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
-                                        Icon(
-                                            imageVector = if (isGridView) Icons.Outlined.ViewList else Icons.Outlined.GridView, 
-                                            contentDescription = "Ganti Tampilan", 
-                                            tint = Primary500, 
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        Icon(Icons.Outlined.ViewList, "List view", tint = Gray500, modifier = Modifier.size(18.dp))
                                     }
                                     SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
                                 }
@@ -252,9 +242,7 @@ fun ExploreScreen(
                             item(key = "error_banner", span = { GridItemSpan(2) }) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
-                                        .background(SemanticErrorBase.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                                        .border(1.dp, SemanticErrorBase.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                        .padding(12.dp)
+                                        .background(SemanticErrorLight, RoundedCornerShape(8.dp)).padding(12.dp)
                                 ) {
                                     Text(error ?: "", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = SemanticErrorBase)
                                 }
@@ -274,10 +262,12 @@ fun ExploreScreen(
                             item(key = "loading_more", span = { GridItemSpan(2) }) {
                                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                                     LoadMoreSkeleton()
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    LoadMoreSkeleton()
                                 }
                             }
                         }
-                        item(key = "bottom_spacer", span = { GridItemSpan(2) }) { Spacer(modifier = Modifier.height(100.dp)) }
+                        item(key = "bottom_spacer", span = { GridItemSpan(2) }) { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 } else {
                     LazyColumn(
@@ -323,7 +313,7 @@ fun ExploreScreen(
                             }
                         }
                         item(key = "categories") {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             ExploreCategories(
                                 selectedCategory = selectedCategoryChip,
                                 onCategorySelected = { viewModel.selectCategoryChip(it) },
@@ -331,23 +321,18 @@ fun ExploreScreen(
                             )
                         }
                         item(key = "sort_row") {
+                            Spacer(modifier = Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "${events.size} event ditemukan", 
-                                    fontFamily = PlusJakartaSansFont, 
-                                    fontSize = 13.sp, 
-                                    fontWeight = FontWeight.Bold,
-                                    color = Gray500
-                                )
+                                Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
                                         Icon(
                                             imageVector = if (isGridView) Icons.Outlined.ViewList else Icons.Outlined.GridView,
-                                            contentDescription = "Toggle view", tint = Primary500, modifier = Modifier.size(20.dp)
+                                            contentDescription = "Toggle view", tint = Gray500, modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
@@ -358,9 +343,7 @@ fun ExploreScreen(
                             item(key = "error_banner") {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
-                                        .background(SemanticErrorBase.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                                        .border(1.dp, SemanticErrorBase.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                                        .padding(12.dp)
+                                        .background(SemanticErrorLight, RoundedCornerShape(8.dp)).padding(12.dp)
                                 ) {
                                     Text(error ?: "", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = SemanticErrorBase)
                                 }
@@ -383,6 +366,8 @@ fun ExploreScreen(
                         if (isLoadingMore) {
                             item(key = "loading_more") {
                                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                                    LoadMoreSkeleton()
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     LoadMoreSkeleton()
                                 }
                             }

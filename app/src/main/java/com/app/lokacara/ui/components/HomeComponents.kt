@@ -61,98 +61,41 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.input.TextFieldValue
 
 @Composable
-fun HomeHeader(
-    navController: NavController,
-    currentLocation: String = "",
-    onLocationClick: () -> Unit = {}
-) {
-    Column(
+fun HomeHeader(navController: NavController) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Primary500.copy(alpha = 0.08f), Color.Transparent)
-                )
-            )
-            .padding(top = 16.dp, bottom = 24.dp)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Halo, Selamat Datang!",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = Gray500
+        Image(
+            painter = painterResource(id = R.drawable.logo_lokacara),
+            contentDescription = "Logo",
+            modifier = Modifier.height(34.dp)
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            IconButton(
+                onClick = { navController.navigate(Screen.Notification.route) }
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Notifications,
+                    contentDescription = "Notifikasi",
+                    tint = Secondary500,
+                    modifier = Modifier.size(26.dp)
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onLocationClick() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        tint = Primary500,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (currentLocation.isNotBlank()) currentLocation else "Pilih Lokasi",
-                        fontFamily = PlusJakartaSansFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp,
-                        color = Gray900
-                    )
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                        tint = Gray900,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
             }
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    onClick = { navController.navigate(Screen.Notification.route) },
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.Notifications,
-                            contentDescription = "Notifikasi",
-                            tint = Gray900,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Surface(
-                    onClick = { navController.navigate(Screen.Bookmark.route) },
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Tersimpan",
-                            tint = Gray900,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
+
+            IconButton(
+                onClick = { navController.navigate(Screen.Bookmark.route) }
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Event Tersimpan",
+                    tint = Secondary500,
+                    modifier = Modifier.size(26.dp)
+                )
             }
         }
     }
@@ -224,69 +167,56 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(210.dp)
+                        .height(200.dp)
                         .clickable { onEventClick(event) },
                     shape = cardShape,
-                    color = Color.White,
-                    shadowElevation = 3.dp
+                    color = Color.Transparent,
+                    shadowElevation = 8.dp
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize().clip(cardShape)
                     ) {
                         AsyncImage(
-                            model = rememberEventImageRequest(event.imageUrl, 500),
+                            model = rememberEventImageRequest(event.imageUrl, 400),
                             contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Black.copy(alpha = 0.1f),
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.7f)
-                                        )
-                                    )
-                                )
-                        )
+                        Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
 
                         Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(18.dp),
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = SvgOrange,
-                                    shadowElevation = 4.dp
-                                ) {
-                                    Text(
-                                        text = event.category,
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontFamily = PlusJakartaSansFont,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                                    )
+                                Box(modifier = Modifier.widthIn(max = 160.dp)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = SvgOrange.copy(alpha = 0.9f)
+                                    ) {
+                                        Text(
+                                            text = event.category,
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontFamily = PlusJakartaSansFont,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
-                                
                                 if (event.viewCount > 0) {
                                     Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Color.Black.copy(alpha = 0.4f)
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.White.copy(alpha = 0.25f)
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
@@ -297,10 +227,9 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                "${formatViewCount(event.viewCount)}",
+                                                "${formatViewCount(event.viewCount)} x dilihat",
                                                 color = Color.White,
                                                 fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
                                                 fontFamily = PlusJakartaSansFont
                                             )
                                         }
@@ -312,35 +241,15 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                                 Text(
                                     text = event.title,
                                     color = Color.White,
-                                    style = TextStyle(
-                                        fontFamily = NunitoFont, 
-                                        fontWeight = FontWeight.ExtraBold, 
-                                        fontSize = 20.sp,
-                                        lineHeight = 26.sp
-                                    ),
+                                    style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Outlined.LocationOn, 
-                                        contentDescription = null, 
-                                        tint = Color.White.copy(alpha = 0.9f), 
-                                        modifier = Modifier.size(14.dp)
-                                    )
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = event.location, 
-                                        color = Color.White.copy(alpha = 0.9f), 
-                                        style = TextStyle(
-                                            fontFamily = PlusJakartaSansFont, 
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 12.sp
-                                        ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                    Text(text = event.date, color = Color.White.copy(alpha = 0.8f), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
                                 }
                             }
                         }

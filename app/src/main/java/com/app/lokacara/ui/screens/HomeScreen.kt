@@ -125,11 +125,7 @@ fun HomeScreen(
                 ) {
 
                     item(key = "header", contentType = "header") {
-                        HomeHeader(
-                            navController = navController,
-                            currentLocation = currentLocation,
-                            onLocationClick = { viewModel.showLocationPicker() }
-                        )
+                        HomeHeader(navController = navController)
                     }
 
                     // ── Popular Events ──
@@ -143,18 +139,17 @@ fun HomeScreen(
                     }
 
                     // ── Nearby Events ──
-                    if (nearbyEvents.isNotEmpty()) {
-                        item(key = "nearby_header", contentType = "nearby_header") {
-                            Text(
-                                text = "Event Terdekat",
-                                style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color.Black),
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-                            )
-                        }
+                    item(key = "nearby_header", contentType = "nearby_header") {
+                        NearbyEventsHeader(
+                            currentLocation = currentLocation,
+                            onLocationClick = { viewModel.showLocationPicker() }
+                        )
+                    }
 
+                    if (nearbyEvents.isNotEmpty()) {
                         item(key = "nearby_events", contentType = "nearby_row") {
                             LazyRow(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
@@ -165,6 +160,21 @@ fun HomeScreen(
                                         onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
                                     )
                                 }
+                            }
+                        }
+                    } else {
+                        item(key = "nearby_empty", contentType = "nearby_empty") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                            ) {
+                                Text(
+                                    "Tidak ada event di sekitar Anda saat ini",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 13.sp,
+                                    color = Gray400
+                                )
                             }
                         }
                     }

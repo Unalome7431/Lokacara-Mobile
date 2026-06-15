@@ -50,78 +50,71 @@ fun ExploreHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                "Temukan Event",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 24.sp,
-                color = Gray900
-            )
-            Text(
-                "Cari berbagai event menarik di sekitarmu",
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 13.sp,
-                color = Gray500
-            )
-        }
+        Image(
+            painter = painterResource(id = R.drawable.logo_lokacara),
+            contentDescription = "Logo",
+            modifier = Modifier.height(34.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            "Jelajahi Event",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 20.sp,
+            color = Color.Black
+        )
     }
 }
 
 @Composable
 fun CollapsedSearchBar(onClick: () -> Unit, onFilterClick: () -> Unit = {}, activeFilterCount: Int = 0) {
-    Surface(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .height(54.dp)
+            .height(52.dp)
+            .background(Color.White, RoundedCornerShape(100.dp))
             .clickable { onClick() },
-        shape = RoundedCornerShape(100.dp),
-        color = Color.White,
-        shadowElevation = 2.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Gray100)
+        contentAlignment = Alignment.CenterStart
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Text("Cari event...", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray400))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Search, null, tint = Gray400, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Cari event impianmu...", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray400))
-            }
-            
-            Surface(
-                onClick = onFilterClick,
-                shape = CircleShape,
-                color = Primary500.copy(alpha = 0.08f),
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = Primary500, modifier = Modifier.size(18.dp))
+                Box {
+                    IconButton(
+                        onClick = onFilterClick,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Outlined.Tune, contentDescription = "Filter", tint = Primary500, modifier = Modifier.size(18.dp))
+                    }
                     if (activeFilterCount > 0) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .size(14.dp)
+                                .size(16.dp)
                                 .offset(x = 2.dp, y = (-2).dp)
-                                .background(SemanticErrorBase, CircleShape),
+                                .background(SemanticErrorBase, RoundedCornerShape(8.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 "$activeFilterCount",
                                 color = Color.White,
-                                fontSize = 9.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = PlusJakartaSansFont
                             )
                         }
                     }
                 }
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Outlined.Search, "Cari", tint = Primary500)
             }
         }
     }
@@ -139,65 +132,118 @@ fun ExpandedSearchSection(
     onCancel: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        focusedBorderColor = Primary500,
+        unfocusedBorderColor = Secondary500,
+        focusedTextColor = Gray900,
+        unfocusedTextColor = Gray900
+    )
 
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            LokacaraTextField(
-                value = eventName,
-                onValueChange = onEventNameChange,
-                placeholder = "Apa yang ingin kamu cari?",
-                label = "Nama Event",
-                isOutlined = true,
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color.White,
-                leadingIcon = { Icon(Icons.Outlined.Search, null, tint = Primary500) },
-                trailingIcon = if (eventName.isNotEmpty()) {
-                    {
+    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = eventName, onValueChange = onEventNameChange,
+                placeholder = { Text("Nama Event", style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray400)) },
+                textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
+                modifier = Modifier.weight(1f).height(56.dp),
+                shape = RoundedCornerShape(12.dp), colors = textFieldColors, singleLine = true,
+                trailingIcon = {
+                    if (eventName.isNotEmpty()) {
                         IconButton(onClick = onClearEventName) {
                             Icon(Icons.Filled.Close, "Hapus", tint = Gray400, modifier = Modifier.size(18.dp))
                         }
                     }
-                } else null
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearchSubmit() })
             )
-
-            SearchAutocompleteField(
-                value = eventLocation,
-                onValueChange = onEventLocationChange,
-                onClear = onClearEventLocation,
-                placeholder = "Semua lokasi",
-                label = "Lokasi",
-                icon = Icons.Outlined.LocationOn,
-                suggestions = locationSuggestions,
-                focusManager = focusManager
-            )
-
+            Spacer(modifier = Modifier.width(12.dp))
+            Box(
+                modifier = Modifier.size(56.dp).border(1.dp, Primary500, RoundedCornerShape(12.dp)).background(Primary500, RoundedCornerShape(12.dp)).clickable { onSearchSubmit() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Search, "Cari", tint = Color.White)
+            }
+        }
+        if (eventName.isEmpty() && searchHistory.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = onCancel,
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Gray200)
+                Text(
+                    "Pencarian Terakhir",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 11.sp,
+                    color = Gray400
+                )
+                TextButton(
+                    onClick = onClearHistory,
+                    modifier = Modifier.height(28.dp)
                 ) {
-                    Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray600, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Hapus Semua",
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 11.sp,
+                        color = SemanticErrorBase
+                    )
                 }
-                Button(
-                    onClick = onSearchSubmit,
-                    modifier = Modifier.weight(1.2f).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                ) {
-                    Icon(Icons.Outlined.Search, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cari Sekarang", fontWeight = FontWeight.Bold)
+            }
+            Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                searchHistory.forEach { item ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onEventNameChange(item)
+                                onSearchSubmit()
+                            },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Outlined.Schedule,
+                                null,
+                                tint = Gray400,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                item,
+                                fontFamily = PlusJakartaSansFont,
+                                fontSize = 13.sp,
+                                color = Gray700
+                            )
+                        }
+                    }
                 }
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        SearchAutocompleteField(
+            value = eventLocation,
+            onValueChange = onEventLocationChange,
+            onClear = onClearEventLocation,
+            placeholder = "Lokasi Event",
+            icon = Icons.Outlined.LocationOn,
+            suggestions = locationSuggestions,
+            textFieldColors = textFieldColors,
+            focusManager = focusManager
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(onClick = onCancel) {
+                Text("Batal", fontFamily = PlusJakartaSansFont, color = SemanticErrorBase, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -210,58 +256,45 @@ private fun SearchAutocompleteField(
     onValueChange: (String) -> Unit,
     onClear: () -> Unit,
     placeholder: String,
-    label: String,
     icon: ImageVector,
     suggestions: List<String>,
+    textFieldColors: TextFieldColors,
     focusManager: androidx.compose.ui.focus.FocusManager
 ) {
     var expanded by remember { mutableStateOf(false) }
     val filtered = remember(value) { suggestions.filter { it.contains(value, true) } }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
-            color = Gray700
-        )
-        
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
-                placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
-                textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
-                leadingIcon = { Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp)) },
-                trailingIcon = if (value.isNotEmpty()) {
-                    {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
+            placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
+            textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
+            trailingIcon = {
+                Row {
+                    if (value.isNotEmpty()) {
                         IconButton(onClick = onClear) {
                             Icon(Icons.Filled.Close, "Hapus", tint = Gray400, modifier = Modifier.size(18.dp))
                         }
                     }
-                } else null,
-                modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary500,
-                    unfocusedBorderColor = Gray200,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                ),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-            )
-            if (expanded && filtered.isNotEmpty()) {
-                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
-                    filtered.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
-                            onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                            leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
-                        )
-                    }
+                    Icon(icon, "Dropdown", tint = Primary500, modifier = Modifier.size(20.dp))
+                }
+            },
+            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            shape = RoundedCornerShape(12.dp),
+            colors = textFieldColors,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+        )
+        if (expanded && filtered.isNotEmpty()) {
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
+                filtered.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
+                        onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
+                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    )
                 }
             }
         }
@@ -288,31 +321,18 @@ fun ExploreCategories(
 
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    val background by androidx.compose.animation.animateColorAsState(
-        targetValue = if (isSelected) Primary500 else Color.White,
-        label = "chip_bg"
-    )
-    val contentColor by androidx.compose.animation.animateColorAsState(
-        targetValue = if (isSelected) Color.White else Gray700,
-        label = "chip_fg"
-    )
-
     Surface(
-        modifier = Modifier
-            .clip(RoundedCornerShape(100.dp))
-            .clickable { onClick() },
-        color = background,
+        color = if (isSelected) Primary500 else Gray100,
         shape = RoundedCornerShape(100.dp),
-        shadowElevation = if (isSelected) 4.dp else 1.dp,
-        border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Gray100) else null
+        modifier = Modifier.clickable { onClick() }
     ) {
         Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            color = contentColor,
+            text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
+            color = if (isSelected) Color.White else Gray700,
             style = TextStyle(
                 fontFamily = PlusJakartaSansFont,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
         )
