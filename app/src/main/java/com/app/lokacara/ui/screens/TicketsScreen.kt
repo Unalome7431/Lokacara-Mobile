@@ -2,6 +2,7 @@ package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +38,7 @@ import com.app.lokacara.R
 import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.ui.components.*
+import com.app.lokacara.ui.navigation.navigateToLoginAndClearMain
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.TicketsViewModel
 
@@ -69,9 +71,7 @@ fun TicketsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        (rootNavController ?: navController).navigate(com.app.lokacara.ui.navigation.Screen.Login.route) {
-                            launchSingleTop = true
-                        }
+                        (rootNavController ?: navController).navigateToLoginAndClearMain()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                     shape = RoundedCornerShape(28.dp)
@@ -337,28 +337,31 @@ private fun TicketTabRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 10.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White.copy(alpha = 0.86f))
+            .border(1.dp, Gray100, RoundedCornerShape(18.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         tabs.forEachIndexed { index, title ->
             val selected = selectedTab == index
-            Column(
+            Box(
                 modifier = Modifier
                     .weight(1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (selected) Primary500 else Color.Transparent)
                     .clickable { onSelect(index) },
-                horizontalAlignment = Alignment.CenterHorizontally
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = title,
-                    color = if (selected) Primary500 else Gray500,
+                    color = if (selected) Color.White else Gray500,
                     fontFamily = PlusJakartaSansFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(3.dp)
-                        .background(if (selected) Primary500 else Color.Transparent)
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

@@ -24,6 +24,8 @@ import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.BookmarkViewModel
 
@@ -43,10 +45,15 @@ fun BookmarkScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 30.dp)
         ) {
             IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.align(Alignment.CenterStart).size(28.dp)
+                onClick = { navController.navigateBackOrHome() },
+                modifier = Modifier.align(Alignment.CenterStart).size(40.dp)
             ) {
-                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = "Kembali", tint = Gray900)
+                Icon(
+                    Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = "Kembali",
+                    tint = Gray900,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
             Text(
@@ -67,7 +74,7 @@ fun BookmarkScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     EmptyEventState(
                         text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                        onClick = { navController.navigate(Screen.Explore.createRoute("")) { launchSingleTop = true } }
+                        onClick = { navController.navigateToExplore() }
                     )
                 }
             } else {

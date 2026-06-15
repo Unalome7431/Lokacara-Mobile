@@ -13,6 +13,7 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -172,7 +173,9 @@ class ExploreViewModel @Inject constructor(
             SortOption.TERPOPULER -> filtered.sortedByDescending { it.viewCount }
             SortOption.TERMURAH -> filtered.sortedBy { parsePrice(it.price) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun parsePrice(price: String): Int {
         return when {

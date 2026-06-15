@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.HomeViewModel
 
@@ -107,7 +108,7 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
                         Button(
-                            onClick = { navController.navigate(Screen.Explore.createRoute("")) { launchSingleTop = true } },
+                            onClick = { navController.navigateToExplore() },
                             colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
@@ -202,7 +203,7 @@ fun HomeScreen(
                                     events = events,
                                     onEventClick = onEventClick,
                                     onSeeAll = {
-                                        navController.navigate(Screen.Explore.createRoute(categoryName)) { launchSingleTop = true }
+                                        navController.navigateToExplore(categoryName)
                                     },
                                     onBookmarkClick = { eventId -> viewModel.toggleBookmark(eventId) }
                                 )

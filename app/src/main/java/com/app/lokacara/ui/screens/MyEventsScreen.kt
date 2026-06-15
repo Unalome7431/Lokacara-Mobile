@@ -23,6 +23,8 @@ import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToCreateEvent
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.Primary500
@@ -36,7 +38,7 @@ fun MyEventsScreen(
     val myEvents by viewModel.myEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    ProfilePageScaffold(title = "Event Saya", onBack = { navController.popBackStack() }) {
+    ProfilePageScaffold(title = "Event Saya", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && myEvents.isEmpty()) {
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize(),
@@ -57,7 +59,7 @@ fun MyEventsScreen(
                 ) {
                     if (myEvents.isEmpty()) {
                         item {
-                            EmptyEventState(onClick = { navController.navigate(Screen.CreateEvent.route) })
+                            EmptyEventState(onClick = { navController.navigateToCreateEvent() })
                         }
                     } else {
                         items(

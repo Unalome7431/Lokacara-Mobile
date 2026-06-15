@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray900
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
@@ -54,7 +55,7 @@ fun AboutScreen(navController: NavController) {
         "Track" to "Pantau tiket, sertifikat, dan riwayat aktivitas dalam profile area."
     )
 
-    ProfilePageScaffold(title = "Tentang Lokacara", onBack = { navController.popBackStack() }) {
+    ProfilePageScaffold(title = "Tentang Lokacara", onBack = { navController.navigateBackOrHome() }) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 100.dp),

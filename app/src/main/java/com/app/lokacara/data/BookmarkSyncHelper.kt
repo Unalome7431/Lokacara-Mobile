@@ -34,6 +34,22 @@ class BookmarkSyncHelper @Inject constructor(
         }
     }
 
+    fun syncBookmark(
+        scope: CoroutineScope,
+        state: MutableStateFlow<Event>
+    ) {
+        bookmarkJob?.cancel()
+        bookmarkJob = scope.launch {
+            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
+                val event = state.value
+                val bookmarked = event.id.toString() in bookmarkedIds
+                if (event.id != 0L && event.isBookmarked != bookmarked) {
+                    state.value = event.copy(isBookmarked = bookmarked)
+                }
+            }
+        }
+    }
+
     fun toggleBookmark(
         scope: CoroutineScope,
         eventId: String

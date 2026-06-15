@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 
 @Composable
@@ -31,7 +32,7 @@ fun PrivacyPolicyScreen(navController: NavController) {
 
     ProfilePageScaffold(
         title = "Kebijakan Privasi",
-        onBack = { navController.popBackStack() }
+        onBack = { navController.navigateBackOrHome() }
     ) {
         Column(
             modifier = Modifier

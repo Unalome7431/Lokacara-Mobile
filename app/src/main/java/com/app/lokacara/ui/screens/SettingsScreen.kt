@@ -72,6 +72,8 @@ import com.app.lokacara.ui.theme.Primary500
 import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SemanticErrorLight
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToLoginAndClearMain
 import com.app.lokacara.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
@@ -96,9 +98,7 @@ fun SettingsScreen(
             viewModel.resetDeleteSuccess()
             scope.launch {
                 viewModel.logout()
-                (rootNavController ?: navController).navigate(Screen.Login.route) {
-                    popUpTo(0) { inclusive = true }
-                }
+                (rootNavController ?: navController).navigateToLoginAndClearMain()
             }
         }
     }
@@ -180,7 +180,7 @@ fun SettingsScreen(
         )
     }
 
-    ProfilePageScaffold(title = "Pengaturan", onBack = { navController.popBackStack() }) {
+    ProfilePageScaffold(title = "Pengaturan", onBack = { navController.navigateBackOrHome() }) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -243,9 +243,7 @@ fun SettingsScreen(
                         .clickable {
                             scope.launch {
                                 viewModel.logout()
-                                (rootNavController ?: navController).navigate(Screen.Login.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
+                                (rootNavController ?: navController).navigateToLoginAndClearMain()
                             }
                         }
                         .padding(horizontal = 16.dp, vertical = 18.dp),

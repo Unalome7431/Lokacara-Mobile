@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,10 +56,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
 import com.app.lokacara.data.UserSessionManager
-import com.app.lokacara.ui.components.ProfileAvatarPlaceholder
+import com.app.lokacara.ui.components.ProfileAvatarImage
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.Gray100
 import com.app.lokacara.ui.theme.Gray300
@@ -122,7 +121,7 @@ fun EditProfileScreen(
 
     ProfilePageScaffold(
         title = "Edit Profil",
-        onBack = { navController.popBackStack() }
+        onBack = { navController.navigateBackOrHome() }
     ) {
         Column(
             modifier = Modifier
@@ -143,23 +142,10 @@ fun EditProfileScreen(
                         )
                     }
 
-                if (profileImageUri != null) {
-                    AsyncImage(
-                        model = profileImageUri,
-                        contentDescription = "Profile Picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = avatarModifier
-                    )
-                } else if (!userProfile.profileImageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = userProfile.profileImageUrl,
-                        contentDescription = "Profile Picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = avatarModifier
-                    )
-                } else {
-                    ProfileAvatarPlaceholder(modifier = avatarModifier)
-                }
+                ProfileAvatarImage(
+                    imageModel = profileImageUri ?: userProfile.profileImageUrl,
+                    modifier = avatarModifier
+                )
 
                 Box(
                     modifier = Modifier

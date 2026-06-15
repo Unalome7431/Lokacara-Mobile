@@ -74,7 +74,11 @@ class ProfileViewModel @Inject constructor(
                                 email = email,
                                 phone = user.phone ?: "",
                                 location = user.location ?: "",
-                                profileImageUrl = user.avatar_url ?: resolveLocalProfileImagePath()
+                                profileImageUrl = resolveProfileImageUrl(
+                                    remoteAvatar = user.avatar_url,
+                                    updatedAt = user.updated_at,
+                                    localFallback = resolveLocalProfileImagePath()
+                                )
                             )
                         } else {
                             loadFallbackProfile()
@@ -109,6 +113,25 @@ class ProfileViewModel @Inject constructor(
 
     private fun resolveLocalProfileImagePath(): String? {
         return fileStorageManager.getProfilePhoto()?.absolutePath
+    }
+
+    private fun resolveProfileImageUrl(
+        remoteAvatar: String?,
+        updatedAt: String? = null,
+        localFallback: String? = null
+    ): String? {
+        val local = localFallback?.takeIf { it.isNotBlank() }
+        val remote = remoteAvatar
+            ?.takeIf { it.isNotBlank() }
+            ?.let { imageUrlProvider.avatarUrl(it) }
+            ?.withAvatarCacheBuster(updatedAt)
+        return remote ?: local
+    }
+
+    private fun String.withAvatarCacheBuster(version: String?): String {
+        val safeVersion = version?.takeIf { it.isNotBlank() } ?: System.currentTimeMillis().toString()
+        val separator = if (contains("?")) "&" else "?"
+        return "$this${separator}v=$safeVersion"
     }
 
     private fun loadDashboard() {
@@ -229,13 +252,24 @@ class ProfileViewModel @Inject constructor(
             val context = getApplication<Application>()
             when (val result = repository.uploadAvatar(context, uri)) {
                 is ApiResult.Success -> {
-                    fileStorageManager.saveProfilePhoto(uri)?.let { path ->
+                    val localPath = fileStorageManager.saveProfilePhoto(uri)
+                    localPath?.let { path ->
                         userSessionManager.updateProfileImagePath(path)
                     }
-                    loadUserProfile()
+                    val user = result.data.user
+                    val displayImage = localPath ?: resolveProfileImageUrl(
+                        remoteAvatar = user?.avatar_url,
+                        updatedAt = user?.updated_at ?: System.currentTimeMillis().toString()
+                    )
+                    _userProfile.value = _userProfile.value.copy(
+                        profileImageUrl = displayImage
+                    )
                     SnackbarManager.show("Foto profil diperbarui")
                 }
-                is ApiResult.Error -> { _errorMessage.value = result.message }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
             }
         }
     }

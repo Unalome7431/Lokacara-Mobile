@@ -10,10 +10,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -30,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
@@ -116,8 +113,6 @@ fun ExploreScreen(
             focusManager.clearFocus()
         } else if (hasActiveFilter) {
             viewModel.resetFilters()
-        } else {
-            navController.popBackStack()
         }
     }
 
@@ -253,18 +248,16 @@ fun ExploreScreen(
                                 }
                             }
                         }
-                            items(events, key = { it.id }, contentType = { "event_grid" }) { event ->
-                                Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "grid_crossfade") {
-                                    EventCardCompact(
-                                        event = event,
-                                        onClick = {
-                                            viewModel.onEventClick(event.id)
-                                            navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                        },
-                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                    )
-                                }
-                            }
+                        items(events, key = { it.id }, contentType = { "event_grid" }) { event ->
+                            EventCardCompact(
+                                event = event,
+                                onClick = {
+                                    viewModel.onEventClick(event.id)
+                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                },
+                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                            )
+                        }
                         if (isLoadingMore) {
                             item(key = "loading_more", span = { GridItemSpan(2) }) {
                                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -359,19 +352,15 @@ fun ExploreScreen(
                         if (events.isEmpty() && !isLoading) {
                             item { EmptyStateView(hasActiveFilter = hasActiveFilter, onResetFilters = { viewModel.resetFilters() }) }
                         } else {
-                            itemsIndexed(items = events, key = { _, event -> event.id }, contentType = { _, _ -> "event_list" }) { index, event ->
-                                Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "list_crossfade") {
-                                    StaggeredCardItem(index = index) {
-                                        EventCard(
-                                            event = event,
-                                            onClick = {
-                                                viewModel.onEventClick(event.id)
-                                                navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                            },
-                                            onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                        )
-                                    }
-                                }
+                            items(items = events, key = { event -> event.id }, contentType = { "event_list" }) { event ->
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        viewModel.onEventClick(event.id)
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                )
                             }
                         }
                         if (isLoadingMore) {
@@ -424,21 +413,6 @@ fun ExploreScreen(
             onReset = { viewModel.resetFilters() },
             onDismiss = { showBottomSheet = false }
         )
-    }
-}
-
-@Composable
-private fun StaggeredCardItem(index: Int, content: @Composable () -> Unit) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(index.coerceAtMost(8) * 24L)
-        visible = true
-    }
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 }
-    ) {
-        content()
     }
 }
 

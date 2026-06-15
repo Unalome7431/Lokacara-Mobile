@@ -25,33 +25,85 @@ class AttendeesViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _isReminderSending = MutableStateFlow(false)
+    val isReminderSending: StateFlow<Boolean> = _isReminderSending.asStateFlow()
+
+    private val _togglingIds = MutableStateFlow<Set<Long>>(emptySet())
+    val togglingIds: StateFlow<Set<Long>> = _togglingIds.asStateFlow()
+
+    private val _totalCount = MutableStateFlow(0)
+    val totalCount: StateFlow<Int> = _totalCount.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private var currentEventId: Long = 0
+    private var currentPage = 1
+    private var hasMorePages = true
 
-    fun loadAttendees(eventId: Long) {
+    fun loadAttendees(eventId: Long, refresh: Boolean = false) {
         currentEventId = eventId
         viewModelScope.launch {
-            _isLoading.value = true
+            currentPage = 1
+            hasMorePages = true
+            if (refresh) _isRefreshing.value = true else _isLoading.value = true
             _error.value = null
 
             when (val result = safeApiCall { apiService.getAttendees(eventId) }) {
                 is ApiResult.Success -> {
                     _attendees.value = result.data.attendees.data
+                    _totalCount.value = result.data.attendees.total
+                    hasMorePages = result.data.attendees.current_page < result.data.attendees.last_page
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
 
             _isLoading.value = false
+            _isRefreshing.value = false
+        }
+    }
+
+    fun refresh() {
+        if (currentEventId == 0L) return
+        loadAttendees(currentEventId, refresh = true)
+    }
+
+    fun loadNextPage() {
+        if (currentEventId == 0L || !hasMorePages || _isLoadingMore.value || _isLoading.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            _error.value = null
+            val nextPage = currentPage + 1
+            when (val result = safeApiCall { apiService.getAttendees(currentEventId, nextPage) }) {
+                is ApiResult.Success -> {
+                    currentPage = result.data.attendees.current_page
+                    hasMorePages = result.data.attendees.current_page < result.data.attendees.last_page
+                    _totalCount.value = result.data.attendees.total
+                    val existingIds = _attendees.value.map { it.id }.toSet()
+                    _attendees.value = _attendees.value + result.data.attendees.data.filterNot { it.id in existingIds }
+                }
+                is ApiResult.Error -> {
+                    _error.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+            _isLoadingMore.value = false
         }
     }
 
     fun toggleAttendance(registrationId: Long) {
         if (currentEventId == 0L) return
         viewModelScope.launch {
+            _togglingIds.value = _togglingIds.value + registrationId
             when (val result = safeApiCall {
                 apiService.toggleAttendance(currentEventId, registrationId)
             }) {
@@ -63,25 +115,32 @@ class AttendeesViewModel @Inject constructor(
                             checked_in_at = updated.checked_in_at
                         ) else it
                     }
-                    SnackbarManager.show("Peserta berhasil check-in")
+                    SnackbarManager.show(if (updated.status == "present") "Peserta ditandai hadir" else "Status peserta diperbarui")
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
+            _togglingIds.value = _togglingIds.value - registrationId
         }
     }
 
     fun sendReminders() {
-        if (currentEventId == 0L) return
+        if (currentEventId == 0L || _isReminderSending.value) return
         viewModelScope.launch {
+            _isReminderSending.value = true
             _error.value = null
             when (val result = safeApiCall { apiService.sendReminders(currentEventId) }) {
                 is ApiResult.Error -> {
                     _error.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
-                is ApiResult.Success -> { }
+                is ApiResult.Success -> {
+                    SnackbarManager.show("Pengingat sedang dikirim")
+                }
             }
+            _isReminderSending.value = false
         }
     }
 }

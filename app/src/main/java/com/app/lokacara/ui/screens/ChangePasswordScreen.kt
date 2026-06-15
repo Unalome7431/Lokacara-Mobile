@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.viewmodel.ChangePasswordViewModel
 
 @Composable
@@ -52,7 +53,7 @@ fun ChangePasswordScreen(
         if (changeSuccess) {
             viewModel.resetChangeSuccess()
             kotlinx.coroutines.delay(1500)
-            navController.popBackStack()
+            navController.navigateBackOrHome()
         }
     }
 
@@ -60,7 +61,7 @@ fun ChangePasswordScreen(
 
     ProfilePageScaffold(
         title = stringResource(R.string.change_password_button),
-        onBack = { navController.popBackStack() }
+        onBack = { navController.navigateBackOrHome() }
     ) {
         Column(
             modifier = Modifier

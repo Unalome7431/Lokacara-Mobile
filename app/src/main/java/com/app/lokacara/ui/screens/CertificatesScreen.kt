@@ -20,7 +20,8 @@ import com.app.lokacara.model.CertificateData
 import com.app.lokacara.ui.components.CertificateCard
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.ProfilePageScaffold
-import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.Primary500
@@ -34,7 +35,7 @@ fun CertificatesScreen(
     val certificates by viewModel.certificates.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    ProfilePageScaffold(title = "Sertifikat", onBack = { navController.popBackStack() }) {
+    ProfilePageScaffold(title = "Sertifikat", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && certificates.isEmpty()) {
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize(),
@@ -53,7 +54,7 @@ fun CertificatesScreen(
                     item {
                         EmptyEventState(
                             text = "Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya",
-                            onClick = { navController.navigate(Screen.Explore.createRoute("")) }
+                            onClick = { navController.navigateToExplore() }
                         )
                     }
                 } else {

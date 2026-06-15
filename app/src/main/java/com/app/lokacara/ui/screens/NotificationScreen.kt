@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.ui.components.NotificationCard
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.NotificationViewModel
 import androidx.compose.ui.res.stringResource
@@ -46,15 +47,16 @@ fun NotificationScreen(
         ) {
 
             IconButton(
-                onClick = { navController.popBackStack() },
+                onClick = { navController.navigateBackOrHome() },
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .size(24.dp)
+                    .size(40.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowBackIosNew,
                     contentDescription = "Kembali",
-                    tint = Gray900
+                    tint = Gray900,
+                    modifier = Modifier.size(22.dp)
                 )
             }
 

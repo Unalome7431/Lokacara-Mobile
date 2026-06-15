@@ -36,13 +36,18 @@ class QrScanViewModel @Inject constructor(
         currentEventId = eventId
     }
 
-    fun scan() {
-        val token = qrToken.value.trim()
+    fun updateQrToken(value: String) {
+        qrToken.value = value
+    }
+
+    fun scan(rawToken: String = qrToken.value) {
+        val token = rawToken.trim()
         if (token.isEmpty()) {
             _error.value = "Masukkan kode QR"
             return
         }
         if (currentEventId == 0L) return
+        qrToken.value = token
 
         viewModelScope.launch {
             _isLoading.value = true
@@ -65,6 +70,10 @@ class QrScanViewModel @Inject constructor(
     fun reset() {
         qrToken.value = ""
         _result.value = null
+        _error.value = null
+    }
+
+    fun clearError() {
         _error.value = null
     }
 }

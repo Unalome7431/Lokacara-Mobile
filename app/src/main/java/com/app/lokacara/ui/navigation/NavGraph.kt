@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -79,7 +78,11 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popExitTransition = screenPopExit
         ) {
             RegisterScreen(
-                onNavigateToLogin = { rootNavController.navigate(Screen.Login.route) },
+                onNavigateToLogin = {
+                    rootNavController.navigate(Screen.Login.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLoginSuccess = {
                     rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
@@ -95,7 +98,11 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popExitTransition = screenPopExit
         ) {
             LoginScreen(
-                onNavigateToRegister = { rootNavController.navigate(Screen.Register.route) },
+                onNavigateToRegister = {
+                    rootNavController.navigate(Screen.Register.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLoginSuccess = {
                     rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
@@ -126,7 +133,9 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            BottomNavbar(navController = internalNavController)
+            if (currentRoute.isMainTabRoute()) {
+                BottomNavbar(navController = internalNavController)
+            }
         }
     ) { innerPadding ->
         Box(
@@ -199,14 +208,13 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     popExitTransition = { fadeOut(tween(200)) }
                 ) {
                     CreateEventScreen(
-                        onBack = { internalNavController.popBackStack() },
+                        onBack = { internalNavController.navigateBackOrHome() },
                         onPublish = {
                             internalNavController.navigate(Screen.MyEvents.route) {
-                                popUpTo(internalNavController.graph.findStartDestination().id) {
-                                    saveState = true
+                                popUpTo(Screen.CreateEvent.route) {
+                                    inclusive = true
                                 }
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         }
                     )

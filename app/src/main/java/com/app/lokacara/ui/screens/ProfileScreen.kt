@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,11 +50,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
 import com.app.lokacara.R
-import com.app.lokacara.ui.components.ProfileAvatarPlaceholder
+import com.app.lokacara.ui.components.ProfileAvatarImage
 import com.app.lokacara.ui.components.ProfileStatChip
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateToLoginAndClearMain
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray600
@@ -64,6 +64,7 @@ import com.app.lokacara.ui.theme.NunitoFont
 import com.app.lokacara.ui.theme.PlusJakartaSansFont
 import com.app.lokacara.ui.theme.Primary100
 import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.Secondary100
 import com.app.lokacara.ui.theme.Secondary500
 import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SemanticErrorLight
@@ -162,7 +163,8 @@ fun ProfileScreen(
                     icon = Icons.Rounded.Settings,
                     title = stringResource(R.string.profile_settings),
                     subtitle = "Keamanan, preferensi, dan bantuan",
-                    onClick = { navController.navigate(Screen.Settings.route) }
+                    onClick = { navController.navigate(Screen.Settings.route) },
+                    accentColor = Primary500
                 )
             }
 
@@ -171,12 +173,13 @@ fun ProfileScreen(
                     icon = Icons.Rounded.Info,
                     title = stringResource(R.string.profile_about),
                     subtitle = "Informasi aplikasi Lokacara",
-                    onClick = { navController.navigate(Screen.About.route) }
+                    onClick = { navController.navigate(Screen.About.route) },
+                    accentColor = Secondary500
                 )
             }
 
             item {
-                ProfileLogoutRow(onClick = { viewModel.logout { rootNavController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } })
+                ProfileLogoutRow(onClick = { viewModel.logout { rootNavController.navigateToLoginAndClearMain() } })
             }
         }
     }
@@ -195,30 +198,30 @@ private fun ProfileIdentityCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.White.copy(alpha = 0.78f), RoundedCornerShape(24.dp))
     ) {
         Column(
             modifier = Modifier
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(Color.White, Primary100.copy(alpha = 0.36f), Color.White)
+                        colors = listOf(
+                            Color.White,
+                            Primary100.copy(alpha = 0.42f),
+                            Secondary100.copy(alpha = 0.30f)
+                        )
                     )
                 )
                 .padding(18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (imageUrl.isNullOrBlank()) {
-                    ProfileAvatarPlaceholder(modifier = Modifier.size(82.dp))
-                } else {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Profile Picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(82.dp)
-                            .clip(CircleShape)
-                    )
-                }
+                ProfileAvatarImage(
+                    imageModel = imageUrl,
+                    modifier = Modifier
+                        .size(82.dp)
+                        .clip(CircleShape)
+                )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -302,20 +305,45 @@ private fun ProfileShortcutTile(
             .clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            accentColor.copy(alpha = 0.12f),
+                            Color.White,
+                            Color.White
+                        )
+                    )
+                )
+                .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(accentColor.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = accentColor,
-                    modifier = Modifier.size(22.dp)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color.White.copy(alpha = 0.78f), CircleShape)
+                        .border(1.dp, accentColor.copy(alpha = 0.16f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = accentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .width(24.dp)
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(accentColor.copy(alpha = 0.45f))
                 )
             }
 
@@ -349,7 +377,8 @@ private fun ProfileUtilityRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    accentColor: Color = Primary500
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -360,16 +389,22 @@ private fun ProfileUtilityRow(
             .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(accentColor.copy(alpha = 0.08f), Color.White, Color.White)
+                    )
+                )
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Gray50, CircleShape),
+                    .background(accentColor.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = title, tint = Primary500, modifier = Modifier.size(21.dp))
+                Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(21.dp))
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {

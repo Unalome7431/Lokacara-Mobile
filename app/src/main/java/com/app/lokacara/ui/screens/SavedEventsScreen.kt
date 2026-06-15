@@ -23,6 +23,8 @@ import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
 import com.app.lokacara.ui.theme.Primary500
@@ -36,7 +38,7 @@ fun SavedEventsScreen(
     val savedEvents by viewModel.savedEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    ProfilePageScaffold(title = "Event Tersimpan", onBack = { navController.popBackStack() }) {
+    ProfilePageScaffold(title = "Event Tersimpan", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && savedEvents.isEmpty()) {
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.fillMaxSize(),
@@ -59,7 +61,7 @@ fun SavedEventsScreen(
                         item {
                             EmptyEventState(
                                 text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                                onClick = { navController.navigate(Screen.Explore.createRoute("")) { launchSingleTop = true } }
+                                onClick = { navController.navigateToExplore() }
                             )
                         }
                     } else {

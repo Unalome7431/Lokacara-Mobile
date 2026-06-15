@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 
 @Composable
@@ -49,7 +50,7 @@ fun HelpCenterScreen(navController: NavController) {
 
     ProfilePageScaffold(
         title = "Pusat Bantuan",
-        onBack = { navController.popBackStack() }
+        onBack = { navController.navigateBackOrHome() }
     ) {
         Column(
             modifier = Modifier

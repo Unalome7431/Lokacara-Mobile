@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,9 +44,7 @@ import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.draw.drawBehind
+import java.io.File
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.foundation.layout.statusBarsPadding
 
@@ -65,23 +64,36 @@ fun ProfilePageScaffold(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 24.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 18.dp)
+                .height(52.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.White,
+                            Primary100.copy(alpha = 0.34f),
+                            Secondary100.copy(alpha = 0.44f)
+                        )
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.78f), RoundedCornerShape(18.dp))
         ) {
             if (onBack != null) {
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .size(28.dp)
+                        .size(40.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.ArrowBackIosNew,
                         contentDescription = "Kembali",
-                        tint = Gray900
+                        tint = Primary500,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             } else {
-                Spacer(modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.size(40.dp))
             }
 
             Text(
@@ -89,7 +101,7 @@ fun ProfilePageScaffold(
                 modifier = Modifier.align(Alignment.Center),
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 color = Gray900
             )
 
@@ -144,6 +156,38 @@ fun ProfileAvatarPlaceholder(modifier: Modifier = Modifier) {
             contentDescription = "Profile Picture",
             tint = Primary500,
             modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
+@Composable
+fun ProfileAvatarImage(
+    imageModel: Any?,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "Profile Picture"
+) {
+    val resolvedModel = remember(imageModel) {
+        when (imageModel) {
+            is String -> imageModel
+                .trim()
+                .takeIf { it.isNotEmpty() }
+                ?.let { value ->
+                    if (value.startsWith("/") && File(value).exists()) File(value) else value
+                }
+            else -> imageModel
+        }
+    }
+    var hasError by remember(resolvedModel) { mutableStateOf(false) }
+
+    if (resolvedModel == null || hasError) {
+        ProfileAvatarPlaceholder(modifier = modifier)
+    } else {
+        AsyncImage(
+            model = resolvedModel,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            onError = { hasError = true },
+            modifier = modifier
         )
     }
 }
@@ -219,31 +263,47 @@ fun EmptyEventState(
     text: String = stringResource(R.string.empty_no_events),
     onClick: () -> Unit
 ) {
-    val stroke = Stroke(
-        width = 3f,
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
-    )
-    val color = Gray500
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 24.dp)
-            .drawBehind {
-                drawRoundRect(color = color, style = stroke, cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()))
-            }
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        Color.White,
+                        Primary100.copy(alpha = 0.38f),
+                        Secondary100.copy(alpha = 0.44f)
+                    )
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(24.dp))
             .clickable { onClick() }
-            .padding(vertical = 48.dp, horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .padding(vertical = 34.dp, horizontal = 22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .background(Color.White.copy(alpha = 0.86f), CircleShape)
+                .border(1.dp, Primary100, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = null,
+                tint = Primary500,
+                modifier = Modifier.size(28.dp)
+            )
+        }
         Text(
             text = text,
             fontFamily = NunitoFont,
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             color = Gray900,
+            lineHeight = 22.sp,
             textAlign = TextAlign.Center
         )
     }
