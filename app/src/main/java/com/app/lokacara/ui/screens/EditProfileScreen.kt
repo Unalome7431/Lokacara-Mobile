@@ -58,6 +58,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.components.ProfileAvatarImage
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.navigation.navigateBackOrHome
@@ -343,26 +344,15 @@ fun EditFieldDialog(
             )
         },
         text = {
-            OutlinedTextField(
+            LokacaraTextField(
                 value = text,
                 onValueChange = { text = it },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                placeholder = "Masukkan $label",
+                isOutlined = true,
+                keyboardType = keyboardType,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary500,
-                    unfocusedBorderColor = Gray300,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Gray900,
-                    unfocusedTextColor = Gray900
-                ),
-                textStyle = LocalTextStyle.current.copy(
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
-                )
+                containerColor = Color.White
             )
         },
         confirmButton = {

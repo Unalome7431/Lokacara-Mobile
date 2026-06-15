@@ -44,9 +44,8 @@ import com.app.lokacara.R
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.ui.theme.Gray400
 import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.ui.theme.SvgPrimaryBlue
-
-private val SplashBackground = Color(0xFFFAF8FF)
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
@@ -67,7 +66,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SplashBackground),
+            .background(SvgBackground),
         contentAlignment = Alignment.Center
     ) {
         SplashContent(splashPhase = splashPhase)

@@ -111,25 +111,40 @@ fun TicketsScreen(
         return
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
+    Column(modifier = Modifier.fillMaxSize().background(SvgBackground).statusBarsPadding()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_lokacara),
-                contentDescription = "Logo",
-                modifier = Modifier.height(34.dp),
-                contentScale = ContentScale.Fit
-            )
-            Row {
-                IconButton(onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) }) {
-                    Icon(Icons.Outlined.Notifications, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Bookmark.route) }) {
-                    Icon(Icons.Outlined.FavoriteBorder, null, tint = SvgOrange, modifier = Modifier.size(26.dp))
+            Column {
+                Text(
+                    text = "Tiket Saya",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 24.sp,
+                    color = Gray900
+                )
+                Text(
+                    text = "Daftar event yang kamu ikuti",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 13.sp,
+                    color = Gray500
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) },
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.Notifications, null, tint = Gray900, modifier = Modifier.size(22.dp))
+                    }
                 }
             }
         }
@@ -139,11 +154,35 @@ fun TicketsScreen(
             userName = userName
         )
 
-        TicketTabRow(
-            tabs = tabs,
-            selectedTab = selectedTab,
-            onSelect = { selectedTab = it }
-        )
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            tabs.forEachIndexed { index, title ->
+                val selected = selectedTab == index
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedTab = index },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = title,
+                        color = if (selected) Primary500 else Gray500,
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                            .background(if (selected) Primary500 else Color.Transparent)
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(thickness = 1.dp, color = Gray100.copy(alpha = 0.5f))
 
         if (error != null) {
             InlineTicketError(message = error ?: "", onRetry = { viewModel.refresh() })

@@ -106,6 +106,34 @@ class AuthViewModel @Inject constructor(
     private val _forgotPasswordError = MutableStateFlow<String?>(null)
     val forgotPasswordError: StateFlow<String?> = _forgotPasswordError.asStateFlow()
 
+    private val _changePasswordSuccess = MutableStateFlow(false)
+    val changePasswordSuccess: StateFlow<Boolean> = _changePasswordSuccess.asStateFlow()
+
+    val oldPassword = MutableStateFlow("")
+    val newPassword = MutableStateFlow("")
+
+    fun changePassword() {
+        if (oldPassword.value.isBlank()) { _errorMessage.value = "Kata sandi lama harus diisi"; return }
+        if (newPassword.value.length < 6) { _errorMessage.value = "Kata sandi baru minimal 6 karakter"; return }
+        if (newPassword.value != confirmPassword.value) { _errorMessage.value = "Password baru dan konfirmasi tidak sama"; return }
+        viewModelScope.launch {
+            _errorMessage.value = null
+            _isLoading.value = true
+            when (val result = repository.changePassword(oldPassword.value, newPassword.value, confirmPassword.value)) {
+                is ApiResult.Success -> {
+                    _changePasswordSuccess.value = true
+                    SnackbarManager.show("Kata sandi berhasil diubah")
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                }
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun resetChangePasswordSuccess() { _changePasswordSuccess.value = false }
+
     fun forgotPassword(email: String) {
         if (email.isBlank()) {
             _forgotPasswordError.value = "Email harus diisi"

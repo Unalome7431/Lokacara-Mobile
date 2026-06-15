@@ -58,7 +58,8 @@ fun EventCard(
     event: Event,
     onBookmarkClick: () -> Unit = {},
     onClick: (() -> Unit)? = null,
-    showBookmark: Boolean = true
+    showBookmark: Boolean = true,
+    trailingContent: @Composable (ColumnScope.() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -115,6 +116,14 @@ fun EventCard(
                         }
                     }
                 }
+            }
+            if (trailingContent != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    content = trailingContent
+                )
             }
         }
     }

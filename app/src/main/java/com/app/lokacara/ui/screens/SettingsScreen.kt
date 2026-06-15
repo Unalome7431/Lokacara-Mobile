@@ -60,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
+import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.theme.Gray100
 import com.app.lokacara.ui.theme.Gray500
@@ -124,14 +125,13 @@ fun SettingsScreen(
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
+                    LokacaraTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text(stringResource(R.string.auth_password_placeholder), fontFamily = NunitoFont) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        textStyle = LocalTextStyle.current.copy(fontFamily = NunitoFont)
+                        placeholder = stringResource(R.string.auth_password_placeholder),
+                        isPassword = true,
+                        isOutlined = true,
+                        containerColor = Color.White
                     )
                     if (deleteError != null) {
                         Spacer(modifier = Modifier.height(8.dp))

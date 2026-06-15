@@ -4,6 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +51,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -133,56 +138,9 @@ fun EventDetailScreen(
         if (eventId > 0L) viewModel.loadEvent(eventId) else navController.navigateBackOrHome()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SvgBackground)
-    ) {
-        when {
-            isLoading && event.id == 0L -> EventDetailLoading(onBack = { navController.navigateBackOrHome() })
-            error != null -> EventDetailError(
-                message = error ?: stringResource(R.string.error_occurred),
-                onBack = { navController.navigateBackOrHome() },
-                onRetry = { viewModel.loadEvent(eventId) }
-            )
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 132.dp)
-                ) {
-                    item {
-                        EventHero(
-                            event = event,
-                            onBack = { navController.navigateBackOrHome() },
-                            onShare = { shareEvent(context, event) },
-                            onBookmark = { viewModel.toggleBookmark() }
-                        )
-                    }
-
-                    item {
-                        EventDetailContent(
-                            event = event,
-                            isRegistered = isRegistered,
-                            isHost = isHost,
-                            isQrLoading = isQrLoading,
-                            qrToken = qrToken,
-                            onOpenMap = { openEventMap(context, event) },
-                            onOpenLink = { openEventLink(context, event) }
-                        )
-                    }
-
-                    if (isHost) {
-                        item {
-                            HostManagementPanel(
-                                eventId = event.id,
-                                navController = navController,
-                                isReminderSending = isReminderSending,
-                                onSendReminder = { viewModel.sendReminders() }
-                            )
-                        }
-                    }
-                }
-
+    Scaffold(
+        bottomBar = {
+            if (event.id != 0L && !isLoading) {
                 EventBottomActionBar(
                     isHost = isHost,
                     isRegistered = isRegistered,
@@ -191,9 +149,61 @@ fun EventDetailScreen(
                     onLeave = { showLeaveConfirm = true },
                     onOpenTickets = { navController.navigateToMainTab(Screen.Tickets.route) },
                     onViewAttendees = { navController.navigate(Screen.Attendees.createRoute(event.id)) },
-                    onScanQr = { navController.navigate(Screen.QrScan.createRoute(event.id)) },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    onScanQr = { navController.navigate(Screen.QrScan.createRoute(event.id)) }
                 )
+            }
+        },
+        containerColor = SvgBackground
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
+        ) {
+            when {
+                isLoading && event.id == 0L -> EventDetailLoading(onBack = { navController.navigateBackOrHome() })
+                error != null -> EventDetailError(
+                    message = error ?: stringResource(R.string.error_occurred),
+                    onBack = { navController.navigateBackOrHome() },
+                    onRetry = { viewModel.loadEvent(eventId) }
+                )
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        item {
+                            EventHero(
+                                event = event,
+                                onBack = { navController.navigateBackOrHome() },
+                                onShare = { shareEvent(context, event) },
+                                onBookmark = { viewModel.toggleBookmark() }
+                            )
+                        }
+
+                        item {
+                            EventDetailContent(
+                                event = event,
+                                isRegistered = isRegistered,
+                                isHost = isHost,
+                                isQrLoading = isQrLoading,
+                                qrToken = qrToken,
+                                onOpenMap = { openEventMap(context, event) },
+                                onOpenLink = { openEventLink(context, event) }
+                            )
+                        }
+
+                        if (isHost) {
+                            item {
+                                HostManagementPanel(
+                                    eventId = event.id,
+                                    navController = navController,
+                                    isReminderSending = isReminderSending,
+                                    onSendReminder = { viewModel.sendReminders() }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -598,7 +608,6 @@ private fun EventLocationCard(
 private fun EventDescription(text: String) {
     var expanded by remember(text) { mutableStateOf(false) }
     val shouldCollapse = text.length > 320
-    val displayText = if (!expanded && shouldCollapse) text.take(320).trimEnd() + "..." else text
 
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -614,23 +623,39 @@ private fun EventDescription(text: String) {
                 color = Gray900
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = displayText.ifBlank { "Deskripsi event belum tersedia." },
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 14.sp,
-                color = Gray700,
-                lineHeight = 22.sp
-            )
+            
+            androidx.compose.animation.AnimatedContent(
+                targetState = expanded,
+                transitionSpec = {
+                    fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                },
+                label = "description_expansion"
+            ) { isExpanded ->
+                val displayText = if (!isExpanded && shouldCollapse) text.take(320).trimEnd() + "..." else text
+                Text(
+                    text = displayText.ifBlank { "Deskripsi event belum tersedia." },
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 14.sp,
+                    color = Gray700,
+                    lineHeight = 22.sp
+                )
+            }
+            
             if (shouldCollapse) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = if (expanded) "Tampilkan lebih sedikit" else "Baca selengkapnya",
-                    fontFamily = PlusJakartaSansFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Primary500,
-                    modifier = Modifier.clickable { expanded = !expanded }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = if (expanded) "Tampilkan lebih sedikit" else "Baca selengkapnya",
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Primary500,
+                        modifier = Modifier.clickable { expanded = !expanded }
+                    )
+                }
             }
         }
     }

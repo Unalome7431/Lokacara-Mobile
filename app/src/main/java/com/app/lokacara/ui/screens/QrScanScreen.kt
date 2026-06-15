@@ -124,6 +124,25 @@ fun QrScanScreen(
     var lastScannedToken by remember { mutableStateOf<String?>(null) }
     var lastScanAt by remember { mutableLongStateOf(0L) }
 
+    var showSuccessOverlay by remember { mutableStateOf(false) }
+    var showErrorOverlay by remember { mutableStateOf(false) }
+
+    LaunchedEffect(result) {
+        if (result != null && mode == QrMode.CAMERA) {
+            showSuccessOverlay = true
+            kotlinx.coroutines.delay(1500)
+            showSuccessOverlay = false
+        }
+    }
+
+    LaunchedEffect(error) {
+        if (error != null && mode == QrMode.CAMERA) {
+            showErrorOverlay = true
+            kotlinx.coroutines.delay(1500)
+            showErrorOverlay = false
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         hasCameraPermission = granted
         if (!granted) mode = QrMode.MANUAL
@@ -147,6 +166,8 @@ fun QrScanScreen(
             onModeSelected = {
                 mode = it
                 viewModel.clearError()
+                showSuccessOverlay = false
+                showErrorOverlay = false
             }
         )
 
@@ -164,7 +185,9 @@ fun QrScanScreen(
                             lastScanAt = now
                             viewModel.scan(token)
                         }
-                    }
+                    },
+                    showSuccessOverlay = showSuccessOverlay,
+                    showErrorOverlay = showErrorOverlay
                 )
             } else {
                 CameraPermissionCard(
@@ -252,38 +275,48 @@ private fun QrModeSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White.copy(alpha = 0.88f))
-            .border(1.dp, Gray100, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(50))
+            .background(Color.White)
+            .border(1.dp, Gray100, RoundedCornerShape(50))
             .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        verticalAlignment = Alignment.CenterVertically
     ) {
         QrMode.entries.forEach { item ->
             val selected = selectedMode == item
-            Row(
+            val background by androidx.compose.animation.animateColorAsState(
+                targetValue = if (selected) Primary500 else Color.Transparent,
+                label = "mode_bg"
+            )
+            val contentColor by androidx.compose.animation.animateColorAsState(
+                targetValue = if (selected) Color.White else Gray600,
+                label = "mode_fg"
+            )
+            
+            Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (selected) Primary500 else Color.Transparent)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(background)
                     .clickable { onModeSelected(item) },
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (item == QrMode.CAMERA) Icons.Outlined.PhotoCamera else Icons.Outlined.Edit,
-                    contentDescription = null,
-                    tint = if (selected) Color.White else Gray500,
-                    modifier = Modifier.size(17.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    item.label,
-                    fontFamily = PlusJakartaSansFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = if (selected) Color.White else Gray600
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Icon(
+                        imageVector = if (item == QrMode.CAMERA) Icons.Outlined.PhotoCamera else Icons.Outlined.Edit,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = item.label,
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = contentColor
+                    )
+                }
             }
         }
     }
@@ -292,7 +325,9 @@ private fun QrModeSelector(
 @Composable
 private fun QrCameraScanner(
     isProcessing: Boolean,
-    onQrFound: (String) -> Unit
+    onQrFound: (String) -> Unit,
+    showSuccessOverlay: Boolean,
+    showErrorOverlay: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -304,6 +339,8 @@ private fun QrCameraScanner(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             QrCameraPreview(onQrFound = onQrFound)
+            
+            // Camera viewport frame
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -312,6 +349,33 @@ private fun QrCameraScanner(
                     .background(Color.White.copy(alpha = 0.08f))
                     .border(2.dp, Color.White.copy(alpha = 0.74f), RoundedCornerShape(28.dp))
             )
+
+            // Result Overlay
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showSuccessOverlay || showErrorOverlay,
+                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.8f),
+                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.scaleOut(targetScale = 1.2f),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .background(
+                            if (showSuccessOverlay) SemanticSuccessBase.copy(alpha = 0.9f)
+                            else SemanticErrorBase.copy(alpha = 0.9f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (showSuccessOverlay) Icons.Default.CheckCircle else Icons.Outlined.ErrorOutline,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
+
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -446,22 +510,19 @@ private fun ManualTokenCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.ContentPaste, contentDescription = null, tint = Primary500)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.qr_token_label), fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Gray900)
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            com.app.lokacara.ui.components.LokacaraTextField(
                 value = token,
                 onValueChange = onTokenChange,
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
+                placeholder = stringResource(R.string.qr_token_placeholder),
+                label = stringResource(R.string.qr_token_label),
+                isOutlined = true,
                 shape = RoundedCornerShape(16.dp),
-                placeholder = { Text(stringResource(R.string.qr_token_placeholder), color = Gray400, fontFamily = PlusJakartaSansFont) }
+                containerColor = Color.White,
+                leadingIcon = { Icon(Icons.Outlined.ContentPaste, null, tint = Primary500, modifier = Modifier.size(20.dp)) }
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            
             Button(
                 onClick = onSubmit,
                 enabled = !isLoading,
@@ -473,7 +534,7 @@ private fun ManualTokenCard(
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                 } else {
                     Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(22.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(stringResource(R.string.qr_verify_button), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }

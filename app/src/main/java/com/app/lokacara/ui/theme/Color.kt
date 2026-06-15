@@ -62,3 +62,12 @@ val SvgPrimaryBlue = Color(0xFF0D59F2)
 val SvgOrange = Color(0xFFFFAA00)
 val SvgTextDark = Color(0xFF333333)
 val SvgChipGray = Color(0xFFCCCCCC)
+
+// Create Event Colors
+val CreateEventLightBlue = Color(0xFFD6E4FF)
+val CreateEventDarkerBlue = Color(0xFFA1C1FF)
+val CreateEventNeutralSurface = Color(0xFFF6F8FC)
+val CreateEventNeutralTrack = Color(0xFFE7ECF7)
+val CreateEventNeutralPill = Color(0xFFF2F4F8)
+val CreateEventDashedBorder = Color(0xFF666666)
+

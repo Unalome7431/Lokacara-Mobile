@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.navigateBackOrHome
@@ -89,21 +90,15 @@ fun HelpCenterScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(
+            LokacaraTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cari topik bantuan...", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
+                placeholder = "Cari topik bantuan...",
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, tint = Gray400) },
+                isOutlined = true,
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Primary500,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Gray900,
-                    unfocusedTextColor = Gray900
-                )
+                containerColor = Color.White
             )
 
             Spacer(modifier = Modifier.height(32.dp))

@@ -39,7 +39,9 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -83,6 +85,7 @@ import com.app.lokacara.ui.theme.Secondary500
 import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SemanticErrorLight
 import com.app.lokacara.ui.theme.SemanticSuccessBase
+import com.app.lokacara.ui.theme.SemanticSuccessLight
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.viewmodel.AttendeesViewModel
 
@@ -201,7 +204,8 @@ fun AttendeesScreen(
                         onSearchQueryChange = { searchQuery = it },
                         onClearSearch = { searchQuery = "" },
                         selectedFilter = filter,
-                        onFilterChange = { filter = it }
+                        onFilterChange = { filter = it },
+                        matchCount = filteredAttendees.size
                     )
                 }
 
@@ -354,7 +358,8 @@ private fun AttendeeControlPanel(
     onSearchQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
     selectedFilter: AttendeeFilter,
-    onFilterChange: (AttendeeFilter) -> Unit
+    onFilterChange: (AttendeeFilter) -> Unit,
+    matchCount: Int
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
@@ -365,11 +370,12 @@ private fun AttendeeControlPanel(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
+            com.app.lokacara.ui.components.LokacaraTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
+                placeholder = "Cari nama atau email peserta",
+                isOutlined = true,
                 shape = RoundedCornerShape(18.dp),
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Primary500) },
                 trailingIcon = {
@@ -379,34 +385,48 @@ private fun AttendeeControlPanel(
                         }
                     }
                 },
-                placeholder = {
-                    Text("Cari nama atau email peserta", fontFamily = PlusJakartaSansFont, color = Gray400)
-                }
+                containerColor = Color.White
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AttendeeFilter.entries.forEach { item ->
-                    FilterChip(
-                        selected = selectedFilter == item,
-                        onClick = { onFilterChange(item) },
-                        label = {
-                            Text(
-                                item.label,
-                                fontFamily = PlusJakartaSansFont,
-                                fontWeight = if (selectedFilter == item) FontWeight.Bold else FontWeight.Medium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Primary500,
-                            selectedLabelColor = Color.White,
-                            containerColor = Gray100,
-                            labelColor = Gray600
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AttendeeFilter.entries.forEach { item ->
+                        FilterChip(
                             selected = selectedFilter == item,
-                            borderColor = Gray200,
-                            selectedBorderColor = Primary500
+                            onClick = { onFilterChange(item) },
+                            label = {
+                                Text(
+                                    item.label,
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontWeight = if (selectedFilter == item) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Primary500,
+                                selectedLabelColor = Color.White,
+                                containerColor = Gray100,
+                                labelColor = Gray600
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = selectedFilter == item,
+                                borderColor = Gray200,
+                                selectedBorderColor = Primary500
+                            )
                         )
+                    }
+                }
+                
+                if (searchQuery.isNotBlank() || selectedFilter != AttendeeFilter.ALL) {
+                    Text(
+                        text = "$matchCount ditemukan",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Gray500,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -461,7 +481,7 @@ private fun AttendeeCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(if (isCheckedIn) Secondary100 else Primary100),
+                    .background(if (isCheckedIn) SemanticSuccessLight else Primary100),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -469,7 +489,7 @@ private fun AttendeeCard(
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 18.sp,
-                    color = if (isCheckedIn) Secondary500 else Primary500
+                    color = if (isCheckedIn) SemanticSuccessBase else Primary500
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -486,24 +506,36 @@ private fun AttendeeCard(
                 attendee.user?.email?.takeIf { it.isNotBlank() }?.let {
                     Text(it, fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Spacer(modifier = Modifier.height(5.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isCheckedIn) Icons.Filled.CheckCircle else Icons.Outlined.Cancel,
-                        contentDescription = null,
-                        tint = if (isCheckedIn) SemanticSuccessBase else Gray400,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = if (isCheckedIn) stringResource(R.string.attendees_present) else stringResource(R.string.attendees_not_checked_in),
-                        fontFamily = PlusJakartaSansFont,
-                        fontSize = 12.sp,
-                        color = if (isCheckedIn) SemanticSuccessBase else Gray500
-                    )
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                Surface(
+                    color = if (isCheckedIn) SemanticSuccessLight else Gray100,
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isCheckedIn) Icons.Filled.CheckCircle else Icons.Outlined.Cancel,
+                            contentDescription = null,
+                            tint = if (isCheckedIn) SemanticSuccessBase else Gray500,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = if (isCheckedIn) stringResource(R.string.attendees_present) else stringResource(R.string.attendees_not_checked_in),
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCheckedIn) SemanticSuccessBase else Gray600
+                        )
+                    }
                 }
+
                 attendee.checked_in_at?.takeIf { it.isNotBlank() }?.let {
-                    Text("Check-in: $it", fontFamily = PlusJakartaSansFont, fontSize = 11.sp, color = Gray500)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Pukul $it", fontFamily = PlusJakartaSansFont, fontSize = 10.sp, color = Gray400)
                 }
             }
             IconButton(enabled = !isToggling, onClick = onToggle) {

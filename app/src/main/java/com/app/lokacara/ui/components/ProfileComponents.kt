@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
@@ -27,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -347,40 +350,55 @@ fun EmptyEventState(
                 Brush.linearGradient(
                     listOf(
                         Color.White,
-                        Primary100.copy(alpha = 0.38f),
-                        Secondary100.copy(alpha = 0.44f)
+                        Primary100.copy(alpha = 0.15f),
+                        Secondary100.copy(alpha = 0.15f)
                     )
                 )
             )
-            .border(1.dp, Color.White.copy(alpha = 0.82f), RoundedCornerShape(24.dp))
-            .clickable { onClick() }
-            .padding(vertical = 34.dp, horizontal = 22.dp),
+            .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(24.dp))
+            .padding(vertical = 42.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .size(58.dp)
-                .background(Color.White.copy(alpha = 0.86f), CircleShape)
-                .border(1.dp, Primary100, CircleShape),
+                .size(80.dp)
+                .background(Color.White, CircleShape)
+                .shadow(2.dp, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Outlined.Search,
+                imageVector = androidx.compose.material.icons.Icons.Outlined.EventNote,
                 contentDescription = null,
                 tint = Primary500,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(40.dp)
             )
         }
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
         Text(
             text = text,
             fontFamily = NunitoFont,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             color = Gray900,
-            lineHeight = 22.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
         )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = onClick,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+            modifier = Modifier.height(48.dp).padding(horizontal = 16.dp)
+        ) {
+            Icon(androidx.compose.material.icons.Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Buat Event Sekarang", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

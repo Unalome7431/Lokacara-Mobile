@@ -32,50 +32,111 @@ fun LokacaraTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    label: String? = null,
     isPassword: Boolean = false,
-    keyboardType: KeyboardType = KeyboardType.Text
+    isOutlined: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    containerColor: Color = Secondary100,
+    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.small,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
-        placeholder = {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier.fillMaxWidth()) {
+        if (label != null) {
             Text(
-                text = placeholder,
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 12.sp,
-                color = Gray500
+                text = label,
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = Gray700
             )
-        },
-        visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        trailingIcon = {
-            if (isPassword) {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = null,
-                        tint = Gray500,
-                        modifier = Modifier.size(24.dp)
+        }
+        
+        if (isOutlined) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 12.sp,
+                        color = Gray500
                     )
-                }
-            }
-        },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Secondary100,
-                unfocusedContainerColor = Secondary100,
-                disabledContainerColor = Secondary100,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                focusedTextColor = Gray900,
-                unfocusedTextColor = Gray900
-            ),
-            textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp),
-            shape = MaterialTheme.shapes.small,
-        singleLine = true
-    )
+                },
+                visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                leadingIcon = leadingIcon,
+                trailingIcon = if (isPassword) {
+                    {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "Sembunyikan kata sandi" else "Tampilkan kata sandi",
+                                tint = Gray500,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                } else trailingIcon,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Gray200,
+                    focusedBorderColor = Primary500,
+                    focusedContainerColor = containerColor,
+                    unfocusedContainerColor = containerColor,
+                    focusedTextColor = Gray900,
+                    unfocusedTextColor = Gray900
+                ),
+                textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp),
+                shape = shape,
+                singleLine = true
+            )
+        } else {
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 12.sp,
+                        color = Gray500
+                    )
+                },
+                visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                leadingIcon = leadingIcon,
+                trailingIcon = if (isPassword) {
+                    {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "Sembunyikan kata sandi" else "Tampilkan kata sandi",
+                                tint = Gray500,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                } else trailingIcon,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = containerColor,
+                    unfocusedContainerColor = containerColor,
+                    disabledContainerColor = containerColor,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Gray900,
+                    unfocusedTextColor = Gray900
+                ),
+                textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp),
+                shape = shape,
+                singleLine = true
+            )
+        }
+    }
 }
 
 @Composable

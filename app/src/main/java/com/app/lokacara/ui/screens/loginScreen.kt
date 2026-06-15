@@ -77,7 +77,7 @@ fun LoginScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.weight(0.1f))
 
         Text(
             text = stringResource(R.string.auth_login),
@@ -237,13 +237,13 @@ fun LoginScreen(
                         color = Gray500
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
+                    LokacaraTextField(
                         value = forgotEmail,
                         onValueChange = { forgotEmail = it },
-                        placeholder = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        placeholder = "Email",
+                        isOutlined = true,
+                        shape = RoundedCornerShape(12.dp),
+                        containerColor = Color.White
                     )
                     forgotPasswordError?.let { err ->
                         Spacer(modifier = Modifier.height(8.dp))

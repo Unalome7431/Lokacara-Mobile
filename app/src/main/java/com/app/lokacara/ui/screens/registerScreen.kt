@@ -73,7 +73,7 @@ fun RegisterScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(80.dp))
+        Spacer(modifier = Modifier.weight(0.05f))
 
         Text(
             text = "Daftar",
