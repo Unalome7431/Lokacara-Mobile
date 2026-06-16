@@ -291,7 +291,7 @@ private fun QrModeSelector(
                 targetValue = if (selected) Color.White else Gray600,
                 label = "mode_fg"
             )
-            
+
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -339,7 +339,7 @@ private fun QrCameraScanner(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             QrCameraPreview(onQrFound = onQrFound)
-            
+
             // Camera viewport frame
             Box(
                 modifier = Modifier
@@ -521,7 +521,7 @@ private fun ManualTokenCard(
             containerColor = Color.White,
             leadingIcon = { Icon(Icons.Outlined.ContentPaste, null, tint = Primary500, modifier = Modifier.size(20.dp)) }
         )
-        
+
         Button(
             onClick = onSubmit,
             enabled = !isLoading,

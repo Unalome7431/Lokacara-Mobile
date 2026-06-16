@@ -386,7 +386,7 @@ private fun AttendeeControlPanel(
                     )
                 }
             }
-            
+
             if (searchQuery.isNotBlank() || selectedFilter != AttendeeFilter.ALL) {
                 Text(
                     text = "$matchCount ditemukan",
@@ -467,7 +467,7 @@ private fun AttendeeCard(
                     Text(it, fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 Surface(
                     color = if (isCheckedIn) SemanticSuccessLight else Gray100,
                     shape = RoundedCornerShape(50)

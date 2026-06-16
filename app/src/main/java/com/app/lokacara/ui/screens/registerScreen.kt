@@ -73,9 +73,9 @@ fun RegisterScreen(
 
     androidx.compose.animation.AnimatedVisibility(
         visible = isVisible,
-        enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(500)) + 
+        enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(500)) +
                 androidx.compose.animation.slideInVertically(
-                    initialOffsetY = { 100 }, 
+                    initialOffsetY = { 100 },
                     animationSpec = androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.FastOutSlowInEasing)
                 )
     ) {
@@ -270,7 +270,7 @@ fun RegisterScreen(
                 contentDescription = "Logo Bawah",
                 modifier = Modifier.height(40.dp)
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

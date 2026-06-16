@@ -393,15 +393,15 @@ private fun EventDetailContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken)
-        
+
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
         EventInfoGrid(event = event)
-        
+
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
         FlatEventLocation(event = event, onOpenMap = onOpenMap, onOpenLink = onOpenLink)
-        
+
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
         FlatEventDescription(text = event.description)
@@ -626,7 +626,7 @@ private fun FlatEventDescription(text: String) {
             color = Gray900
         )
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         androidx.compose.animation.AnimatedContent(
             targetState = expanded,
             transitionSpec = {
@@ -643,7 +643,7 @@ private fun FlatEventDescription(text: String) {
                 lineHeight = 24.sp
             )
         }
-        
+
         if (shouldCollapse) {
             Spacer(modifier = Modifier.height(12.dp))
             Row(

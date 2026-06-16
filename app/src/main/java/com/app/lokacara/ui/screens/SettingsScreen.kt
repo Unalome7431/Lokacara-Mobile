@@ -201,7 +201,7 @@ fun SettingsScreen(
                 color = Gray900,
                 modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
             )
-            
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,7 +227,7 @@ fun SettingsScreen(
                 color = Gray900,
                 modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
             )
-            
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
