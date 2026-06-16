@@ -31,8 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.outlined.ContentPaste
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
@@ -41,10 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -100,11 +95,6 @@ import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import java.util.concurrent.Executors
 
-private enum class QrMode(val label: String) {
-    CAMERA("Kamera"),
-    MANUAL("Manual")
-}
-
 @Composable
 fun QrScanScreen(
     navController: NavController,
@@ -117,7 +107,6 @@ fun QrScanScreen(
     val result by viewModel.result.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    var mode by remember { mutableStateOf(QrMode.CAMERA) }
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -128,7 +117,7 @@ fun QrScanScreen(
     var showErrorOverlay by remember { mutableStateOf(false) }
 
     LaunchedEffect(result) {
-        if (result != null && mode == QrMode.CAMERA) {
+        if (result != null) {
             showSuccessOverlay = true
             kotlinx.coroutines.delay(1500)
             showSuccessOverlay = false
@@ -136,7 +125,7 @@ fun QrScanScreen(
     }
 
     LaunchedEffect(error) {
-        if (error != null && mode == QrMode.CAMERA) {
+        if (error != null) {
             showErrorOverlay = true
             kotlinx.coroutines.delay(1500)
             showErrorOverlay = false
@@ -145,7 +134,6 @@ fun QrScanScreen(
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         hasCameraPermission = granted
-        if (!granted) mode = QrMode.MANUAL
     }
 
     LaunchedEffect(eventId) {
@@ -161,46 +149,26 @@ fun QrScanScreen(
     ) {
         QrTopBar(onBack = { navController.navigateBackOrHome() })
 
-        QrModeSelector(
-            selectedMode = mode,
-            onModeSelected = {
-                mode = it
-                viewModel.clearError()
-                showSuccessOverlay = false
-                showErrorOverlay = false
-            }
-        )
-
         Spacer(modifier = Modifier.height(14.dp))
 
-        if (mode == QrMode.CAMERA) {
-            if (hasCameraPermission) {
-                QrCameraScanner(
-                    isProcessing = isLoading,
-                    onQrFound = { token ->
-                        val now = SystemClock.elapsedRealtime()
-                        val canScan = token != lastScannedToken || now - lastScanAt > 2_500L
-                        if (canScan) {
-                            lastScannedToken = token
-                            lastScanAt = now
-                            viewModel.scan(token)
-                        }
-                    },
-                    showSuccessOverlay = showSuccessOverlay,
-                    showErrorOverlay = showErrorOverlay
-                )
-            } else {
-                CameraPermissionCard(
-                    onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                    onUseManual = { mode = QrMode.MANUAL }
-                )
-            }
+        if (hasCameraPermission) {
+            QrCameraScanner(
+                isProcessing = isLoading,
+                onQrFound = { token ->
+                    val now = SystemClock.elapsedRealtime()
+                    val canScan = token != lastScannedToken || now - lastScanAt > 2_500L
+                    if (canScan) {
+                        lastScannedToken = token
+                        lastScanAt = now
+                        viewModel.scan(token)
+                    }
+                },
+                showSuccessOverlay = showSuccessOverlay,
+                showErrorOverlay = showErrorOverlay
+            )
         } else {
-            ManualTokenCard(
-                token = qrToken,
-                isLoading = isLoading,
-                onTokenChange = { viewModel.updateQrToken(it) },
-                onSubmit = { viewModel.scan() }
+            CameraPermissionCard(
+                onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) }
             )
         }
 
@@ -263,61 +231,6 @@ private fun QrTopBar(onBack: () -> Unit) {
                 )
             }
             Spacer(modifier = Modifier.size(44.dp))
-        }
-    }
-}
-
-@Composable
-private fun QrModeSelector(
-    selectedMode: QrMode,
-    onModeSelected: (QrMode) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(50))
-            .background(Color.White)
-            .border(1.dp, Gray100, RoundedCornerShape(50))
-            .padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        QrMode.entries.forEach { item ->
-            val selected = selectedMode == item
-            val background by androidx.compose.animation.animateColorAsState(
-                targetValue = if (selected) Primary500 else Color.Transparent,
-                label = "mode_bg"
-            )
-            val contentColor by androidx.compose.animation.animateColorAsState(
-                targetValue = if (selected) Color.White else Gray600,
-                label = "mode_fg"
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(background)
-                    .clickable { onModeSelected(item) },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Icon(
-                        imageVector = if (item == QrMode.CAMERA) Icons.Outlined.PhotoCamera else Icons.Outlined.Edit,
-                        contentDescription = null,
-                        tint = contentColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = item.label,
-                        fontFamily = PlusJakartaSansFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = contentColor
-                    )
-                }
-            }
         }
     }
 }
@@ -454,7 +367,7 @@ private fun QrCameraPreview(onQrFound: (String) -> Unit) {
 }
 
 @Composable
-private fun CameraPermissionCard(onRequestPermission: () -> Unit, onUseManual: () -> Unit) {
+private fun CameraPermissionCard(onRequestPermission: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -488,54 +401,6 @@ private fun CameraPermissionCard(onRequestPermission: () -> Unit, onUseManual: (
             colors = ButtonDefaults.buttonColors(containerColor = Primary500)
         ) {
             Text("Aktifkan Kamera", fontWeight = FontWeight.Bold)
-        }
-        TextButton(onClick = onUseManual) {
-            Text("Gunakan token manual", color = Gray600, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun ManualTokenCard(
-    token: String,
-    isLoading: Boolean,
-    onTokenChange: (String) -> Unit,
-    onSubmit: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(26.dp))
-            .border(1.dp, Gray100, RoundedCornerShape(26.dp))
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        com.app.lokacara.ui.components.LokacaraTextField(
-            value = token,
-            onValueChange = onTokenChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = stringResource(R.string.qr_token_placeholder),
-            label = stringResource(R.string.qr_token_label),
-            isOutlined = true,
-            shape = RoundedCornerShape(16.dp),
-            containerColor = Color.White,
-            leadingIcon = { Icon(Icons.Outlined.ContentPaste, null, tint = Primary500, modifier = Modifier.size(20.dp)) }
-        )
-
-        Button(
-            onClick = onSubmit,
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(22.dp))
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(stringResource(R.string.qr_verify_button), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
         }
     }
 }

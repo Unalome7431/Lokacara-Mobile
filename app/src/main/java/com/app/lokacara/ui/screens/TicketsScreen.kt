@@ -113,99 +113,108 @@ fun TicketsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(SvgBackground).statusBarsPadding()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Tiket Saya",
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp,
-                    color = Gray900
-                )
-                Text(
-                    text = "Daftar event yang kamu ikuti",
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 13.sp,
-                    color = Gray500
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) },
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Outlined.Notifications, null, tint = Gray900, modifier = Modifier.size(22.dp))
+        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0, durationMillis = 160, offsetY = 12) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Tiket Saya",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 24.sp,
+                        color = Gray900
+                    )
+                    Text(
+                        text = "Daftar event yang kamu ikuti",
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 13.sp,
+                        color = Gray500
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) },
+                        shape = CircleShape,
+                        color = Color.White,
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Notifications, null, tint = Gray900, modifier = Modifier.size(22.dp))
+                        }
                     }
                 }
             }
         }
 
-        LiveTicketsSection(
-            todayEvents = todayEvents,
-            userName = userName
-        )
-
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-            tabs.forEachIndexed { index, title ->
-                val selected = selectedTab == index
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { selectedTab = index },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = title,
-                        color = if (selected) Primary500 else Gray500,
-                        fontFamily = PlusJakartaSansFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                            .background(if (selected) Primary500 else Color.Transparent)
-                    )
-                }
-            }
+        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 50, durationMillis = 160, offsetY = 10) {
+            LiveTicketsSection(
+                todayEvents = todayEvents,
+                userName = userName
+            )
         }
 
-        HorizontalDivider(thickness = 1.dp, color = Gray100.copy(alpha = 0.5f))
+        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 90, durationMillis = 160, offsetY = 10) {
+            Column {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    tabs.forEachIndexed { index, title ->
+                        val selected = selectedTab == index
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedTab = index },
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = title,
+                                color = if (selected) Primary500 else Gray500,
+                                fontFamily = PlusJakartaSansFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.5f)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                                    .background(if (selected) Primary500 else Color.Transparent)
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(thickness = 1.dp, color = Gray100.copy(alpha = 0.5f))
+            }
+        }
 
         if (error != null) {
             InlineTicketError(message = error ?: "", onRetry = { viewModel.refresh() })
         }
 
-        if (selectedTab == 0) {
-            PullToRefreshBox(
-                isRefreshing = isLoading,
-                onRefresh = { viewModel.refresh() }
-            ) {
-                MendatangContent(upcomingEvents, userName = userName)
-            }
-        } else {
-            PullToRefreshBox(
-                isRefreshing = isLoading,
-                onRefresh = { viewModel.refresh() }
-            ) {
-                RiwayatContent(
-                    historyEvents = historyEvents,
-                    downloadedCertIds = downloadedCertIds,
-                    onDownloadCert = { viewModel.downloadCertificate(it) }
-                )
+        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 120, durationMillis = 160, offsetY = 8) {
+            if (selectedTab == 0) {
+                PullToRefreshBox(
+                    isRefreshing = isLoading,
+                    onRefresh = { viewModel.refresh() }
+                ) {
+                    MendatangContent(upcomingEvents, userName = userName)
+                }
+            } else {
+                PullToRefreshBox(
+                    isRefreshing = isLoading,
+                    onRefresh = { viewModel.refresh() }
+                ) {
+                    RiwayatContent(
+                        historyEvents = historyEvents,
+                        downloadedCertIds = downloadedCertIds,
+                        onDownloadCert = { viewModel.downloadCertificate(it) }
+                    )
+                }
             }
         }
     }
@@ -232,7 +241,9 @@ fun MendatangContent(
             }
         } else {
             items(upcomingEvents, key = { it.id }) { event ->
-                SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
+                AnimatedEntry(durationMillis = 150, offsetY = 8) {
+                    SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -283,7 +294,9 @@ fun RiwayatContent(
             }
         } else {
             items(historyEvents, key = { it.id }) { event ->
-                HistoryItemCard(event, onClick = { selectedEvent = event })
+                AnimatedEntry(durationMillis = 150, offsetY = 8) {
+                    HistoryItemCard(event, onClick = { selectedEvent = event })
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }

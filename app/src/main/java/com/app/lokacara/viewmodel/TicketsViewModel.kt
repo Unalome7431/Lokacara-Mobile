@@ -16,6 +16,9 @@ import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.repository.TicketsRepository
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +39,11 @@ class TicketsViewModel @Inject constructor(
     private val repository: TicketsRepository,
     private val apiService: ApiService,
     private val imageUrlProvider: ImageUrlProvider,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val imageLoader: ImageLoader
 ) : AndroidViewModel(application) {
+
+    private val prefetchedImageUrls = mutableSetOf<String>()
 
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
@@ -142,6 +148,7 @@ class TicketsViewModel @Inject constructor(
                     _todayEvents.value = today.sortedBy { parseDisplayDateMillis(it.date, it.time) }
                     _upcomingEvents.value = upcoming.sortedBy { parseDisplayDateMillis(it.date, it.time) }
                     _historyEvents.value = history.sortedByDescending { parseDisplayDateMillis(it.date, it.time) }
+                    prefetchTicketImages(today + upcoming + history)
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
@@ -149,6 +156,41 @@ class TicketsViewModel @Inject constructor(
             }
 
             _isLoading.value = false
+        }
+    }
+
+    private fun prefetchTicketImages(events: List<Any>) {
+        val urls = events.asSequence()
+            .mapNotNull { event ->
+                when (event) {
+                    is UpcomingEvent -> event.imageUrl
+                    is HistoryEvent -> event.imageUrl
+                    else -> null
+                }?.takeIf(String::isNotBlank)
+            }
+            .distinct()
+            .take(6)
+            .toList()
+
+        if (urls.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            urls.forEach { imageUrl ->
+                val shouldPrefetch = synchronized(prefetchedImageUrls) {
+                    prefetchedImageUrls.add(imageUrl)
+                }
+                if (!shouldPrefetch) return@forEach
+
+                imageLoader.enqueue(
+                    ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .size(320)
+                        .precision(Precision.INEXACT)
+                        .crossfade(false)
+                        .build()
+                )
+            }
         }
     }
 

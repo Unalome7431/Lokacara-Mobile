@@ -125,56 +125,67 @@ fun HomeScreen(
                 ) {
 
                     item(key = "header", contentType = "header") {
-                        HomeHeader(navController = navController)
+                        AnimatedEntry(delayMillis = 0) {
+                            HomeHeader(navController = navController)
+                        }
                     }
 
                     // ── Popular Events ──
                     item(key = "popular_section", contentType = "popular") {
                         if (popularEvents.isNotEmpty()) {
-                            PopularEventSection(
-                                popularEvents = popularEvents,
-                                onEventClick = { onEventClick(it) }
-                            )
+                            AnimatedEntry(delayMillis = 40) {
+                                PopularEventSection(
+                                    popularEvents = popularEvents,
+                                    onEventClick = onEventClick
+                                )
+                            }
                         }
                     }
 
                     // ── Nearby Events ──
                     item(key = "nearby_header", contentType = "nearby_header") {
-                        NearbyEventsHeader(
-                            currentLocation = currentLocation,
-                            onLocationClick = { viewModel.showLocationPicker() }
-                        )
+                        AnimatedEntry(delayMillis = 80) {
+                            NearbyEventsHeader(
+                                currentLocation = currentLocation,
+                                onLocationClick = { viewModel.showLocationPicker() }
+                            )
+                        }
                     }
 
                     if (nearbyEvents.isNotEmpty()) {
                         item(key = "nearby_events", contentType = "nearby_row") {
-                            LazyRow(
-                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                contentPadding = PaddingValues(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(nearbyEvents, key = { it.id }) { event ->
-                                    EventCardCompact(
-                                        event = event,
-                                        onClick = { onEventClick(event) },
-                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                    )
+                            AnimatedEntry(delayMillis = 100) {
+                                val onBookmarkNearbyClick: (String) -> Unit = remember { { id -> viewModel.toggleBookmark(id) } }
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                    contentPadding = PaddingValues(horizontal = 24.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(nearbyEvents, key = { it.id }) { event ->
+                                        EventCardCompact(
+                                            event = event,
+                                            onClick = { onEventClick(event) },
+                                            onBookmarkClick = { onBookmarkNearbyClick(event.id.toString()) }
+                                        )
+                                    }
                                 }
                             }
                         }
                     } else {
                         item(key = "nearby_empty", contentType = "nearby_empty") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                            ) {
-                                Text(
-                                    "Tidak ada event di sekitar Anda saat ini",
-                                    fontFamily = PlusJakartaSansFont,
-                                    fontSize = 13.sp,
-                                    color = Gray400
-                                )
+                            AnimatedEntry(delayMillis = 100) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                                ) {
+                                    Text(
+                                        "Tidak ada event di sekitar Anda saat ini",
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontSize = 13.sp,
+                                        color = Gray400
+                                    )
+                                }
                             }
                         }
                     }
@@ -185,28 +196,33 @@ fun HomeScreen(
 
                     if (sortedCategories.isNotEmpty()) {
                         item(key = "categories_title", contentType = "section_title") {
-                            Text(
-                                text = "Kategori",
-                                fontFamily = NunitoFont,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 22.sp,
-                                color = Primary500,
-                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 0.dp)
-                            )
+                            AnimatedEntry(delayMillis = 120) {
+                                Text(
+                                    text = "Kategori",
+                                    fontFamily = NunitoFont,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 22.sp,
+                                    color = Primary500,
+                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 0.dp)
+                                )
+                            }
                         }
 
                         items(items = sortedCategories, key = { it }, contentType = { "category" }) { categoryName ->
                             val events = groupedEvents[categoryName] ?: emptyList()
                             if (events.isNotEmpty()) {
-                                CategoryEventSection(
-                                    categoryName = categoryName,
-                                    events = events,
-                                    onEventClick = onEventClick,
-                                    onSeeAll = {
-                                        navController.navigateToExplore(categoryName)
-                                    },
-                                    onBookmarkClick = { eventId -> viewModel.toggleBookmark(eventId) }
-                                )
+                                AnimatedEntry(delayMillis = 140) {
+                                    val onBookmarkCategoryClick: (String) -> Unit = remember { { id -> viewModel.toggleBookmark(id) } }
+                                    CategoryEventSection(
+                                        categoryName = categoryName,
+                                        events = events,
+                                        onEventClick = onEventClick,
+                                        onSeeAll = {
+                                            navController.navigateToExplore(categoryName)
+                                        },
+                                        onBookmarkClick = onBookmarkCategoryClick
+                                    )
+                                }
                             }
                         }
                     }

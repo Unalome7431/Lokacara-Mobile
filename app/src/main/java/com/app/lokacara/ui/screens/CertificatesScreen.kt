@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,31 +61,38 @@ fun CertificatesScreen(
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     item {
-                        ProfileSubpageSummaryCard(
-                            title = "Sertifikat",
-                            subtitle = "Sertifikat event yang sudah kamu selesaikan.",
-                            value = certificates.size.toString(),
-                            valueLabel = "file",
-                            icon = Icons.Rounded.WorkspacePremium,
-                            accentColor = SvgOrange
-                        )
+                        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0) {
+                            ProfileSubpageSummaryCard(
+                                title = "Sertifikat",
+                                subtitle = "Sertifikat event yang sudah kamu selesaikan.",
+                                value = certificates.size.toString(),
+                                valueLabel = "file",
+                                icon = Icons.Rounded.WorkspacePremium,
+                                accentColor = SvgOrange
+                            )
+                        }
                     }
                     if (certificates.isEmpty()) {
                         item {
-                            EmptyEventState(
-                                text = "Belum Ada Sertifikat\nIkuti Event Untuk Mendapatkannya",
-                                onClick = { navController.navigateToExplore() }
-                            )
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(20.dp))
+                                EmptyEventState(
+                                    text = "Kamu belum mengumpulkan sertifikat. Ikuti event dan dapatkan sertifikatmu!",
+                                    onClick = { navController.navigateToExplore() }
+                                )
+                            }
                         }
                     } else {
                         items(
                             items = certificates,
                             key = { cert: CertificateData -> cert.id }
                         ) { cert ->
-                            CertificateCard(
-                                cert = cert,
-                                onDownload = { viewModel.downloadCertificate(it) }
-                            )
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                CertificateCard(
+                                    cert = cert,
+                                    onDownload = { viewModel.downloadCertificate(it) }
+                                )
+                            }
                         }
                     }
                 }

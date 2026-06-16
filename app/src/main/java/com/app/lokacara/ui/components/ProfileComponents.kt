@@ -368,7 +368,7 @@ fun EmptyEventState(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Outlined.EventNote,
+                imageVector = Icons.Outlined.EventNote,
                 contentDescription = null,
                 tint = Primary500,
                 modifier = Modifier.size(40.dp)
@@ -417,7 +417,7 @@ fun MyEventCard(event: MyEventData, onClick: (() -> Unit)? = null) {
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             AsyncImage(
-                model = event.imageUrl,
+                model = rememberEventImageRequest(event.imageUrl, 320),
                 contentDescription = event.title,
                 modifier = Modifier
                     .size(110.dp)
@@ -495,7 +495,7 @@ fun CertificateCard(
                     .background(Color.White)
             ) {
                 AsyncImage(
-                    model = cert.imageUrl ?: cert.filePath,
+                    model = rememberEventImageRequest(cert.imageUrl ?: cert.filePath, 900),
                     contentDescription = "Full Certificate",
                     modifier = Modifier.fillMaxWidth(),
                     contentScale = ContentScale.FillWidth
@@ -516,7 +516,7 @@ fun CertificateCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             AsyncImage(
-                model = cert.imageUrl ?: cert.filePath,
+                model = rememberEventImageRequest(cert.imageUrl ?: cert.filePath, 700),
                 contentDescription = cert.title,
                 modifier = Modifier
                     .fillMaxWidth()

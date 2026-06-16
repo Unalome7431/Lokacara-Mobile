@@ -90,49 +90,55 @@ fun MyEventsScreen(
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     item {
-                        ProfileSubpageSummaryCard(
-                            title = "Event Saya",
-                            subtitle = "Event yang kamu kelola sebagai penyelenggara.",
-                            value = myEvents.size.toString(),
-                            valueLabel = "event",
-                            icon = Icons.Rounded.Event,
-                            accentColor = Primary500
-                        )
+                        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0) {
+                            ProfileSubpageSummaryCard(
+                                title = "Event Saya",
+                                subtitle = "Event yang kamu kelola sebagai penyelenggara.",
+                                value = myEvents.size.toString(),
+                                valueLabel = "event",
+                                icon = Icons.Rounded.Event,
+                                accentColor = Primary500
+                            )
+                        }
                     }
                     if (myEvents.isEmpty()) {
                         item {
-                            Spacer(modifier = Modifier.height(20.dp))
-                            EmptyEventState(
-                                text = "Kamu belum memiliki event yang aktif. Mulai buat event pertamamu sekarang!",
-                                onClick = { navController.navigateToCreateEvent() }
-                            )
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                EmptyEventState(
+                                    text = "Kamu belum memiliki event yang aktif. Mulai buat event pertamamu sekarang!",
+                                    onClick = { navController.navigateToCreateEvent() }
+                                )
+                            }
                         }
                     } else {
                         items(
                             items = myEvents,
                             key = { event: Event -> event.id }
                         ) { event ->
-                            EventCard(
-                                event = event,
-                                onClick = {
-                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                },
-                                showBookmark = false,
-                                trailingContent = {
-                                    IconButton(
-                                        onClick = { navController.navigate(Screen.QrScan.createRoute(event.id)) },
-                                        modifier = Modifier.size(36.dp).background(Secondary100, CircleShape)
-                                    ) {
-                                        Icon(androidx.compose.material.icons.Icons.Outlined.QrCode2, null, tint = Secondary500, modifier = Modifier.size(20.dp))
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    showBookmark = false,
+                                    trailingContent = {
+                                        IconButton(
+                                            onClick = { navController.navigate(Screen.QrScan.createRoute(event.id)) },
+                                            modifier = Modifier.size(32.dp).background(Secondary100, CircleShape)
+                                        ) {
+                                            Icon(androidx.compose.material.icons.Icons.Outlined.QrCode2, null, tint = Secondary500, modifier = Modifier.size(18.dp))
+                                        }
+                                        IconButton(
+                                            onClick = { navController.navigate(Screen.Attendees.createRoute(event.id)) },
+                                            modifier = Modifier.size(32.dp).background(Primary100, CircleShape)
+                                        ) {
+                                            Icon(androidx.compose.material.icons.Icons.Outlined.Groups, null, tint = Primary500, modifier = Modifier.size(18.dp))
+                                        }
                                     }
-                                    IconButton(
-                                        onClick = { navController.navigate(Screen.Attendees.createRoute(event.id)) },
-                                        modifier = Modifier.size(36.dp).background(Primary100, CircleShape)
-                                    ) {
-                                        Icon(androidx.compose.material.icons.Icons.Outlined.Groups, null, tint = Primary500, modifier = Modifier.size(20.dp))
-                                    }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
