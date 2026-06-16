@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.AnalyticsTracker
-import com.app.lokacara.data.BookmarkManager
+import com.app.lokacara.data.BookmarkSyncHelper
 import com.app.lokacara.data.HomeCache
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
@@ -34,7 +34,7 @@ import kotlin.math.*
 class HomeViewModel @Inject constructor(
     application: Application,
     private val repository: HomeRepository,
-    private val bookmarkManager: BookmarkManager,
+    private val bookmarkSyncHelper: BookmarkSyncHelper,
     private val imageUrlProvider: ImageUrlProvider,
     private val apiService: ApiService,
     private val analytics: AnalyticsTracker,
@@ -164,6 +164,11 @@ class HomeViewModel @Inject constructor(
         if (!city.isNullOrBlank()) currentLocationName.value = city
     }
 
+    fun useCurrentGps() {
+        isLocationPickerVisible.value = false
+        autoDetectLocation()
+    }
+
     fun showLocationPicker() {
         isLocationPickerVisible.value = true
     }
@@ -182,19 +187,24 @@ class HomeViewModel @Inject constructor(
     // ── Data loading with stale-while-revalidate ──
     private fun loadData() {
         viewModelScope.launch {
-            // Show cached data immediately if available
-            val cachedEvents = repository.getFeedEvents(forceRefresh = false)
-            if (cachedEvents is ApiResult.Success && _allEvents.value.isEmpty()) {
-                val events = cachedEvents.data.map { it.toEvent(imageUrlProvider) }
+            // Show cached data immediately without triggering a network request.
+            val cachedEvents = cache.events
+            if (cachedEvents != null && _allEvents.value.isEmpty()) {
+                val events = cachedEvents.map { it.toEvent(imageUrlProvider) }
                 if (events.isNotEmpty()) {
-                    _popularEvents.value = events.sortedByDescending { it.viewCount }.take(3)
+                    _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
                     _allEvents.value = events
                 }
                 _isLoading.value = false
             }
 
-            // If no cache and refreshing, show loading
-            if (_allEvents.value.isEmpty() && cachedEvents !is ApiResult.Success) {
+            val shouldRefresh = cachedEvents == null || cache.isStale
+            if (!shouldRefresh) {
+                bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
+                return@launch
+            }
+
+            if (_allEvents.value.isEmpty()) {
                 _isLoading.value = true
             } else {
                 _isRefreshing.value = true
@@ -207,7 +217,7 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val events = result.data.map { it.toEvent(imageUrlProvider) }
                     if (events.isNotEmpty()) {
-                        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(3)
+                        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
                         _allEvents.value = events
                         _feedError.value = null
                     }
@@ -222,9 +232,10 @@ class HomeViewModel @Inject constructor(
                 }
             }
 
+            bookmarkSyncHelper.cancel()
+            bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
             _isLoading.value = false
             _isRefreshing.value = false
-            syncBookmarks()
         }
     }
 
@@ -232,9 +243,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _categoryError.value = null
 
-            val cachedCats = repository.getCategories(forceRefresh = false)
-            if (cachedCats is ApiResult.Success && _categories.value.isEmpty()) {
-                _categories.value = cachedCats.data
+            val cachedCats = cache.categories
+            if (cachedCats != null && _categories.value.isEmpty()) {
+                _categories.value = cachedCats
+            }
+            if (cachedCats != null && !cache.isStale) {
+                return@launch
             }
 
             when (val result = repository.getCategories(forceRefresh = true)) {
@@ -259,7 +273,9 @@ class HomeViewModel @Inject constructor(
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
                     currentPage = result.data.current_page
                     totalPages = result.data.last_page
-                    _allEvents.value = _allEvents.value + newEvents
+                    _allEvents.value = (_allEvents.value + newEvents).take(200)
+                    bookmarkSyncHelper.cancel()
+                    bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
                 }
                 is ApiResult.Error -> {
                     SnackbarManager.show("Gagal memuat lebih banyak event")
@@ -283,42 +299,8 @@ class HomeViewModel @Inject constructor(
         loadFilterData()
     }
 
-    // ── Bookmark sync ──
-    private var bookmarkJob: kotlinx.coroutines.Job? = null
-
-    private fun syncBookmarks() {
-        bookmarkJob?.cancel()
-        bookmarkJob = viewModelScope.launch {
-            bookmarkManager.bookmarkedIds.collect { bookmarkedIds ->
-                val syncEvent: (Event) -> Event = { event ->
-                    val bookmarked = event.id.toString() in bookmarkedIds
-                    if (event.isBookmarked != bookmarked) event.copy(isBookmarked = bookmarked) else event
-                }
-                _popularEvents.value = _popularEvents.value.map(syncEvent)
-                _allEvents.value = _allEvents.value.map(syncEvent)
-            }
-        }
-    }
-
     fun toggleBookmark(eventId: String) {
-        viewModelScope.launch {
-            val bookmarkedIds = bookmarkManager.bookmarkedIds.first()
-            val wasBookmarked = bookmarkedIds.contains(eventId)
-            bookmarkManager.toggleBookmark(eventId)
-            val idLong = eventId.toLongOrNull()
-            if (idLong != null) {
-                try {
-                    if (wasBookmarked) apiService.removeBookmark(idLong) else apiService.addBookmark(idLong)
-                } catch (_: Exception) {}
-            }
-            if (wasBookmarked) {
-                SnackbarManager.show("Event dihapus dari bookmark")
-                analytics.logEvent("bookmark_removed", mapOf("event_id" to eventId))
-            } else {
-                SnackbarManager.show("Event disimpan")
-                analytics.logEvent("bookmark_added", mapOf("event_id" to eventId))
-            }
-        }
+        bookmarkSyncHelper.toggleBookmark(viewModelScope, eventId)
     }
 
     fun onEventClick(event: Event) {

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -45,12 +46,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.app.lokacara.R
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.navigation.Screen
 import android.location.Geocoder
+import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.ui.theme.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -102,8 +105,8 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val pageCount = popularEvents.size * 10
-    val initialPage = pageCount / 2
+    val pageCount = Int.MAX_VALUE
+    val initialPage = Int.MAX_VALUE / 2
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pageCount })
 
     val cardShape = remember { RoundedCornerShape(24.dp) }
@@ -113,11 +116,10 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             startY = 0f
         )
     }
-    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var paused by remember { mutableStateOf(false) }
 
-    // Pause auto-slide when user interacts with the pager
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.isScrollInProgress }
             .collect { scrolling ->
@@ -127,12 +129,14 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(if (paused) 3000L else 4000L)
-            if (paused) { paused = false; continue }
-            if (pageCount > 1) {
-                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(if (paused) 5000L else 4000L)
+                if (paused) { paused = false; continue }
+                if (pageCount > 1) {
+                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                }
             }
         }
     }
@@ -173,10 +177,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                         modifier = Modifier.fillMaxSize().clip(cardShape)
                     ) {
                         AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(event.imageUrl)
-                                .size(400)
-                                .build(),
+                            model = rememberEventImageRequest(event.imageUrl, 400),
                             contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -188,21 +189,51 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                             modifier = Modifier.fillMaxSize().padding(16.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(modifier = Modifier.align(Alignment.Start).widthIn(max = 200.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = SvgOrange.copy(alpha = 0.9f)
-                                ) {
-                                    Text(
-                                        text = event.category,
-                                        color = Color.White,
-                                        fontSize = 11.sp,
-                                        fontFamily = PlusJakartaSansFont,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Box(modifier = Modifier.widthIn(max = 160.dp)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = SvgOrange.copy(alpha = 0.9f)
+                                    ) {
+                                        Text(
+                                            text = event.category,
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontFamily = PlusJakartaSansFont,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                                if (event.viewCount > 0) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.White.copy(alpha = 0.25f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Outlined.FavoriteBorder,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                "${formatViewCount(event.viewCount)} x dilihat",
+                                                color = Color.White,
+                                                fontSize = 10.sp,
+                                                fontFamily = PlusJakartaSansFont
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -237,7 +268,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
-                        .size(if (index == currentPage) 24.dp else 8.dp, 8.dp)
+                        .size(if (index == currentPage) 14.dp else 8.dp, 8.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(if (index == currentPage) SvgPrimaryBlue else Gray300)
                 )
@@ -285,8 +316,9 @@ fun CategoryEventSection(
     var visible by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
     val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
+    val previewEvents = remember(events) { events.take(10) }
 
-    Column(modifier = Modifier.padding(top = 24.dp).graphicsLayer(alpha = alpha)) {
+    Column(modifier = Modifier.padding(top = 12.dp).graphicsLayer(alpha = alpha)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -294,13 +326,15 @@ fun CategoryEventSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = categoryName,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = categoryName,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Gray900
+                )
+            }
             TextButton(onClick = onSeeAll) {
                 Text("Lihat Semua →", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SvgOrange)
             }
@@ -310,7 +344,7 @@ fun CategoryEventSection(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(events, key = { it.id }) { event ->
+            items(previewEvents, key = { it.id }, contentType = { "category_event" }) { event ->
                 EventCardCompact(
                     event = event,
                     onClick = { onEventClick(event) },
@@ -325,7 +359,8 @@ fun CategoryEventSection(
 fun LocationPickerDialog(
     currentLocation: String,
     onDismiss: () -> Unit,
-    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit
+    onLocationSelected: (cityName: String, lat: Double, lng: Double) -> Unit,
+    onUseCurrentGps: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
     val scope = rememberCoroutineScope()
@@ -355,6 +390,29 @@ fun LocationPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp)
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Secondary100,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onUseCurrentGps() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.MyLocation, null, tint = Secondary500, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Gunakan Lokasi Saya",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Secondary700
+                        )
+                    }
+                }
                 if (currentLocation.isNotBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(

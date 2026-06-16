@@ -22,40 +22,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 
 @Composable
 fun PrivacyPolicyScreen(navController: NavController) {
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
+    ProfilePageScaffold(
+        title = "Kebijakan Privasi",
+        onBack = { navController.navigateBackOrHome() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Kebijakan Privasi",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()

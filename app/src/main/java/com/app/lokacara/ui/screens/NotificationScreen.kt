@@ -19,7 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.app.lokacara.model.NotificationItem
+import com.app.lokacara.notifications.NotificationRouteMapper
+import com.app.lokacara.notifications.NotificationTarget
 import com.app.lokacara.ui.components.NotificationCard
+import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.NotificationViewModel
 import androidx.compose.ui.res.stringResource
@@ -37,7 +42,7 @@ fun NotificationScreen(
         stringResource(R.string.tab_notifications_info)
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
+    Column(modifier = Modifier.fillMaxSize().background(SvgBackground).systemBarsPadding()) {
 
         Box(
             modifier = Modifier
@@ -46,15 +51,16 @@ fun NotificationScreen(
         ) {
 
             IconButton(
-                onClick = { navController.popBackStack() },
+                onClick = { navController.navigateBackOrHome() },
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .size(24.dp)
+                    .size(40.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowBackIosNew,
                     contentDescription = "Kembali",
-                    tint = Gray900
+                    tint = Gray900,
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
@@ -90,10 +96,31 @@ fun NotificationScreen(
                 item {
                     Text(dateGroup, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
                 }
-                items(items) { notification -> NotificationCard(notification) }
+                items(items) { notification ->
+                    val route = notificationTargetRoute(notification)
+                    NotificationCard(
+                        notification = notification,
+                        onClick = route?.let {
+                            {
+                                navController.navigate(it) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     }
+}
+
+private fun notificationTargetRoute(notification: NotificationItem): String? {
+    val hasTargetMetadata = !notification.target.isNullOrBlank() || !notification.category.isNullOrBlank()
+    if (!hasTargetMetadata) return null
+
+    val target = NotificationTarget.from(notification.target, notification.category.orEmpty())
+    val route = NotificationRouteMapper.routeFor(target, notification.eventId)
+    return route.takeUnless { it == Screen.Notification.route }
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true)

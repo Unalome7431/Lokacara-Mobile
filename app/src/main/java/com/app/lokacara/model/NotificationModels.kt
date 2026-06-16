@@ -13,5 +13,8 @@ data class NotificationItem(
     val dateGroup: String,
     val type: NotificationType,
     val isRead: Boolean,
+    val category: String? = null,
+    val target: String? = null,
+    val eventId: Long? = null,
     val iconRes: Int? = null
 )

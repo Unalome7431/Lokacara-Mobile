@@ -1,5 +1,6 @@
 package com.app.lokacara.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.EnterTransition
@@ -9,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -16,7 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,7 +44,12 @@ private val screenPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransitio
 }
 
 @Composable
-fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
+fun NavGraph(
+    isLoggedIn: Boolean,
+    isOnboardingCompleted: Boolean,
+    pendingNotificationRoute: String? = null,
+    onNotificationRouteConsumed: () -> Unit = {}
+) {
     val rootNavController = rememberNavController()
     val startDestination = when {
         !isOnboardingCompleted -> Screen.Onboarding.route
@@ -74,7 +83,11 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popExitTransition = screenPopExit
         ) {
             RegisterScreen(
-                onNavigateToLogin = { rootNavController.navigate(Screen.Login.route) },
+                onNavigateToLogin = {
+                    rootNavController.navigate(Screen.Login.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLoginSuccess = {
                     rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
@@ -90,7 +103,11 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popExitTransition = screenPopExit
         ) {
             LoginScreen(
-                onNavigateToRegister = { rootNavController.navigate(Screen.Register.route) },
+                onNavigateToRegister = {
+                    rootNavController.navigate(Screen.Register.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLoginSuccess = {
                     rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
@@ -106,33 +123,52 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popEnterTransition = { fadeIn(tween(300)) },
             popExitTransition = { fadeOut(tween(200)) }
         ) {
-            MainContainer(rootNavController)
+            MainContainer(
+                rootNavController = rootNavController,
+                pendingNotificationRoute = pendingNotificationRoute,
+                onNotificationRouteConsumed = onNotificationRouteConsumed
+            )
         }
     }
 }
 
 @Composable
-fun MainContainer(rootNavController: androidx.navigation.NavController) {
+fun MainContainer(
+    rootNavController: androidx.navigation.NavController,
+    pendingNotificationRoute: String? = null,
+    onNotificationRouteConsumed: () -> Unit = {}
+) {
     val internalNavController = rememberNavController()
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val layoutDirection = LocalLayoutDirection.current
+
+    androidx.compose.runtime.LaunchedEffect(pendingNotificationRoute) {
+        val route = pendingNotificationRoute ?: return@LaunchedEffect
+        internalNavController.navigate(route) {
+            launchSingleTop = true
+        }
+        onNotificationRouteConsumed()
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            val hideNavbar = currentRoute == Screen.Notification.route ||
-                    currentRoute == Screen.CreateEvent.route ||
-                    currentRoute?.startsWith("edit_event") == true ||
-                    currentRoute?.startsWith(Screen.EventDetail.route.split("?")[0]) == true ||
-                    currentRoute?.startsWith(Screen.Attendees.route.split("/")[0]) == true ||
-                    currentRoute?.startsWith(Screen.QrScan.route.split("/")[0]) == true
-
-            if (!hideNavbar) {
+            if (currentRoute.isMainTabRoute()) {
                 BottomNavbar(navController = internalNavController)
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding(),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                    bottom = 0.dp
+                )
+                .fillMaxSize()
+        ) {
             NavHost(
                 navController = internalNavController,
                 startDestination = Screen.Home.route,
@@ -158,7 +194,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     popEnterTransition = screenPopEnter,
                     popExitTransition = screenPopExit
                 ) { backStackEntry ->
-                    val initialCategory = backStackEntry.arguments?.getString("category") ?: ""
+                    val initialCategory = Uri.decode(backStackEntry.arguments?.getString("category").orEmpty())
                     ExploreScreen(navController = internalNavController, initialCategory = initialCategory)
                 }
                 composable(
@@ -182,11 +218,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 ) {
                     ProfileScreen(
                         navController = internalNavController,
-                        onLogout = {
-                            rootNavController.navigate(Screen.Login.route) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
+                        rootNavController = rootNavController
                     )
                 }
                 composable(
@@ -197,20 +229,18 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     popExitTransition = { fadeOut(tween(200)) }
                 ) {
                     CreateEventScreen(
-                        eventId = null, // Mode Buat Baru
-                        onBack = { internalNavController.popBackStack() },
+                        eventId = null,
+                        onBack = { internalNavController.navigateBackOrHome() },
                         onPublish = {
-                            internalNavController.navigate(Screen.Home.route) {
-                                popUpTo(internalNavController.graph.findStartDestination().id) {
-                                    saveState = true
+                            internalNavController.navigate(Screen.MyEvents.route) {
+                                popUpTo(Screen.CreateEvent.route) {
+                                    inclusive = true
                                 }
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         }
                     )
                 }
-                // --- RUTE BARU UNTUK EDIT EVENT ---
                 composable(
                     route = "edit_event/{eventId}",
                     arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
@@ -221,15 +251,11 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                 ) { backStackEntry ->
                     val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
                     CreateEventScreen(
-                        eventId = eventId, // Melempar ID agar masuk mode Edit
+                        eventId = eventId,
                         onBack = { internalNavController.popBackStack() },
-                        onPublish = {
-                            // Saat berhasil diedit, kembali ke halaman detail acaranya
-                            internalNavController.popBackStack()
-                        }
+                        onPublish = { internalNavController.popBackStack() }
                     )
                 }
-                // ----------------------------------
                 composable(
                     Screen.Notification.route,
                     enterTransition = screenEnter,
@@ -259,7 +285,7 @@ fun MainContainer(rootNavController: androidx.navigation.NavController) {
                     exitTransition = screenExit,
                     popEnterTransition = screenPopEnter,
                     popExitTransition = screenPopExit
-                ) { BookmarkScreen(navController = internalNavController) }
+                ) { SavedEventsScreen(navController = internalNavController) }
                 composable(
                     Screen.Certificates.route,
                     enterTransition = screenEnter,

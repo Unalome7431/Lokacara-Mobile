@@ -1,12 +1,7 @@
 package com.app.lokacara.ui.components
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -29,8 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,15 +36,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Precision
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
+
+@Composable
+fun rememberEventImageRequest(imageUrl: String?, sizePx: Int): ImageRequest {
+    val context = LocalContext.current
+    return remember(context, imageUrl, sizePx) {
+        ImageRequest.Builder(context)
+            .data(imageUrl)
+            .size(sizePx)
+            .precision(Precision.INEXACT)
+            .crossfade(true)
+            .build()
+    }
+}
 
 @Composable
 fun EventCard(
     event: Event,
     onBookmarkClick: () -> Unit = {},
     onClick: (() -> Unit)? = null,
-    showBookmark: Boolean = true
+    showBookmark: Boolean = true,
+    trailingContent: @Composable (ColumnScope.() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -74,10 +82,7 @@ fun EventCard(
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(event.imageUrl)
-                    .size(110)
-                    .build(),
+                model = rememberEventImageRequest(event.imageUrl, 110),
                 contentDescription = event.title,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
@@ -112,6 +117,14 @@ fun EventCard(
                     }
                 }
             }
+            if (trailingContent != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    content = trailingContent
+                )
+            }
         }
     }
 }
@@ -139,10 +152,7 @@ fun EventCardCompact(
         Column {
             Box {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(event.imageUrl)
-                        .size(160)
-                        .build(),
+                    model = rememberEventImageRequest(event.imageUrl, 160),
                     contentDescription = event.title,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -150,6 +160,21 @@ fun EventCardCompact(
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                     contentScale = ContentScale.Crop
                 )
+                Surface(
+                    shape = RoundedCornerShape(bottomEnd = 8.dp),
+                    color = Secondary500,
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Text(
+                        text = event.category,
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        maxLines = 1
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -201,7 +226,7 @@ fun EventCardCompact(
                         text = event.date,
                         fontFamily = PlusJakartaSansFont,
                         fontSize = 11.sp,
-                        color = Gray400,
+                        color = Gray600,
                         maxLines = 1
                     )
                     Text(
@@ -220,26 +245,7 @@ fun EventCardCompact(
 
 @Composable
 fun ShimmerSkeletonCard() {
-    val shimmerColors = listOf(
-        Gray200.copy(alpha = 0.6f),
-        Gray100.copy(alpha = 0.3f),
-        Gray200.copy(alpha = 0.6f)
-    )
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 600f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslate"
-    )
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset.Zero,
-        end = Offset(translateAnim.value, translateAnim.value)
-    )
+    val brush = shimmerBrush()
 
     Surface(
         modifier = Modifier.width(160.dp),

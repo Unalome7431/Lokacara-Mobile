@@ -59,21 +59,21 @@ val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Normal,
-        fontSize = 24.sp
+        fontSize = 16.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Normal,
-        fontSize = 20.sp
+        fontSize = 14.sp
     ),
     bodySmall = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp
+        fontSize = 12.sp
     ),
     labelSmall = TextStyle(
         fontFamily = PlusJakartaSansFont,
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp
+        fontSize = 11.sp
     )
 )

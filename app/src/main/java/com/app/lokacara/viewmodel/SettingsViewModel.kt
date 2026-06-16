@@ -1,6 +1,7 @@
 package com.app.lokacara.viewmodel
 
 import android.app.Application
+import com.app.lokacara.data.PushTokenManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.SettingsManager
@@ -23,6 +24,7 @@ class SettingsViewModel @Inject constructor(
     application: Application,
     private val settingsManager: SettingsManager,
     private val userSessionManager: UserSessionManager,
+    private val pushTokenManager: PushTokenManager,
     private val apiService: ApiService
 ) : AndroidViewModel(application) {
 
@@ -84,6 +86,7 @@ class SettingsViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            pushTokenManager.unregisterLastSyncedToken()
             try { apiService.logout() } catch (_: Exception) {}
             userSessionManager.logout()
             SnackbarManager.show("Anda telah logout")

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Lokacara-Mobile</string>
+    <string name="app_name">Lokacara</string>
 
     <!-- Tab Labels -->
     <string name="tab_tickets_upcoming">Mendatang</string>

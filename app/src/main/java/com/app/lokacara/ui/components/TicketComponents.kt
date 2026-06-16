@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,7 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,11 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -65,7 +71,9 @@ fun BigTicketCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 24.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TicketInfoItem("Tanggal", date, Color.White)
@@ -125,9 +133,78 @@ fun BigTicketCard(
 
 @Composable
 fun TicketInfoItem(label: String, value: String, color: Color) {
-    Column {
+    Column(modifier = Modifier.widthIn(max = 130.dp)) {
         Text(label, fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
-        Text(value, fontSize = 14.sp, color = color, fontWeight = FontWeight.Bold, fontFamily = PlusJakartaSansFont)
+        Text(
+            value,
+            fontSize = 14.sp,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontFamily = PlusJakartaSansFont,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun TicketPosterThumb(
+    imageUrl: String?,
+    title: String,
+    modifier: Modifier = Modifier.size(64.dp)
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Primary100),
+        contentAlignment = Alignment.Center
+    ) {
+        if (imageUrl.isNullOrBlank()) {
+            Icon(
+                imageVector = Icons.Outlined.ConfirmationNumber,
+                contentDescription = title,
+                tint = Primary500,
+                modifier = Modifier.size(26.dp)
+            )
+        } else {
+            AsyncImage(
+                model = rememberEventImageRequest(imageUrl, 160),
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f))
+                        )
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+private fun TicketChip(text: String, isSecondary: Boolean = false) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = if (isSecondary) Primary100 else Secondary100,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isSecondary) Primary200 else Secondary200
+        )
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+            fontFamily = PlusJakartaSansFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp,
+            color = if (isSecondary) Primary600 else Secondary700,
+            maxLines = 1
+        )
     }
 }
 
@@ -140,18 +217,54 @@ fun SmallUpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = event.imageUrl,
-                contentDescription = event.title,
-                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
+            TicketPosterThumb(imageUrl = event.imageUrl, title = event.title)
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(event.title, fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Gray900)
-                Text("${event.date} | ${event.time}", fontSize = 12.sp, color = Gray500, modifier = Modifier.padding(vertical = 4.dp))
-                Text(event.type, fontSize = 12.sp, color = Secondary500, fontWeight = FontWeight.Bold)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    event.title,
+                    fontFamily = PlusJakartaSansFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Gray900,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "${event.date} | ${event.time}",
+                    fontSize = 12.sp,
+                    color = Gray500,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Row(
+                    modifier = Modifier.padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = Gray500)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        event.location,
+                        fontSize = 12.sp,
+                        color = Gray600,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TicketChip(text = event.type.replaceFirstChar { it.titlecase() })
+                    TicketChip(text = "QR tersedia", isSecondary = true)
+                }
             }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                "Detail tiket",
+                modifier = Modifier.size(16.dp),
+                tint = Gray400
+            )
         }
     }
 }
@@ -165,8 +278,21 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = bgColor)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            TicketPosterThumb(
+                imageUrl = event.imageUrl,
+                title = event.title,
+                modifier = Modifier.size(56.dp)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    event.title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Gray600)
@@ -177,7 +303,13 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.LocationOn, null, modifier = Modifier.size(14.dp), tint = Gray600)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(event.location, fontSize = 12.sp, color = Gray600)
+                    Text(
+                        event.location,
+                        fontSize = 12.sp,
+                        color = Gray600,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
@@ -211,7 +343,15 @@ fun HistoryDetailDialog(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(event.title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f))
+                    Text(
+                        event.title,
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     IconButton(
                         onClick = onDownload,
                         modifier = Modifier
@@ -249,13 +389,79 @@ fun HistoryDetailDialog(
 
 @Composable
 fun QrCodeDialog(qrData: String, onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.size(300.dp)) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                QrCodeImage(
-                    data = qrData.ifEmpty { "lokacara" },
-                    modifier = Modifier.fillMaxSize().padding(32.dp)
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Primary100
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.QrCode2, null, tint = Primary600, modifier = Modifier.size(18.dp))
+                        Text(
+                            text = "QR Check-in",
+                            fontFamily = PlusJakartaSansFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Primary700
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+                Box(
+                    modifier = Modifier
+                        .size(236.dp)
+                        .background(Color.White, RoundedCornerShape(22.dp))
+                        .border(1.dp, Gray200, RoundedCornerShape(22.dp))
+                        .padding(18.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    QrCodeImage(
+                        data = qrData.ifEmpty { "lokacara" },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Tunjukkan QR ini ke panitia saat check-in.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray500
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        val bitmap = createQrBitmap(qrData.ifEmpty { "lokacara" })
+                        val file = java.io.File(context.cacheDir, "qr_checkin.png")
+                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "image/png"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(android.content.Intent.createChooser(shareIntent, "Bagikan QR Code"))
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Share, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Bagikan QR", color = Color.White, fontWeight = FontWeight.Bold, fontFamily = PlusJakartaSansFont)
+                }
             }
         }
     }

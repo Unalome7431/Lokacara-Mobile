@@ -1,27 +1,37 @@
 package com.app.lokacara
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.app.lokacara.notifications.NotificationNavigation
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.NavGraph
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
@@ -31,14 +41,48 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
+    private val pendingNotificationRoute = mutableStateOf<String?>(null)
+    @Volatile
+    private var keepSplashOnScreen = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { keepSplashOnScreen }
         super.onCreate(savedInstanceState)
+        pendingNotificationRoute.value = notificationRouteFrom(intent)
         enableEdgeToEdge()
         setContent {
             val snackbarHostState = remember { SnackbarHostState().also { SnackbarManager.init(it) } }
             val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = null)
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState(initial = null)
+            val notificationsEnabled by viewModel.notificationsEnabled.collectAsState(initial = true)
+            val notificationRoute by pendingNotificationRoute
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = {}
+            )
+
+            LaunchedEffect(isLoggedIn, isOnboardingCompleted) {
+                keepSplashOnScreen = isLoggedIn == null || isOnboardingCompleted == null
+            }
+
+            LaunchedEffect(isLoggedIn) {
+                if (isLoggedIn == true) viewModel.syncPushToken()
+            }
+
+            LaunchedEffect(isLoggedIn, notificationsEnabled) {
+                if (
+                    isLoggedIn == true &&
+                    notificationsEnabled &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
 
             LokacaraMobileTheme {
                 Box(Modifier.fillMaxSize()) {
@@ -46,13 +90,19 @@ class MainActivity : ComponentActivity() {
                         isLoggedIn != null && isOnboardingCompleted != null -> {
                             NavGraph(
                                 isLoggedIn = isLoggedIn == true,
-                                isOnboardingCompleted = isOnboardingCompleted == true
+                                isOnboardingCompleted = isOnboardingCompleted == true,
+                                pendingNotificationRoute = notificationRoute,
+                                onNotificationRouteConsumed = {
+                                    pendingNotificationRoute.value = null
+                                }
                             )
                         }
                         else -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Loading...")
-                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFFAF8FF))
+                            )
                         }
                     }
 
@@ -73,5 +123,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingNotificationRoute.value = notificationRouteFrom(intent)
+    }
+
+    private fun notificationRouteFrom(intent: Intent?): String? {
+        return intent?.getStringExtra(NotificationNavigation.EXTRA_ROUTE)?.takeIf { it.isNotBlank() }
     }
 }

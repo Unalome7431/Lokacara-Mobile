@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.LokacaraMobile" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.LokacaraMobile.Splash" parent="Theme.SplashScreen">
+        <item name="android:windowBackground">#FAF8FF</item>
+        <item name="windowSplashScreenBackground">#FAF8FF</item>
+        <item name="postSplashScreenTheme">@style/Theme.LokacaraMobile</item>
+    </style>
 </resources>

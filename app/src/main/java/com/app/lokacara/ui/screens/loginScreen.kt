@@ -50,7 +50,10 @@ fun LoginScreen(
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
 
+    var isVisible by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
+        isVisible = true
         viewModel.resetForm()
     }
 
@@ -69,155 +72,172 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    androidx.compose.animation.AnimatedVisibility(
+        visible = isVisible,
+        enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(500)) +
+                androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { 100 },
+                    animationSpec = androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                )
     ) {
-        Spacer(modifier = Modifier.height(150.dp))
-
-        Text(
-            text = stringResource(R.string.auth_login),
-            style = MaterialTheme.typography.displaySmall,
-            color = Primary500,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        val context = LocalContext.current
-        val googleWebClientId = stringResource(R.string.google_web_client_id)
-        val googleSignInOptions = remember(googleWebClientId) {
-            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
-                if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
-            }.build()
-        }
-        val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
-        val googleLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            try {
-                val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                account.result?.let { acct ->
-                    acct.idToken?.let { idToken ->
-                        viewModel.loginWithGoogle(idToken)
-                    }
-                }
-            } catch (e: Exception) {
-                SnackbarManager.showError("Gagal login dengan Google")
-            }
-        }
-
-        GoogleButton(
-            text = stringResource(R.string.auth_login_google),
-            enabled = !isLoading && googleWebClientId.isNotBlank(),
-            onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
-            Text(
-                text = " atau ",
-                style = MaterialTheme.typography.labelSmall,
-                color = Gray500,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        LokacaraTextField(
-            value = email,
-            onValueChange = { viewModel.email.value = it },
-            placeholder = stringResource(R.string.auth_email_placeholder)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LokacaraTextField(
-            value = password,
-            onValueChange = { viewModel.password.value = it },
-            placeholder = stringResource(R.string.auth_password_placeholder),
-            isPassword = true
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Lupa Kata Sandi?", // TODO: move to string resources if needed
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-            color = Gray500,
+        Column(
             modifier = Modifier
-                .align(Alignment.End)
-                .clickable { showForgotPasswordDialog = true }
-                .padding(vertical = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.login() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            enabled = !isLoading,
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 4.dp,
-                pressedElevation = 8.dp
-            ),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500),
-            shape = RoundedCornerShape(100.dp)
+                .fillMaxSize()
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
-            } else {
-                Text(stringResource(R.string.auth_login), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-            }
-        }
+            Spacer(modifier = Modifier.height(32.dp))
 
-        errorMessage?.let { msg ->
-            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = msg,
-                style = MaterialTheme.typography.labelSmall,
-                color = SemanticErrorBase,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Belum memiliki akun? ", style = MaterialTheme.typography.labelSmall, color = Gray500)
-            Text(
-                text = stringResource(R.string.auth_register),
-                style = MaterialTheme.typography.labelSmall,
+                text = stringResource(R.string.auth_login),
+                style = MaterialTheme.typography.displaySmall,
                 color = Primary500,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onNavigateToRegister() }
+                modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            val context = LocalContext.current
+            val googleWebClientId = stringResource(R.string.google_web_client_id)
+            val googleSignInOptions = remember(googleWebClientId) {
+                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
+                    requestEmail()
+                    if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
+                }.build()
+            }
+            val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
+            val googleLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                try {
+                    val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    account.result?.let { acct ->
+                        acct.idToken?.let { idToken ->
+                            viewModel.loginWithGoogle(idToken, acct.email)
+                        }
+                    }
+                } catch (e: Exception) {
+                    SnackbarManager.showError("Gagal login dengan Google")
+                }
+            }
+
+            GoogleButton(
+                text = stringResource(R.string.auth_login_google),
+                enabled = !isLoading && googleWebClientId.isNotBlank(),
+                onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
+                Text(
+                    text = " atau ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Gray500,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LokacaraTextField(
+                value = email,
+                onValueChange = { viewModel.email.value = it },
+                placeholder = stringResource(R.string.auth_email_placeholder)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LokacaraTextField(
+                value = password,
+                onValueChange = { viewModel.password.value = it },
+                placeholder = stringResource(R.string.auth_password_placeholder),
+                isPassword = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Lupa Kata Sandi?", // TODO: move to string resources if needed
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                color = Gray500,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable { showForgotPasswordDialog = true }
+                    .padding(vertical = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = { viewModel.login() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                enabled = !isLoading,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                shape = RoundedCornerShape(100.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.auth_login), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            androidx.compose.animation.AnimatedVisibility(
+                visible = errorMessage != null,
+                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = errorMessage ?: "",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SemanticErrorBase,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Belum memiliki akun? ", style = MaterialTheme.typography.labelSmall, color = Gray500)
+                Text(
+                    text = stringResource(R.string.auth_register),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Primary500,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onNavigateToRegister() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_lokacara),
+                contentDescription = "Logo Bawah",
+                modifier = Modifier.height(40.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Image(
-            painter = painterResource(id = R.drawable.logo_lokacara),
-            contentDescription = "Logo Bawah",
-            modifier = Modifier
-                .size(200.dp)
-                .padding(bottom = 100.dp)
-        )
     }
 
     if (showForgotPasswordDialog) {
@@ -236,13 +256,13 @@ fun LoginScreen(
                         color = Gray500
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
+                    LokacaraTextField(
                         value = forgotEmail,
                         onValueChange = { forgotEmail = it },
-                        placeholder = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        placeholder = "Email",
+                        isOutlined = true,
+                        shape = RoundedCornerShape(12.dp),
+                        containerColor = Color.White
                     )
                     forgotPasswordError?.let { err ->
                         Spacer(modifier = Modifier.height(8.dp))

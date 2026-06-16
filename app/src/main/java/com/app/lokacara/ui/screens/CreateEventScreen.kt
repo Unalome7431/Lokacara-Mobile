@@ -1,13 +1,10 @@
 package com.app.lokacara.ui.screens
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.LocationManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,23 +15,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FileUpload
-import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
@@ -43,10 +33,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,35 +57,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.DpOffset
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.ui.theme.CreateEventDarkerBlue
+import com.app.lokacara.ui.theme.CreateEventDashedBorder
+import com.app.lokacara.ui.theme.CreateEventLightBlue
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray600
 import com.app.lokacara.ui.theme.Gray800
 import com.app.lokacara.ui.theme.Gray900
 import com.app.lokacara.ui.theme.NunitoFont
-import com.app.lokacara.ui.theme.Primary500
 import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.ui.theme.SvgOrange
 import com.app.lokacara.ui.theme.SvgPrimaryBlue
 import com.app.lokacara.ui.components.MapSearchPicker
-import com.app.lokacara.ui.components.MapLocation
+import com.app.lokacara.ui.components.createevent.*
 import com.app.lokacara.viewmodel.CreateEventViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -104,7 +91,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
-    eventId: Long? = null, // Parameter penentu mode Edit/Create
+    eventId: Long? = null,
     onBack: () -> Unit = {},
     onPublish: () -> Unit = {},
     viewModel: CreateEventViewModel = hiltViewModel()
@@ -120,6 +107,8 @@ fun CreateEventScreen(
     val isOnline by viewModel.isOnline.collectAsState()
     val aplikasiTempat by viewModel.aplikasiTempat.collectAsState()
     val alamat by viewModel.alamat.collectAsState()
+    val latitude by viewModel.latitude.collectAsState()
+    val longitude by viewModel.longitude.collectAsState()
     val deskripsi by viewModel.deskripsi.collectAsState()
     val kuota by viewModel.kuota.collectAsState()
     val posterUri by viewModel.posterUri.collectAsState()
@@ -127,6 +116,23 @@ fun CreateEventScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val hasDraft by viewModel.hasDraft.collectAsState()
+    val scheduleReady = waktuMulai.isNotBlank() && waktuSelesai.isNotBlank()
+    val locationReady = if (isOnline) {
+        aplikasiTempat.isNotBlank() && alamat.isNotBlank()
+    } else {
+        aplikasiTempat.isNotBlank() && alamat.isNotBlank() && latitude.isNotBlank() && longitude.isNotBlank()
+    }
+    val requiredChecks = listOf(
+        namaEvent.isNotBlank(),
+        selectedCategoryName.isNotBlank(),
+        scheduleReady,
+        locationReady,
+        deskripsi.isNotBlank(),
+        kuota in 1..100_000
+    )
+    val completedRequirements = requiredChecks.count { it }
+    val totalRequirements = requiredChecks.size
+    val formProgress = completedRequirements / totalRequirements.toFloat()
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -134,7 +140,7 @@ fun CreateEventScreen(
 
     LaunchedEffect(eventId) {
         if (isEditMode) {
-            // viewModel.loadEventForEditing(eventId!!)
+            viewModel.loadEventForEditing(eventId!!)
         }
     }
 
@@ -153,8 +159,8 @@ fun CreateEventScreen(
         }
     }
 
-    val lightBlueBg = Color(0xFFD6E4FF)
-    val darkerBlueBg = Color(0xFFA1C1FF)
+    val lightBlueBg = CreateEventLightBlue
+    val darkerBlueBg = CreateEventDarkerBlue
 
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
@@ -276,17 +282,20 @@ fun CreateEventScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (isEditMode) Icons.Rounded.ArrowBackIosNew else Icons.Default.Close,
-                contentDescription = if (isEditMode) "Kembali" else "Tutup",
-                modifier = Modifier
-                    .size(if (isEditMode) 20.dp else 28.dp)
-                    .clickable {
-                        if (isEditMode) onBack() else viewModel.saveDraftAndExit(onBack)
-                    },
-                tint = Gray900
-            )
-            Spacer(modifier = Modifier.width(16.dp))
+            IconButton(
+                onClick = {
+                    if (isEditMode) onBack() else viewModel.saveDraftAndExit(onBack)
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = if (isEditMode) Icons.Rounded.ArrowBackIosNew else Icons.Default.Close,
+                    contentDescription = if (isEditMode) "Kembali" else "Tutup",
+                    modifier = Modifier.size(24.dp),
+                    tint = Gray900
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = if (isEditMode) "Edit Detail Acara" else "Buat Event Baru",
                 fontFamily = NunitoFont,
@@ -295,7 +304,6 @@ fun CreateEventScreen(
                 color = Gray900
             )
             Spacer(modifier = Modifier.weight(1f))
-
             if (!isEditMode) {
                 Text(
                     text = "Simpan Draf",
@@ -305,8 +313,6 @@ fun CreateEventScreen(
                     color = SvgOrange,
                     modifier = Modifier.clickable { viewModel.saveDraft() }
                 )
-            } else {
-                Spacer(modifier = Modifier.width(48.dp))
             }
         }
 
@@ -350,6 +356,15 @@ fun CreateEventScreen(
             }
         }
 
+        EventReadinessCard(
+            completed = completedRequirements,
+            total = totalRequirements,
+            progress = formProgress,
+            isOnline = isOnline,
+            scheduleReady = scheduleReady,
+            locationReady = locationReady
+        )
+
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = "Poster Event",
@@ -358,15 +373,20 @@ fun CreateEventScreen(
                 fontSize = 18.sp,
                 color = Gray800
             )
+            val posterElevation by animateDpAsState(
+                targetValue = if (posterUri != null) 5.dp else 0.dp,
+                label = "posterElevation"
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(188.dp)
+                    .shadow(posterElevation, RoundedCornerShape(20.dp))
                     .background(Color.White, RoundedCornerShape(20.dp))
                     .then(
                         if (posterUri == null) Modifier.drawBehind {
                             drawRoundRect(
-                                color = Color(0xFF666666),
+                                color = CreateEventDashedBorder,
                                 style = Stroke(
                                     width = 3f,
                                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f)
@@ -386,6 +406,45 @@ fun CreateEventScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.45f)
+                                    )
+                                )
+                            )
+                    )
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(14.dp),
+                        color = Color.White.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.PhotoCamera,
+                                contentDescription = "Ganti poster",
+                                tint = SvgOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Ganti Poster",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Gray900
+                            )
+                        }
+                    }
                 } else {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -395,12 +454,6 @@ fun CreateEventScreen(
                             Icon(
                                 imageVector = Icons.Outlined.PhotoCamera,
                                 contentDescription = "Camera",
-                                tint = SvgOrange,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Icon(
-                                imageVector = Icons.Outlined.AddCircleOutline,
-                                contentDescription = "Add",
                                 tint = SvgOrange,
                                 modifier = Modifier.size(32.dp)
                             )
@@ -414,7 +467,7 @@ fun CreateEventScreen(
                 }
             }
             Text(
-                text = "ukuran maksimal 5mb, png jpg svg",
+                text = "Poster akan dikompresi otomatis. Maksimal 10 MB.",
                 style = MaterialTheme.typography.labelSmall,
                 color = Gray500,
                 modifier = Modifier.fillMaxWidth(),
@@ -427,7 +480,9 @@ fun CreateEventScreen(
             onValueChange = { viewModel.namaEvent.value = it },
             label = "Nama Event",
             placeholder = "Nama Event",
-            containerColor = lightBlueBg
+            containerColor = lightBlueBg,
+            supportingText = "${namaEvent.length}/255",
+            supportingColor = if (namaEvent.length > 255) SemanticErrorBase else Gray500
         )
 
         CategoryDropdownField(
@@ -476,10 +531,11 @@ fun CreateEventScreen(
 
             SectionContainer(
                 title = "Detail Event",
+                subtitle = if (isOnline) "Platform dan tautan event" else "Venue dan alamat dari peta",
                 backgroundColor = lightBlueBg,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                 trailingContent = {
-                    CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.isOnline.value = it })
+                    CustomToggleSwitch(isOnline = isOnline, onToggle = { viewModel.setEventMode(it) })
                 }
             ) {
                 if (isOnline) {
@@ -501,6 +557,10 @@ fun CreateEventScreen(
                     )
                 } else {
                     MapSearchPicker(
+                        selectedLocationName = aplikasiTempat,
+                        selectedLocationAddress = alamat,
+                        selectedLatitude = latitude.toDoubleOrNull(),
+                        selectedLongitude = longitude.toDoubleOrNull(),
                         onLocationSelected = { location ->
                             viewModel.setLocationFromMap(location)
                         }
@@ -538,37 +598,46 @@ fun CreateEventScreen(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium
                 )
+                Text(
+                    text = "${deskripsi.length}/5000",
+                    fontFamily = NunitoFont,
+                    fontSize = 11.sp,
+                    color = if (deskripsi.length > 5000) SemanticErrorBase else Gray600,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
             }
         }
 
         SectionContainer(
             title = "Kuota Peserta",
             backgroundColor = lightBlueBg,
-            subtitle = "Batas maksimal pendaftar",
-            trailingContent = {
-                Stepper(value = kuota, onValueChange = { viewModel.kuota.value = it })
-            }
-        )
+            subtitle = "Batas maksimal pendaftar"
+        ) {
+            CapacityControl(
+                value = kuota,
+                onValueChange = { nextValue ->
+                    viewModel.kuota.value = nextValue.coerceIn(1, 100_000)
+                }
+            )
+        }
 
         errorMessage?.let { msg ->
-            Text(
-                text = msg,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = SemanticErrorBase,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            ErrorMessageBanner(message = msg)
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        val publishElevation by animateDpAsState(
+            targetValue = if (isLoading) 0.dp else 4.dp,
+            label = "publishElevation"
+        )
         Button(
             onClick = { viewModel.publish() },
             enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .shadow(publishElevation, RoundedCornerShape(28.dp)),
             colors = ButtonDefaults.buttonColors(
                 containerColor = SvgPrimaryBlue,
                 disabledContainerColor = SvgPrimaryBlue.copy(alpha = 0.6f)
@@ -583,7 +652,7 @@ fun CreateEventScreen(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Memproses...",
+                    text = if (isEditMode) "Menyimpan..." else "Menerbitkan...",
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -591,7 +660,11 @@ fun CreateEventScreen(
                 )
             } else {
                 Text(
-                    text = if (isEditMode) "Simpan Perubahan" else "Terbitkan Event",
+                    text = when {
+                        isEditMode -> "Simpan Perubahan"
+                        formProgress >= 1f -> "Terbitkan Event"
+                        else -> "Cek dan Terbitkan"
+                    },
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
@@ -610,301 +683,5 @@ fun CreateEventScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-    }
-}
-
-@Composable
-fun DatePickerField(
-    value: String,
-    onClick: () -> Unit,
-    label: String,
-    placeholder: String
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = label,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = Gray800
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White, RoundedCornerShape(16.dp))
-                .clickable { onClick() }
-                .padding(horizontal = 16.dp, vertical = 18.dp)
-        ) {
-            Text(
-                text = value.ifBlank { placeholder },
-                color = if (value.isBlank()) Gray500 else Gray900,
-                fontSize = 14.sp,
-                fontFamily = NunitoFont
-            )
-        }
-    }
-}
-
-@Composable
-fun CategoryDropdownField(
-    selectedCategoryName: String,
-    categories: List<CategoryDto>,
-    onCategorySelected: (CategoryDto) -> Unit,
-    label: String,
-    containerColor: Color
-) {
-    var showDialog by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Gray800)
-        Surface(
-            modifier = Modifier.fillMaxWidth().clickable { showDialog = true },
-            shape = RoundedCornerShape(16.dp),
-            color = containerColor
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = selectedCategoryName.ifEmpty { "Pilih Kategori" },
-                    color = if (selectedCategoryName.isEmpty()) Gray500 else Gray900,
-                    fontSize = 14.sp, fontFamily = NunitoFont
-                )
-                Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = SvgOrange, modifier = Modifier.size(24.dp))
-            }
-        }
-    }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Pilih Kategori", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    categories.forEach { cat ->
-                        val isSelected = selectedCategoryName == cat.name
-                        Surface(
-                            modifier = Modifier.fillMaxWidth().clickable { onCategorySelected(cat); showDialog = false },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) Primary500.copy(alpha = 0.1f) else Color.Transparent
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = cat.name,
-                                    fontFamily = NunitoFont, fontSize = 15.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Primary500 else Gray900
-                                )
-                                if (isSelected) Icon(Icons.Default.Check, "Selected", tint = Primary500, modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Tutup", fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-}
-
-@Composable
-fun SectionContainer(
-    title: String,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = Color(0xFFD6E4FF),
-    shape: Shape = RoundedCornerShape(20.dp),
-    subtitle: String? = null,
-    trailingContent: @Composable (() -> Unit)? = null,
-    content: @Composable (() -> Unit)? = null
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(backgroundColor)
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = title,
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Gray800
-                )
-                if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Gray600
-                    )
-                }
-            }
-            if (trailingContent != null) {
-                trailingContent()
-            }
-        }
-        if (content != null) {
-            content()
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CreateEventTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    label: String,
-    placeholder: String,
-    containerColor: Color = Color(0xFFD6E4FF),
-    labelSize: androidx.compose.ui.unit.TextUnit = 16.sp
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
-        if (label.isNotEmpty()) {
-            Text(
-                text = label,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = labelSize,
-                color = Gray800
-            )
-        }
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 12.sp,
-                    color = Gray500
-                )
-            },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = containerColor,
-                unfocusedContainerColor = containerColor,
-                disabledContainerColor = containerColor,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                focusedTextColor = Gray900,
-                unfocusedTextColor = Gray900
-            ),
-            shape = RoundedCornerShape(16.dp),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-    }
-}
-
-@Composable
-fun CustomToggleSwitch(isOnline: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Color.White)
-            .padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(if (isOnline) SvgPrimaryBlue else Color.Transparent)
-                .clickable { onToggle(true) }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Online",
-                color = if (isOnline) Color.White else Gray800,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(if (!isOnline) SvgPrimaryBlue else Color.Transparent)
-                .clickable { onToggle(false) }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Offline",
-                color = if (!isOnline) Color.White else Gray800,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-fun Stepper(value: Int, onValueChange: (Int) -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .background(Color.White, RoundedCornerShape(50))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(SvgOrange, CircleShape)
-                .clickable { if (value > 0) onValueChange(value - 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("-", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp, modifier = Modifier.offset(y = (-2).dp))
-        }
-        Text(
-            text = value.toString(),
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = Gray900
-        )
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(SvgPrimaryBlue, CircleShape)
-                .clickable { onValueChange(value + 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("+", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.offset(y = (-1).dp))
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-@Composable
-fun CreateEventScreenPreview() {
-    com.app.lokacara.ui.theme.LokacaraMobileTheme {
-        CreateEventScreen(
-            eventId = null, // Set null untuk preview Create mode
-            onBack = {},
-            onPublish = {},
-            viewModel = hiltViewModel()
-        )
     }
 }

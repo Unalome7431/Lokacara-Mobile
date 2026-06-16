@@ -4,37 +4,76 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
-import com.app.lokacara.ui.theme.*
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.components.ProfileAvatarImage
+import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.theme.Gray50
+import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.theme.Gray300
+import com.app.lokacara.ui.theme.Gray500
+import com.app.lokacara.ui.theme.Gray600
+import com.app.lokacara.ui.theme.Gray900
+import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.Primary100
+import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.Secondary100
 import com.app.lokacara.viewmodel.ProfileViewModel
 
 @Composable
@@ -48,9 +87,9 @@ fun EditProfileScreen(
     var editField by remember { mutableStateOf<UserSessionManager.Field?>(null) }
     var editFieldValue by remember { mutableStateOf("") }
     var editKeyboardType by remember { mutableStateOf(KeyboardType.Text) }
-
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var previousProfileUrl by remember { mutableStateOf<String?>(null) }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
@@ -63,13 +102,14 @@ fun EditProfileScreen(
     )
 
     LaunchedEffect(userProfile.profileImageUrl) {
-        if (profileImageUri != null && userProfile.profileImageUrl != null &&
-            userProfile.profileImageUrl != previousProfileUrl) {
+        if (
+            profileImageUri != null &&
+            userProfile.profileImageUrl != null &&
+            userProfile.profileImageUrl != previousProfileUrl
+        ) {
             profileImageUri = null
         }
     }
-
-    val scrollState = rememberScrollState()
 
     if (showDialog) {
         EditFieldDialog(
@@ -77,154 +117,114 @@ fun EditProfileScreen(
             initialValue = editFieldValue,
             keyboardType = editKeyboardType,
             onDismiss = { showDialog = false },
-                    onSave = { newValue ->
+            onSave = { newValue ->
                 editField?.let { field -> viewModel.updateProfileField(field, newValue) }
                 showDialog = false
             }
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
+    ProfilePageScaffold(
+        title = "Edit Profil",
+        onBack = { navController.navigateBackOrHome() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Edit Profil",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Box(contentAlignment = Alignment.BottomEnd) {
-                if (profileImageUri != null) {
-                    AsyncImage(
-                        model = profileImageUri,
-                        contentDescription = "Profile Picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }
-                    )
-                } else {
-                    AsyncImage(
-                        model = userProfile.profileImageUrl,
-                        contentDescription = "Profile Picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }
-                    )
-                }
-                
+                val avatarModifier = Modifier
+                    .size(112.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+
+                ProfileAvatarImage(
+                    imageModel = profileImageUri ?: userProfile.profileImageUrl,
+                    modifier = avatarModifier
+                )
+
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .background(Color.White, CircleShape)
-                        .padding(2.dp)
+                        .size(36.dp)
+                        .background(Primary500, CircleShape)
+                        .border(2.dp, Color.White, CircleShape)
                         .clickable {
-                            photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.CameraAlt,
                         contentDescription = "Edit Photo",
-                        tint = Gray600,
-                        modifier = Modifier.size(16.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = userProfile.name,
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Gray900
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = "Edit Name",
-                    tint = Gray600,
-                    modifier = Modifier
-                        .size(18.dp)
-                        .clickable {
-                            editField = UserSessionManager.Field.NAME
-                            editFieldValue = userProfile.name
-                            editKeyboardType = KeyboardType.Text
-                            showDialog = true
-                        }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .border(1.dp, Gray100, RoundedCornerShape(22.dp))
+                    .padding(vertical = 8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ) {
-                    ProfileDetailRow(label = "Email", value = userProfile.email, onClick = {
+                ProfileDetailRow(
+                    label = "Nama",
+                    value = userProfile.name,
+                    onClick = {
+                        editField = UserSessionManager.Field.NAME
+                        editFieldValue = userProfile.name
+                        editKeyboardType = KeyboardType.Text
+                        showDialog = true
+                    }
+                )
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
+                ProfileDetailRow(
+                    label = "Email",
+                    value = userProfile.email,
+                    onClick = {
                         editField = UserSessionManager.Field.EMAIL
                         editFieldValue = userProfile.email
                         editKeyboardType = KeyboardType.Email
                         showDialog = true
-                    })
-                    HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileDetailRow(label = "Nomor", value = userProfile.phone, onClick = {
+                    }
+                )
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
+                ProfileDetailRow(
+                    label = "Nomor",
+                    value = userProfile.phone,
+                    onClick = {
                         editField = UserSessionManager.Field.PHONE
                         editFieldValue = userProfile.phone
                         editKeyboardType = KeyboardType.Phone
                         showDialog = true
-                    })
-                    HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileDetailRow(label = "Lokasi", value = userProfile.location, onClick = {
+                    }
+                )
+                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
+                ProfileDetailRow(
+                    label = "Lokasi",
+                    value = userProfile.location,
+                    onClick = {
                         editField = UserSessionManager.Field.LOCATION
                         editFieldValue = userProfile.location
                         editKeyboardType = KeyboardType.Text
                         showDialog = true
-                    })
-                }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(100.dp))
@@ -235,27 +235,42 @@ fun EditProfileScreen(
 @Composable
 fun ProfileDetailRow(label: String, value: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 20.dp, vertical = 18.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             fontFamily = NunitoFont,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            color = Gray500
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = Gray600
         )
-        Text(
-            text = value,
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = Gray900
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = value.ifBlank { "-" },
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Gray900,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Icon(
+                imageVector = Icons.Rounded.Edit,
+                contentDescription = null,
+                tint = Primary500,
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
@@ -281,26 +296,15 @@ fun EditFieldDialog(
             )
         },
         text = {
-            OutlinedTextField(
+            LokacaraTextField(
                 value = text,
                 onValueChange = { text = it },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                placeholder = "Masukkan $label",
+                isOutlined = true,
+                keyboardType = keyboardType,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Primary500,
-                    unfocusedBorderColor = Gray300,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Gray900,
-                    unfocusedTextColor = Gray900
-                ),
-                textStyle = LocalTextStyle.current.copy(
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
-                )
+                containerColor = Color.White
             )
         },
         confirmButton = {

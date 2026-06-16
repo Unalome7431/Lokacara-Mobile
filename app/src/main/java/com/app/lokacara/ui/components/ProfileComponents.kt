@@ -5,14 +5,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,6 +29,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,10 +47,228 @@ import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
 import com.app.lokacara.ui.theme.*
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.draw.drawBehind
+import java.io.File
 import androidx.compose.material.icons.outlined.Group
+import androidx.compose.foundation.layout.statusBarsPadding
+
+@Composable
+fun ProfilePageScaffold(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    backgroundColor: Color = Gray50,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .statusBarsPadding()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 18.dp)
+                .height(52.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.White,
+                            Primary100.copy(alpha = 0.34f),
+                            Secondary100.copy(alpha = 0.44f)
+                        )
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.78f), RoundedCornerShape(18.dp))
+        ) {
+            if (onBack != null) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBackIosNew,
+                        contentDescription = "Kembali",
+                        tint = Primary500,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.size(40.dp))
+            }
+
+            Text(
+                text = title,
+                modifier = Modifier.align(Alignment.Center),
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Gray900
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(28.dp)
+            )
+        }
+
+        content()
+    }
+}
+
+@Composable
+fun ProfileStatChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(Gray50, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = value,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray900
+        )
+        Text(
+            text = label,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
+            color = Gray500
+        )
+    }
+}
+
+@Composable
+fun ProfileSubpageSummaryCard(
+    title: String,
+    subtitle: String,
+    value: String,
+    valueLabel: String,
+    icon: ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(accentColor.copy(alpha = 0.14f), Color.White, Color.White)
+                    )
+                )
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(accentColor.copy(alpha = 0.14f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(24.dp))
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    text = title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    color = Gray900,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = subtitle,
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray500,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = value,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 24.sp,
+                    color = accentColor
+                )
+                Text(
+                    text = valueLabel,
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 11.sp,
+                    color = Gray500
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileAvatarPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(Primary100, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = "Profile Picture",
+            tint = Primary500,
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
+@Composable
+fun ProfileAvatarImage(
+    imageModel: Any?,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "Profile Picture"
+) {
+    val resolvedModel = remember(imageModel) {
+        when (imageModel) {
+            is String -> imageModel
+                .trim()
+                .takeIf { it.isNotEmpty() }
+                ?.let { value ->
+                    if (value.startsWith("/") && File(value).exists()) File(value) else value
+                }
+            else -> imageModel
+        }
+    }
+    var hasError by remember(resolvedModel) { mutableStateOf(false) }
+
+    if (resolvedModel == null || hasError) {
+        ProfileAvatarPlaceholder(modifier = modifier)
+    } else {
+        AsyncImage(
+            model = resolvedModel,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            onError = { hasError = true },
+            modifier = modifier
+        )
+    }
+}
 
 @Composable
 fun ProfileMenuItem(icon: ImageVector, title: String, onClick: () -> Unit) {
@@ -116,33 +341,64 @@ fun EmptyEventState(
     text: String = stringResource(R.string.empty_no_events),
     onClick: () -> Unit
 ) {
-    val stroke = Stroke(
-        width = 3f,
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
-    )
-    val color = Gray500
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 24.dp)
-            .drawBehind {
-                drawRoundRect(color = color, style = stroke, cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()))
-            }
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
-            .clickable { onClick() }
-            .padding(vertical = 48.dp, horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        Color.White,
+                        Primary100.copy(alpha = 0.15f),
+                        Secondary100.copy(alpha = 0.15f)
+                    )
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(24.dp))
+            .padding(vertical = 42.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(Color.White, CircleShape)
+                .shadow(2.dp, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Outlined.EventNote,
+                contentDescription = null,
+                tint = Primary500,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
         Text(
             text = text,
             fontFamily = NunitoFont,
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             color = Gray900,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
         )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Button(
+            onClick = onClick,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+            modifier = Modifier.height(48.dp).padding(horizontal = 16.dp)
+        ) {
+            Icon(androidx.compose.material.icons.Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Buat Event Sekarang", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

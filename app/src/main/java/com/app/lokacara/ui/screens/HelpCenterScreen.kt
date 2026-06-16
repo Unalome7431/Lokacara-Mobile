@@ -23,6 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.SnackbarManager
+import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.*
 
 @Composable
@@ -46,34 +50,10 @@ fun HelpCenterScreen(navController: NavController) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
+    ProfilePageScaffold(
+        title = "Pusat Bantuan",
+        onBack = { navController.navigateBackOrHome() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Pusat Bantuan",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,21 +90,15 @@ fun HelpCenterScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(
+            LokacaraTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cari topik bantuan...", color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
+                placeholder = "Cari topik bantuan...",
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, tint = Gray400) },
+                isOutlined = true,
                 shape = RoundedCornerShape(16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Primary500,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Gray900,
-                    unfocusedTextColor = Gray900
-                )
+                containerColor = Color.White
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -140,9 +114,16 @@ fun HelpCenterScreen(navController: NavController) {
                 )
             }
 
-            faqs.forEach { (question, answer) ->
-                FAQItem(question = question, answer = answer)
-                Spacer(modifier = Modifier.height(12.dp))
+            if (faqs.isEmpty()) {
+                HelpEmptySearchCard(
+                    query = searchQuery,
+                    onReset = { searchQuery = "" }
+                )
+            } else {
+                faqs.forEach { (question, answer) ->
+                    FAQItem(question = question, answer = answer)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -186,7 +167,8 @@ fun HelpCenterScreen(navController: NavController) {
                             val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
                                 data = android.net.Uri.parse("mailto:support@lokacara.my.id")
                             }
-                            context.startActivity(intent)
+                            runCatching { context.startActivity(intent) }
+                                .onFailure { SnackbarManager.showError("Aplikasi email tidak tersedia") }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500),
                         shape = RoundedCornerShape(28.dp),
@@ -204,6 +186,36 @@ fun HelpCenterScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun HelpEmptySearchCard(query: String, onReset: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Rounded.SearchOff, contentDescription = null, tint = Gray400, modifier = Modifier.size(34.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Tidak ada hasil untuk \"$query\"",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Gray900,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onReset) {
+                Text("Reset pencarian", color = Primary500, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

@@ -46,3 +46,12 @@ data class RefreshTokenResponse(
 data class GoogleLoginRequest(
     val token: String
 )
+
+data class PushTokenRequest(
+    val token: String,
+    val platform: String = "android"
+)
+
+data class DeletePushTokenRequest(
+    val token: String
+)

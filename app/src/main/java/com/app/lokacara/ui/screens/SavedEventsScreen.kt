@@ -1,31 +1,37 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
+import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.ProfileSubpageSummaryCard
 import com.app.lokacara.ui.navigation.Screen
-import com.app.lokacara.ui.theme.*
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.navigation.navigateToExplore
+import com.app.lokacara.ui.theme.Gray50
+import com.app.lokacara.ui.theme.LokacaraMobileTheme
+import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.Secondary500
 import com.app.lokacara.viewmodel.BookmarkViewModel
 
 @Composable
@@ -36,66 +42,54 @@ fun SavedEventsScreen(
     val savedEvents by viewModel.savedEvents.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = "Event Tersimpan",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Primary500
-                )
-            } else {
-                PullToRefreshBox(
-                    isRefreshing = isLoading,
-                    onRefresh = { viewModel.refresh() }
+    ProfilePageScaffold(title = "Event Tersimpan", onBack = { navController.navigateBackOrHome() }) {
+        if (isLoading && savedEvents.isEmpty()) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Primary500)
+            }
+        } else {
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refresh() }
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Gray50),
+                    contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 100.dp)
-                    ) {
-                        if (savedEvents.isEmpty()) {
-                            item {
-                                EmptyEventState(
-                                    text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                                    onClick = { navController.navigate(Screen.Explore.route) }
-                                )
-                            }
-                        } else {
-                            items(savedEvents) { event ->
-                                EventCard(
-                                    event = event,
-                                    onClick = {
-                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                    },
-                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                )
-                            }
+                    item {
+                        ProfileSubpageSummaryCard(
+                            title = "Event Tersimpan",
+                            subtitle = "Event favorit yang bisa kamu akses lagi nanti.",
+                            value = savedEvents.size.toString(),
+                            valueLabel = "event",
+                            icon = Icons.Rounded.Bookmark,
+                            accentColor = Secondary500
+                        )
+                    }
+                    if (savedEvents.isEmpty()) {
+                        item {
+                            EmptyEventState(
+                                text = "Belum Ada Event Tersimpan\nCari Event Disini",
+                                onClick = { navController.navigateToExplore() }
+                            )
+                        }
+                    } else {
+                        items(
+                            items = savedEvents,
+                            key = { event: Event -> event.id }
+                        ) { event ->
+                            EventCard(
+                                event = event,
+                                onClick = {
+                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                },
+                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                            )
                         }
                     }
                 }

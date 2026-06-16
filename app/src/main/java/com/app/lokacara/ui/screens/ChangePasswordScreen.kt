@@ -1,124 +1,98 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.LockReset
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.app.lokacara.ui.theme.*
-import androidx.compose.ui.res.stringResource
-import com.app.lokacara.R
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.app.lokacara.viewmodel.ChangePasswordViewModel
+import androidx.navigation.NavController
+import com.app.lokacara.R
+import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.navigation.navigateBackOrHome
+import com.app.lokacara.ui.theme.*
+import com.app.lokacara.viewmodel.AuthViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangePasswordScreen(
     navController: NavController,
-    viewModel: ChangePasswordViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val oldPassword by viewModel.oldPassword.collectAsState()
     val newPassword by viewModel.newPassword.collectAsState()
     val confirmPassword by viewModel.confirmPassword.collectAsState()
-    val oldPasswordVisible by viewModel.oldPasswordVisible.collectAsState()
-    val newPasswordVisible by viewModel.newPasswordVisible.collectAsState()
-    val confirmPasswordVisible by viewModel.confirmPasswordVisible.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    val changeSuccess by viewModel.changeSuccess.collectAsState()
+    val changePasswordSuccess by viewModel.changePasswordSuccess.collectAsState()
 
-    LaunchedEffect(changeSuccess) {
-        if (changeSuccess) {
-            viewModel.resetChangeSuccess()
-            kotlinx.coroutines.delay(1500)
-            navController.popBackStack()
+    LaunchedEffect(changePasswordSuccess) {
+        if (changePasswordSuccess) {
+            viewModel.resetChangePasswordSuccess()
+            navController.navigateBackOrHome()
         }
     }
 
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Gray50)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp).clickable { navController.popBackStack() }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.change_password_title),
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateBackOrHome() }) {
+                        Icon(
+                            imageVector = Icons.Rounded.ArrowBackIosNew,
+                            contentDescription = "Kembali",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = Gray900,
+                    navigationIconContentColor = Gray900
+                )
             )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = stringResource(R.string.change_password_button),
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(20.dp))
-        }
-
+        },
+        containerColor = Color.White
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
+                .padding(innerPadding)
+                .background(Color.White)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Primary100, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.LockReset,
-                    contentDescription = "Ubah Kata Sandi",
-                    tint = Primary500,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
             Text(
-                text = "Buat Kata Sandi Baru",
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = Gray900
+                text = "Ubah Kata Sandi",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Primary500,
+                textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Text(
                 text = "Pastikan kata sandi baru Anda unik dan kuat untuk menjaga keamanan akun.",
@@ -137,111 +111,38 @@ fun ChangePasswordScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = stringResource(R.string.change_password_old_label),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        color = Gray700,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    OutlinedTextField(
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    LokacaraTextField(
                         value = oldPassword,
                         onValueChange = { viewModel.oldPassword.value = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.change_password_old_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
-                        shape = RoundedCornerShape(12.dp),
-                        visualTransformation = if (oldPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.oldPasswordVisible.value = !viewModel.oldPasswordVisible.value }) {
-                                Icon(
-                                    imageVector = if (oldPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = "Tampilkan Kata Sandi",
-                                    tint = Gray400
-                                )
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Gray200,
-                            focusedBorderColor = Primary500,
-                            focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50,
-                            focusedTextColor = Gray900,
-                            unfocusedTextColor = Gray900
-                        )
+                        placeholder = stringResource(R.string.change_password_old_placeholder),
+                        label = stringResource(R.string.change_password_old_label),
+                        isPassword = true,
+                        isOutlined = true,
+                        containerColor = Gray50,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = stringResource(R.string.change_password_new_label),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        color = Gray700,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    OutlinedTextField(
+                    LokacaraTextField(
                         value = newPassword,
                         onValueChange = { viewModel.newPassword.value = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.change_password_new_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
-                        shape = RoundedCornerShape(12.dp),
-                        visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.newPasswordVisible.value = !viewModel.newPasswordVisible.value }) {
-                                Icon(
-                                    imageVector = if (newPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = "Tampilkan Kata Sandi",
-                                    tint = Gray400
-                                )
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Gray200,
-                            focusedBorderColor = Primary500,
-                            focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50,
-                            focusedTextColor = Gray900,
-                            unfocusedTextColor = Gray900
-                        )
+                        placeholder = stringResource(R.string.change_password_new_placeholder),
+                        label = stringResource(R.string.change_password_new_label),
+                        isPassword = true,
+                        isOutlined = true,
+                        containerColor = Gray50,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = stringResource(R.string.change_password_confirm_label),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        color = Gray700,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    OutlinedTextField(
+                    LokacaraTextField(
                         value = confirmPassword,
                         onValueChange = { viewModel.confirmPassword.value = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.change_password_confirm_placeholder), color = Gray400, fontFamily = NunitoFont, fontSize = 12.sp) },
-                        shape = RoundedCornerShape(12.dp),
-                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.confirmPasswordVisible.value = !viewModel.confirmPasswordVisible.value }) {
-                                Icon(
-                                    imageVector = if (confirmPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                    contentDescription = "Tampilkan Kata Sandi",
-                                    tint = Gray400
-                                )
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Gray200,
-                            focusedBorderColor = Primary500,
-                            focusedContainerColor = Gray50,
-                            unfocusedContainerColor = Gray50,
-                            focusedTextColor = Gray900,
-                            unfocusedTextColor = Gray900
-                        )
+                        placeholder = stringResource(R.string.change_password_confirm_placeholder),
+                        label = stringResource(R.string.change_password_confirm_label),
+                        isPassword = true,
+                        isOutlined = true,
+                        containerColor = Gray50,
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
@@ -274,7 +175,7 @@ fun ChangePasswordScreen(
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
                     Text(
-                        text = "Simpan Perubahan",
+                        text = "Simpan Kata Sandi Baru",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
@@ -282,19 +183,6 @@ fun ChangePasswordScreen(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(100.dp))
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ChangePasswordScreenPreview() {
-    LokacaraMobileTheme {
-        ChangePasswordScreen(
-            navController = rememberNavController(),
-            viewModel = hiltViewModel()
-        )
     }
 }
