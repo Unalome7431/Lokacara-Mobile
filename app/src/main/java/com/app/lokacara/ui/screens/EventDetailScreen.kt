@@ -36,7 +36,6 @@ import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
@@ -85,6 +84,7 @@ import com.app.lokacara.R
 import com.app.lokacara.data.remote.countdownLabel
 import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.model.Event
+import com.app.lokacara.ui.components.ReminderSchedulePanel
 import com.app.lokacara.ui.components.rememberEventImageRequest
 import com.app.lokacara.ui.components.shimmerBrush
 import com.app.lokacara.ui.navigation.Screen
@@ -125,7 +125,6 @@ fun EventDetailScreen(
     val isRegistered by viewModel.isRegistered.collectAsState()
     val isHost by viewModel.isHost.collectAsState()
     val isJoining by viewModel.isJoining.collectAsState()
-    val isReminderSending by viewModel.isReminderSending.collectAsState()
     val isQrLoading by viewModel.isQrLoading.collectAsState()
     val qrToken by viewModel.qrToken.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
@@ -196,9 +195,8 @@ fun EventDetailScreen(
                             item {
                                 HostManagementPanel(
                                     eventId = event.id,
+                                    startDatetime = event.startDatetime,
                                     navController = navController,
-                                    isReminderSending = isReminderSending,
-                                    onSendReminder = { viewModel.sendReminders() }
                                 )
                             }
                         }
@@ -391,63 +389,71 @@ private fun EventDetailContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        EventStatusCard(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken)
+        FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken)
+        
+        HorizontalDivider(thickness = 1.dp, color = Gray100)
 
         EventInfoGrid(event = event)
+        
+        HorizontalDivider(thickness = 1.dp, color = Gray100)
 
-        EventLocationCard(event = event, onOpenMap = onOpenMap, onOpenLink = onOpenLink)
+        FlatEventLocation(event = event, onOpenMap = onOpenMap, onOpenLink = onOpenLink)
+        
+        HorizontalDivider(thickness = 1.dp, color = Gray100)
 
-        EventDescription(text = event.description)
+        FlatEventDescription(text = event.description)
     }
 }
 
 @Composable
-private fun EventStatusCard(
+private fun FlatEventStatus(
     event: Event,
     isRegistered: Boolean,
     isHost: Boolean,
     isQrLoading: Boolean,
     qrToken: String?
 ) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                EventPill(
-                    text = localizedEventType(event.type),
-                    color = Primary100,
-                    contentColor = Primary500
-                )
-                EventPill(
-                    text = event.price,
-                    color = if (event.price == "Gratis") SemanticSuccessLight else Secondary100,
-                    contentColor = if (event.price == "Gratis") SemanticSuccessBase else Secondary500
-                )
-                if (isHost) EventPill(text = "Host", color = Gray900, contentColor = Color.White)
-            }
-
-            val statusText = when {
-                isHost -> "Kamu adalah penyelenggara event ini."
-                isRegistered -> "Kamu sudah terdaftar. Tiket tersedia di halaman Tiket."
-                else -> "Daftar untuk menyimpan tiket dan mendapatkan akses check-in."
-            }
-            Text(
-                text = statusText,
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 13.sp,
-                color = Gray600,
-                lineHeight = 19.sp
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            EventPill(
+                text = localizedEventType(event.type),
+                color = Primary100.copy(alpha = 0.5f),
+                contentColor = Primary500
             )
+            EventPill(
+                text = event.price,
+                color = if (event.price == "Gratis") SemanticSuccessLight else Secondary100.copy(alpha = 0.5f),
+                contentColor = if (event.price == "Gratis") SemanticSuccessBase else Secondary500
+            )
+            if (isHost) EventPill(text = "Host", color = Gray900, contentColor = Color.White)
+        }
 
-            if (isRegistered && !isHost) {
-                HorizontalDivider(color = Gray100)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        val statusText = when {
+            isHost -> "Kamu adalah penyelenggara event ini."
+            isRegistered -> "Kamu sudah terdaftar. Tiket tersedia di halaman Tiket."
+            else -> "Daftar untuk menyimpan tiket dan mendapatkan akses check-in."
+        }
+        Text(
+            text = statusText,
+            fontFamily = PlusJakartaSansFont,
+            fontSize = 13.sp,
+            color = Gray600,
+            lineHeight = 19.sp
+        )
+
+        if (isRegistered && !isHost) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                color = Primary100.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(Icons.Outlined.QrCode2, contentDescription = null, tint = Primary500, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
@@ -459,7 +465,7 @@ private fun EventStatusCard(
                         fontFamily = PlusJakartaSansFont,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Gray800
+                        color = Primary500
                     )
                 }
             }
@@ -531,7 +537,7 @@ private fun EventMetricCard(
 }
 
 @Composable
-private fun EventLocationCard(
+private fun FlatEventLocation(
     event: Event,
     onOpenMap: () -> Unit,
     onOpenLink: () -> Unit
@@ -544,20 +550,20 @@ private fun EventLocationCard(
     }
     val canOpen = if (isOnline) !event.link.isNullOrBlank() else event.latitude != null || event.longitude != null || event.location.isNotBlank()
 
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            text = "Lokasi",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray900
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(Primary100),
+                    .background(Primary100.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -567,28 +573,30 @@ private fun EventLocationCard(
                     modifier = Modifier.size(21.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = if (isOnline) "Platform online" else stringResource(R.string.event_detail_location_label),
                     fontFamily = PlusJakartaSansFont,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = Gray500
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = event.location.ifBlank { if (isOnline) "Online" else "Lokasi belum tersedia" },
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     color = Gray900,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 if (detail.isNotBlank() && detail != event.location) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = detail,
                         fontFamily = PlusJakartaSansFont,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = Gray600,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -605,57 +613,51 @@ private fun EventLocationCard(
 }
 
 @Composable
-private fun EventDescription(text: String) {
+private fun FlatEventDescription(text: String) {
     var expanded by remember(text) { mutableStateOf(false) }
     val shouldCollapse = text.length > 320
 
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.event_detail_description_title),
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray900
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        androidx.compose.animation.AnimatedContent(
+            targetState = expanded,
+            transitionSpec = {
+                fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+            },
+            label = "description_expansion"
+        ) { isExpanded ->
+            val displayText = if (!isExpanded && shouldCollapse) text.take(320).trimEnd() + "..." else text
             Text(
-                text = stringResource(R.string.event_detail_description_title),
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Gray900
+                text = displayText.ifBlank { "Deskripsi event belum tersedia." },
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 14.sp,
+                color = Gray700,
+                lineHeight = 24.sp
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            
-            androidx.compose.animation.AnimatedContent(
-                targetState = expanded,
-                transitionSpec = {
-                    fadeIn(tween(300)) togetherWith fadeOut(tween(300))
-                },
-                label = "description_expansion"
-            ) { isExpanded ->
-                val displayText = if (!isExpanded && shouldCollapse) text.take(320).trimEnd() + "..." else text
+        }
+        
+        if (shouldCollapse) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
                 Text(
-                    text = displayText.ifBlank { "Deskripsi event belum tersedia." },
+                    text = if (expanded) "Tampilkan lebih sedikit" else "Baca selengkapnya",
                     fontFamily = PlusJakartaSansFont,
-                    fontSize = 14.sp,
-                    color = Gray700,
-                    lineHeight = 22.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Primary500,
+                    modifier = Modifier.clickable { expanded = !expanded }
                 )
-            }
-            
-            if (shouldCollapse) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = if (expanded) "Tampilkan lebih sedikit" else "Baca selengkapnya",
-                        fontFamily = PlusJakartaSansFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = Primary500,
-                        modifier = Modifier.clickable { expanded = !expanded }
-                    )
-                }
             }
         }
     }
@@ -664,9 +666,8 @@ private fun EventDescription(text: String) {
 @Composable
 private fun HostManagementPanel(
     eventId: Long,
+    startDatetime: String,
     navController: NavController,
-    isReminderSending: Boolean,
-    onSendReminder: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -697,13 +698,7 @@ private fun HostManagementPanel(
                 onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) }
             )
         }
-        HostActionCard(
-            icon = Icons.Outlined.Notifications,
-            title = if (isReminderSending) "Mengirim..." else stringResource(R.string.event_detail_send_reminder),
-            subtitle = "Kirim email pengingat ke peserta",
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onSendReminder
-        )
+        ReminderSchedulePanel(startDatetime = startDatetime)
     }
 }
 

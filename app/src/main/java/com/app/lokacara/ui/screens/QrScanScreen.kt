@@ -455,44 +455,42 @@ private fun QrCameraPreview(onQrFound: (String) -> Unit) {
 
 @Composable
 private fun CameraPermissionCard(onRequestPermission: () -> Unit, onUseManual: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(26.dp))
+            .border(1.dp, Gray100, RoundedCornerShape(26.dp))
+            .padding(22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.padding(22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.size(58.dp).clip(CircleShape).background(Primary100),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier.size(58.dp).clip(CircleShape).background(Primary100),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Outlined.PhotoCamera, contentDescription = null, tint = Primary500, modifier = Modifier.size(30.dp))
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Text("Izin kamera diperlukan", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray900)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                "Aktifkan kamera untuk scan QR langsung, atau gunakan mode manual untuk memasukkan token.",
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 13.sp,
-                color = Gray600,
-                lineHeight = 19.sp
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            Button(
-                onClick = onRequestPermission,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-            ) {
-                Text("Aktifkan Kamera", fontWeight = FontWeight.Bold)
-            }
-            TextButton(onClick = onUseManual) {
-                Text("Gunakan token manual", color = Gray600, fontWeight = FontWeight.Bold)
-            }
+            Icon(Icons.Outlined.PhotoCamera, contentDescription = null, tint = Primary500, modifier = Modifier.size(30.dp))
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Text("Izin kamera diperlukan", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Gray900)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            "Aktifkan kamera untuk scan QR langsung, atau gunakan mode manual untuk memasukkan token.",
+            fontFamily = PlusJakartaSansFont,
+            fontSize = 13.sp,
+            color = Gray600,
+            lineHeight = 19.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(18.dp))
+        Button(
+            onClick = onRequestPermission,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+        ) {
+            Text("Aktifkan Kamera", fontWeight = FontWeight.Bold)
+        }
+        TextButton(onClick = onUseManual) {
+            Text("Gunakan token manual", color = Gray600, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -504,39 +502,39 @@ private fun ManualTokenCard(
     onTokenChange: (String) -> Unit,
     onSubmit: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(26.dp))
+            .border(1.dp, Gray100, RoundedCornerShape(26.dp))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            com.app.lokacara.ui.components.LokacaraTextField(
-                value = token,
-                onValueChange = onTokenChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = stringResource(R.string.qr_token_placeholder),
-                label = stringResource(R.string.qr_token_label),
-                isOutlined = true,
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color.White,
-                leadingIcon = { Icon(Icons.Outlined.ContentPaste, null, tint = Primary500, modifier = Modifier.size(20.dp)) }
-            )
-            
-            Button(
-                onClick = onSubmit,
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(22.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(stringResource(R.string.qr_verify_button), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
+        com.app.lokacara.ui.components.LokacaraTextField(
+            value = token,
+            onValueChange = onTokenChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = stringResource(R.string.qr_token_placeholder),
+            label = stringResource(R.string.qr_token_label),
+            isOutlined = true,
+            shape = RoundedCornerShape(16.dp),
+            containerColor = Color.White,
+            leadingIcon = { Icon(Icons.Outlined.ContentPaste, null, tint = Primary500, modifier = Modifier.size(20.dp)) }
+        )
+        
+        Button(
+            onClick = onSubmit,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(stringResource(R.string.qr_verify_button), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -544,11 +542,11 @@ private fun ManualTokenCard(
 
 @Composable
 private fun QrResultCard(scan: ScanResponse, onReset: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = SemanticSuccessLight),
-        elevation = CardDefaults.cardElevation(1.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SemanticSuccessLight.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+            .border(1.dp, SemanticSuccessLight, RoundedCornerShape(22.dp))
     ) {
         Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SemanticSuccessBase, modifier = Modifier.size(34.dp))
@@ -569,10 +567,12 @@ private fun QrResultCard(scan: ScanResponse, onReset: () -> Unit) {
 
 @Composable
 private fun QrErrorCard(message: String, onDismiss: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = SemanticErrorLight)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .background(SemanticErrorLight.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+            .border(1.dp, SemanticErrorLight, RoundedCornerShape(18.dp))
     ) {
         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = SemanticErrorBase)

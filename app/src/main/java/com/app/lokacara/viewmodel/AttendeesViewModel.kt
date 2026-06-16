@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AttendeeDto
+import com.app.lokacara.data.remote.dto.EventDto
 import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,9 @@ class AttendeesViewModel @Inject constructor(
 
     private val _attendees = MutableStateFlow<List<AttendeeDto>>(emptyList())
     val attendees: StateFlow<List<AttendeeDto>> = _attendees.asStateFlow()
+
+    private val _event = MutableStateFlow<EventDto?>(null)
+    val event: StateFlow<EventDto?> = _event.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -57,6 +61,7 @@ class AttendeesViewModel @Inject constructor(
 
             when (val result = safeApiCall { apiService.getAttendees(eventId) }) {
                 is ApiResult.Success -> {
+                    _event.value = result.data.event
                     _attendees.value = result.data.attendees.data
                     _totalCount.value = result.data.attendees.total
                     hasMorePages = result.data.attendees.current_page < result.data.attendees.last_page
@@ -85,6 +90,7 @@ class AttendeesViewModel @Inject constructor(
             val nextPage = currentPage + 1
             when (val result = safeApiCall { apiService.getAttendees(currentEventId, nextPage) }) {
                 is ApiResult.Success -> {
+                    _event.value = result.data.event
                     currentPage = result.data.attendees.current_page
                     hasMorePages = result.data.attendees.current_page < result.data.attendees.last_page
                     _totalCount.value = result.data.attendees.total

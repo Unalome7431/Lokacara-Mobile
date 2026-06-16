@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    alias(libs.plugins.google.services)
 }
 
 val localProperties = Properties().apply {
@@ -100,6 +101,8 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.places)
     implementation(libs.play.services.auth)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

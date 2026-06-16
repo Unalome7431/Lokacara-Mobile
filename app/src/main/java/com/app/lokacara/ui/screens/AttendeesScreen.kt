@@ -24,12 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,6 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.data.remote.dto.AttendeeDto
+import com.app.lokacara.ui.components.ReminderSchedulePanel
 import com.app.lokacara.ui.components.shimmerBrush
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray100
@@ -106,12 +105,11 @@ fun AttendeesScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val isReminderSending by viewModel.isReminderSending.collectAsState()
+    val event by viewModel.event.collectAsState()
     val togglingIds by viewModel.togglingIds.collectAsState()
     val totalCount by viewModel.totalCount.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    var showReminderConfirm by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(AttendeeFilter.ALL) }
 
@@ -150,28 +148,6 @@ fun AttendeesScreen(
         if (shouldLoadMore && !isLoadingMore && !isLoading) viewModel.loadNextPage()
     }
 
-    if (showReminderConfirm) {
-        AlertDialog(
-            onDismissRequest = { showReminderConfirm = false },
-            title = { Text(stringResource(R.string.attendees_send_reminder), fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
-            text = { Text(stringResource(R.string.attendees_reminder_confirm), fontFamily = PlusJakartaSansFont, color = Gray600) },
-            confirmButton = {
-                TextButton(
-                    enabled = !isReminderSending,
-                    onClick = {
-                        viewModel.sendReminders()
-                        showReminderConfirm = false
-                    }
-                ) { Text(stringResource(R.string.attendees_send), color = Primary500, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showReminderConfirm = false }) { Text(stringResource(R.string.cancel), color = Gray600) }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(22.dp)
-        )
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -179,10 +155,7 @@ fun AttendeesScreen(
             .statusBarsPadding()
     ) {
         AttendeesTopBar(
-            isReminderSending = isReminderSending,
-            reminderEnabled = attendees.isNotEmpty() || totalCount > 0,
-            onBack = { navController.navigateBackOrHome() },
-            onReminder = { showReminderConfirm = true }
+            onBack = { navController.navigateBackOrHome() }
         )
 
         PullToRefreshBox(
@@ -192,11 +165,16 @@ fun AttendeesScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 112.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 112.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 item {
                     AttendeesSummary(total = totalCount.takeIf { it > 0 } ?: attendees.size, present = presentCount, pending = pendingCount)
+                }
+                event?.start_datetime?.let { startDatetime ->
+                    item {
+                        ReminderSchedulePanel(startDatetime = startDatetime)
+                    }
                 }
                 item {
                     AttendeeControlPanel(
@@ -209,41 +187,41 @@ fun AttendeesScreen(
                     )
                 }
 
-                if (error != null && attendees.isNotEmpty()) {
-                    item {
-                        AttendeesInlineError(message = error.orEmpty(), onRetry = { viewModel.refresh() })
-                    }
-                }
-
-                when {
-                    isLoading && attendees.isEmpty() -> {
-                        items(6) { AttendeeSkeletonCard() }
-                    }
-                    error != null && attendees.isEmpty() -> {
-                        item { AttendeesErrorState(message = error.orEmpty(), onRetry = { viewModel.loadAttendees(eventId) }) }
-                    }
-                    filteredAttendees.isEmpty() -> {
-                        item {
-                            AttendeesEmptyState(
-                                text = if (attendees.isEmpty()) stringResource(R.string.attendees_empty) else "Peserta tidak ditemukan"
-                            )
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).border(1.dp, Gray100, RoundedCornerShape(22.dp)).padding(vertical = 8.dp)
+                    ) {
+                        if (error != null && attendees.isNotEmpty()) {
+                            AttendeesInlineError(message = error.orEmpty(), onRetry = { viewModel.refresh() })
                         }
-                    }
-                    else -> {
-                        items(filteredAttendees, key = { it.id }) { attendee ->
-                            AttendeeCard(
-                                attendee = attendee,
-                                isToggling = attendee.id in togglingIds,
-                                onToggle = { viewModel.toggleAttendance(attendee.id) }
-                            )
-                        }
-                    }
-                }
 
-                if (isLoadingMore) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(12.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Primary500, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        when {
+                            isLoading && attendees.isEmpty() -> {
+                                repeat(6) { AttendeeSkeletonCard() }
+                            }
+                            error != null && attendees.isEmpty() -> {
+                                AttendeesErrorState(message = error.orEmpty(), onRetry = { viewModel.loadAttendees(eventId) })
+                            }
+                            filteredAttendees.isEmpty() -> {
+                                AttendeesEmptyState(
+                                    text = if (attendees.isEmpty()) stringResource(R.string.attendees_empty) else "Peserta tidak ditemukan"
+                                )
+                            }
+                            else -> {
+                                filteredAttendees.forEach { attendee ->
+                                    AttendeeCard(
+                                        attendee = attendee,
+                                        isToggling = attendee.id in togglingIds,
+                                        onToggle = { viewModel.toggleAttendance(attendee.id) }
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isLoadingMore) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(12.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Primary500, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
                         }
                     }
                 }
@@ -254,10 +232,7 @@ fun AttendeesScreen(
 
 @Composable
 private fun AttendeesTopBar(
-    isReminderSending: Boolean,
-    reminderEnabled: Boolean,
-    onBack: () -> Unit,
-    onReminder: () -> Unit
+    onBack: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -293,7 +268,7 @@ private fun AttendeesTopBar(
                     color = Gray900
                 )
                 Text(
-                    text = stringResource(R.string.attendees_send_reminder),
+                    text = "Pengingat otomatis",
                     fontFamily = PlusJakartaSansFont,
                     fontSize = 11.sp,
                     color = Gray500,
@@ -301,23 +276,19 @@ private fun AttendeesTopBar(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(
-                enabled = reminderEnabled && !isReminderSending,
-                onClick = onReminder,
+            Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(if (reminderEnabled) Color.White.copy(alpha = 0.82f) else Gray100)
+                    .background(Color.White.copy(alpha = 0.82f)),
+                contentAlignment = Alignment.Center
             ) {
-                if (isReminderSending) {
-                    CircularProgressIndicator(color = Secondary500, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = stringResource(R.string.attendees_send_reminder),
-                        tint = if (reminderEnabled) Secondary500 else Gray400
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = SemanticSuccessBase,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
     }
@@ -361,74 +332,68 @@ private fun AttendeeControlPanel(
     onFilterChange: (AttendeeFilter) -> Unit,
     matchCount: Int
 ) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
+    Column(
+        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).border(1.dp, Gray100, RoundedCornerShape(22.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            com.app.lokacara.ui.components.LokacaraTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = "Cari nama atau email peserta",
-                isOutlined = true,
-                shape = RoundedCornerShape(18.dp),
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Primary500) },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = onClearSearch) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = Gray500, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                },
-                containerColor = Color.White
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AttendeeFilter.entries.forEach { item ->
-                        FilterChip(
-                            selected = selectedFilter == item,
-                            onClick = { onFilterChange(item) },
-                            label = {
-                                Text(
-                                    item.label,
-                                    fontFamily = PlusJakartaSansFont,
-                                    fontWeight = if (selectedFilter == item) FontWeight.Bold else FontWeight.Medium
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary500,
-                                selectedLabelColor = Color.White,
-                                containerColor = Gray100,
-                                labelColor = Gray600
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = selectedFilter == item,
-                                borderColor = Gray200,
-                                selectedBorderColor = Primary500
-                            )
-                        )
+        com.app.lokacara.ui.components.LokacaraTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = "Cari nama atau email peserta",
+            isOutlined = true,
+            shape = RoundedCornerShape(18.dp),
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = Primary500) },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(onClick = onClearSearch) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Gray500, modifier = Modifier.size(18.dp))
                     }
                 }
-                
-                if (searchQuery.isNotBlank() || selectedFilter != AttendeeFilter.ALL) {
-                    Text(
-                        text = "$matchCount ditemukan",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Gray500,
-                        fontWeight = FontWeight.Bold
+            },
+            containerColor = Color.White
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AttendeeFilter.entries.forEach { item ->
+                    FilterChip(
+                        selected = selectedFilter == item,
+                        onClick = { onFilterChange(item) },
+                        label = {
+                            Text(
+                                item.label,
+                                fontFamily = PlusJakartaSansFont,
+                                fontWeight = if (selectedFilter == item) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Primary500,
+                            selectedLabelColor = Color.White,
+                            containerColor = Gray100,
+                            labelColor = Gray600
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = selectedFilter == item,
+                            borderColor = Gray200,
+                            selectedBorderColor = Primary500
+                        )
                     )
                 }
+            }
+            
+            if (searchQuery.isNotBlank() || selectedFilter != AttendeeFilter.ALL) {
+                Text(
+                    text = "$matchCount ditemukan",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Gray500,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -467,14 +432,9 @@ private fun AttendeeCard(
     onToggle: () -> Unit
 ) {
     val isCheckedIn = attendee.status == "present"
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -551,6 +511,7 @@ private fun AttendeeCard(
                 }
             }
         }
+        HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(top = 4.dp))
     }
 }
 

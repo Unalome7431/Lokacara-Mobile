@@ -98,6 +98,12 @@ interface ApiService {
     @GET("api/notifications")
     suspend fun getNotifications(): NotificationListResponse
 
+    @POST("api/user/push-tokens")
+    suspend fun registerPushToken(@Body body: PushTokenRequest): MessageResponse
+
+    @HTTP(method = "DELETE", path = "api/user/push-tokens", hasBody = true)
+    suspend fun unregisterPushToken(@Body body: DeletePushTokenRequest): MessageResponse
+
     // ── Bookmarks ──
     @GET("api/bookmarks")
     suspend fun getBookmarks(): BookmarkListResponse

@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,13 +22,17 @@ import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.ui.theme.*
 
 @Composable
-fun NotificationCard(notification: NotificationItem) {
+fun NotificationCard(
+    notification: NotificationItem,
+    onClick: (() -> Unit)? = null
+) {
     val bgColor = if (!notification.isRead) Primary100 else Secondary100
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(100.dp)) // Bentuk Pil murni
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .background(bgColor)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically

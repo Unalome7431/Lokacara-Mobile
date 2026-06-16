@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +64,10 @@ import com.app.lokacara.R
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.theme.Gray100
+import com.app.lokacara.ui.theme.Gray200
+import com.app.lokacara.ui.theme.Gray400
 import com.app.lokacara.ui.theme.Gray500
+import com.app.lokacara.ui.theme.Gray600
 import com.app.lokacara.ui.theme.Gray900
 import com.app.lokacara.ui.theme.Gray50
 import com.app.lokacara.ui.theme.LokacaraMobileTheme
@@ -187,10 +191,24 @@ fun SettingsScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(scrollState)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsSectionTitle(title = stringResource(R.string.settings_preferences))
-            SettingsCard {
+            Text(
+                text = stringResource(R.string.settings_preferences),
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Gray900,
+                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+            )
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .border(1.dp, Gray100, RoundedCornerShape(22.dp))
+                    .padding(vertical = 8.dp)
+            ) {
                 SettingsToggleRow(
                     icon = Icons.Rounded.Notifications,
                     title = stringResource(R.string.settings_notifications),
@@ -201,43 +219,76 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionTitle(title = stringResource(R.string.settings_security))
-            SettingsCard {
+            Text(
+                text = stringResource(R.string.settings_security),
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Gray900,
+                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+            )
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .border(1.dp, Gray100, RoundedCornerShape(22.dp))
+                    .padding(vertical = 8.dp)
+            ) {
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
                     title = stringResource(R.string.settings_change_password),
                     onClick = { navController.navigate(Screen.ChangePassword.route) }
                 )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
+                SettingsActionRow(
+                    icon = Icons.Rounded.PrivacyTip,
+                    title = stringResource(R.string.settings_privacy_policy),
+                    onClick = { navController.navigate(Screen.PrivacyPolicy.route) } // Assuming PrivacyPolicy is the right route based on the original code
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SettingsSectionTitle(title = stringResource(R.string.settings_help_info))
-            SettingsCard {
+            Text(
+                text = stringResource(R.string.settings_help_info),
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Gray900,
+                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .border(1.dp, Gray100, RoundedCornerShape(22.dp))
+                    .padding(vertical = 8.dp)
+            ) {
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.HelpOutline,
                     title = stringResource(R.string.settings_help_center),
                     onClick = { navController.navigate(Screen.HelpCenter.route) }
                 )
-                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.Article,
                     title = stringResource(R.string.settings_terms_conditions),
                     onClick = { navController.navigate(Screen.TermsConditions.route) }
                 )
-                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-                SettingsActionRow(
-                    icon = Icons.Rounded.PrivacyTip,
-                    title = stringResource(R.string.settings_privacy_policy),
-                    onClick = { navController.navigate(Screen.PrivacyPolicy.route) }
-                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            SettingsSectionTitle(title = stringResource(R.string.settings_others))
-            SettingsCard {
-                Row(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(22.dp))
+                    .border(1.dp, Gray100, RoundedCornerShape(22.dp))
+                    .padding(vertical = 8.dp)
+            ) {
+                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
@@ -246,37 +297,37 @@ fun SettingsScreen(
                                 (rootNavController ?: navController).navigateToLoginAndClearMain()
                             }
                         }
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .background(Primary100, CircleShape),
+                            .background(Primary100.copy(alpha = 0.5f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ExitToApp,
                             contentDescription = "Keluar",
                             tint = Primary500,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = stringResource(R.string.profile_logout),
                         fontFamily = NunitoFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
                         color = Gray900
                     )
                 }
-                HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showDeleteDialog = true }
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -289,15 +340,15 @@ fun SettingsScreen(
                             imageVector = Icons.Rounded.Delete,
                             contentDescription = "Hapus Akun",
                             tint = SemanticErrorBase,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = stringResource(R.string.settings_delete_account),
                         fontFamily = NunitoFont,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
                         color = SemanticErrorBase
                     )
                 }
@@ -309,60 +360,28 @@ fun SettingsScreen(
 }
 
 @Composable
-fun SettingsSectionTitle(title: String) {
-    Text(
-        text = title,
-        fontFamily = NunitoFont,
-        fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
-        color = Gray500,
-        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-    )
-}
-
-@Composable
-fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(content = content)
-    }
-}
-
-@Composable
-fun SettingsToggleRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingsToggleRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(Primary100, CircleShape),
+                modifier = Modifier.size(36.dp).background(Primary100.copy(alpha = 0.5f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = Primary500,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(icon, contentDescription = null, tint = Primary500, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = title,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = Gray900
-            )
+            Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
         }
         Switch(
             checked = isChecked,
@@ -370,52 +389,39 @@ fun SettingsToggleRow(icon: androidx.compose.ui.graphics.vector.ImageVector, tit
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = Primary500,
-                uncheckedThumbColor = Gray500,
-                uncheckedTrackColor = Gray100
+                uncheckedThumbColor = Gray400,
+                uncheckedTrackColor = Gray200,
+                uncheckedBorderColor = Color.Transparent
             )
         )
     }
 }
 
 @Composable
-fun SettingsActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit) {
+private fun SettingsActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 18.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(Primary100, CircleShape),
+                modifier = Modifier.size(36.dp).background(Gray100, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = Primary500,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = title,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = Gray900
-            )
+            Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = "Navigasi",
-            tint = Gray500,
-            modifier = Modifier.size(20.dp)
-        )
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Gray400, modifier = Modifier.size(20.dp))
     }
 }
 

@@ -107,11 +107,11 @@ fun ProfileScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 104.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            contentPadding = PaddingValues(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 104.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                ProfileIdentityCard(
+                FlatProfileIdentity(
                     name = userProfile.name.ifBlank { "Pengguna" },
                     email = userProfile.email,
                     location = userProfile.location,
@@ -207,7 +207,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileIdentityCard(
+private fun FlatProfileIdentity(
     name: String,
     email: String,
     location: String,
@@ -216,128 +216,84 @@ private fun ProfileIdentityCard(
     certificateCount: Int,
     onEditClick: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(28.dp))
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Primary100.copy(alpha = 0.25f),
-                            Color.White
-                        )
-                    )
-                )
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Surface(
-                    modifier = Modifier
-                        .size(94.dp)
-                        .padding(2.dp),
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 4.dp
-                ) {
-                    ProfileAvatarImage(
-                        imageModel = imageUrl,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .clickable { onEditClick() }
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .background(Primary500, CircleShape)
-                        .border(2.dp, Color.White, CircleShape)
-                        .clip(CircleShape)
-                        .clickable { onEditClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Ubah Profil",
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = name,
-                fontFamily = NunitoFont,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 24.sp,
-                color = Gray900,
-                textAlign = TextAlign.Center
-            )
-            
-            Text(
-                text = email.ifBlank { "Email belum tersedia" },
-                fontFamily = PlusJakartaSansFont,
-                fontWeight = FontWeight.Medium,
-                fontSize = 13.sp,
-                color = Gray500,
-                textAlign = TextAlign.Center
-            )
-
-            if (location.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = Gray50,
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier.clip(RoundedCornerShape(50))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.LocationOn,
-                            contentDescription = null,
-                            tint = Primary500,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = location,
-                            fontFamily = PlusJakartaSansFont,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Gray600
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Surface(
+                modifier = Modifier
+                    .size(100.dp)
+                    .padding(2.dp),
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 4.dp
             ) {
-                ProfileStatBox(
-                    label = "Event",
-                    value = myEventCount.toString(),
-                    modifier = Modifier.weight(1f),
-                    accentColor = Primary500
+                ProfileAvatarImage(
+                    imageModel = imageUrl,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .clickable { onEditClick() }
                 )
-                ProfileStatBox(
-                    label = "Sertifikat",
-                    value = certificateCount.toString(),
-                    modifier = Modifier.weight(1f),
-                    accentColor = SvgOrange
+            }
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(Primary500, CircleShape)
+                    .border(2.dp, Color.White, CircleShape)
+                    .clip(CircleShape)
+                    .clickable { onEditClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Edit,
+                    contentDescription = "Ubah Profil",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = name,
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 24.sp,
+            color = Gray900,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = email.ifBlank { "Email belum tersedia" },
+            fontFamily = PlusJakartaSansFont,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            color = Gray500,
+            textAlign = TextAlign.Center
+        )
+
+        if (location.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.LocationOn,
+                    contentDescription = null,
+                    tint = Primary500,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = location,
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Gray600
                 )
             }
         }
@@ -563,7 +519,7 @@ fun ProfileScreenPreview() {
                 contentAlignment = Alignment.TopCenter
             ) {
                 Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
-                    ProfileIdentityCard(
+                    FlatProfileIdentity(
                         name = "Pengguna Lokacara",
                         email = "user@lokacara.my.id",
                         location = "Jakarta",

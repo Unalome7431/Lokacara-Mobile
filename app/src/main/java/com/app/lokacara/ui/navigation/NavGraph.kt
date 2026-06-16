@@ -44,7 +44,12 @@ private val screenPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransitio
 }
 
 @Composable
-fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
+fun NavGraph(
+    isLoggedIn: Boolean,
+    isOnboardingCompleted: Boolean,
+    pendingNotificationRoute: String? = null,
+    onNotificationRouteConsumed: () -> Unit = {}
+) {
     val rootNavController = rememberNavController()
     val startDestination = when {
         !isOnboardingCompleted -> Screen.Onboarding.route
@@ -118,17 +123,33 @@ fun NavGraph(isLoggedIn: Boolean, isOnboardingCompleted: Boolean) {
             popEnterTransition = { fadeIn(tween(300)) },
             popExitTransition = { fadeOut(tween(200)) }
         ) {
-            MainContainer(rootNavController)
+            MainContainer(
+                rootNavController = rootNavController,
+                pendingNotificationRoute = pendingNotificationRoute,
+                onNotificationRouteConsumed = onNotificationRouteConsumed
+            )
         }
     }
 }
 
 @Composable
-fun MainContainer(rootNavController: androidx.navigation.NavController) {
+fun MainContainer(
+    rootNavController: androidx.navigation.NavController,
+    pendingNotificationRoute: String? = null,
+    onNotificationRouteConsumed: () -> Unit = {}
+) {
     val internalNavController = rememberNavController()
     val navBackStackEntry by internalNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val layoutDirection = LocalLayoutDirection.current
+
+    androidx.compose.runtime.LaunchedEffect(pendingNotificationRoute) {
+        val route = pendingNotificationRoute ?: return@LaunchedEffect
+        internalNavController.navigate(route) {
+            launchSingleTop = true
+        }
+        onNotificationRouteConsumed()
+    }
 
     Scaffold(
         containerColor = Color.Transparent,

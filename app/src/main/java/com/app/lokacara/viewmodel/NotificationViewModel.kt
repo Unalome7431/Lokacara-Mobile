@@ -60,7 +60,10 @@ class NotificationViewModel @Inject constructor(
                             time = timeDisplay.ifEmpty { dateDisplay },
                             dateGroup = dateDisplay.ifEmpty { "Hari ini" },
                             type = type,
-                            isRead = dto.is_read
+                            isRead = dto.is_read,
+                            category = dto.category,
+                            target = dto.target,
+                            eventId = dto.event_id
                         )
                     }
                 }

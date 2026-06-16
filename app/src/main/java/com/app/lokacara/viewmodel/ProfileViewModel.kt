@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.FileStorageManager
+import com.app.lokacara.data.PushTokenManager
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
@@ -30,7 +31,8 @@ class ProfileViewModel @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
     private val imageUrlProvider: ImageUrlProvider,
-    private val fileStorageManager: FileStorageManager
+    private val fileStorageManager: FileStorageManager,
+    private val pushTokenManager: PushTokenManager
 ) : AndroidViewModel(application) {
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
@@ -285,6 +287,7 @@ class ProfileViewModel @Inject constructor(
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
+            pushTokenManager.unregisterLastSyncedToken()
             userSessionManager.logout()
             onComplete()
         }

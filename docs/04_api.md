@@ -80,7 +80,7 @@ Evidence:
 
 | Method | URL | Request | Response |
 |---|---|---|---|
-| `GET` | `api/notifications` | none | `NotificationListResponse(data, unread_count)` |
+| `GET` | `api/notifications` | none | `NotificationListResponse(data, unread_count)` | Items may include optional `category`, `target`, and `event_id` for notification routing. |
 
 Evidence:
 - File: `app/src/main/java/com/app/lokacara/repository/NotificationRepository.kt`
