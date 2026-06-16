@@ -1,10 +1,5 @@
 package com.app.lokacara.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,18 +19,14 @@ import androidx.compose.material3.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -43,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
@@ -52,10 +42,9 @@ import com.app.lokacara.ui.navigation.Screen
 import android.location.Geocoder
 import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.ui.theme.*
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.input.TextFieldValue
@@ -105,38 +94,24 @@ fun HomeHeader(navController: NavController) {
 fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Unit = {}) {
     if (popularEvents.isEmpty()) return
 
-    val pageCount = Int.MAX_VALUE
-    val initialPage = Int.MAX_VALUE / 2
-    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { pageCount })
+    val actualSize = popularEvents.size
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { actualSize })
 
-    val cardShape = remember { RoundedCornerShape(24.dp) }
+    val cardShape = remember { RoundedCornerShape(20.dp) }
     val gradientBrush = remember {
         Brush.verticalGradient(
-            colors = listOf(Color.Black.copy(0.1f), Color.Transparent, Color.Black.copy(0.6f), Color.Black.copy(0.7f)),
-            startY = 0f
+            colors = listOf(Color.Transparent, Color.Black.copy(0.4f), Color.Black.copy(0.8f)),
+            startY = 50f
         )
     }
-    val lifecycleOwner = LocalLifecycleOwner.current
 
-    var paused by remember { mutableStateOf(false) }
-
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.isScrollInProgress }
-            .collect { scrolling ->
-                if (scrolling) {
-                    paused = true
-                }
-            }
-    }
-
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                delay(if (paused) 5000L else 4000L)
-                if (paused) { paused = false; continue }
-                if (pageCount > 1) {
-                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                }
+    LaunchedEffect(actualSize) {
+        if (actualSize <= 1) return@LaunchedEffect
+        while (isActive) {
+            delay(4000L)
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = (pagerState.currentPage + 1) % actualSize
+                pagerState.animateScrollToPage(nextPage)
             }
         }
     }
@@ -148,7 +123,7 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
                 fontFamily = NunitoFont,
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 22.sp,
-                color = Color.Black
+                color = Gray900
             ),
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
         )
@@ -157,100 +132,112 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 24.dp),
             pageSpacing = 16.dp,
-            modifier = Modifier.fillMaxWidth(),
-            beyondViewportPageCount = 0,
-            userScrollEnabled = true
+            modifier = Modifier.fillMaxWidth()
         ) { page ->
-            key(page) {
-                val event = popularEvents[page % popularEvents.size]
+            val event = popularEvents[page]
 
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable { onEventClick(event) },
-                    shape = cardShape,
-                    color = Color.Transparent,
-                    shadowElevation = 8.dp
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().clip(cardShape)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(210.dp)
+                    .clickable { onEventClick(event) },
+                shape = cardShape,
+                color = Color.Transparent
+            ) {
+                Box(modifier = Modifier.fillMaxSize().clip(cardShape)) {
+                    AsyncImage(
+                        model = rememberEventImageRequest(event.imageUrl, 500),
+                        contentDescription = event.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
+
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(18.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        AsyncImage(
-                            model = rememberEventImageRequest(event.imageUrl, 400),
-                            contentDescription = event.title,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-
-                        Box(modifier = Modifier.fillMaxSize().background(gradientBrush))
-
-                        Column(
-                            modifier = Modifier.fillMaxSize().padding(16.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = SvgOrange
                             ) {
-                                Box(modifier = Modifier.widthIn(max = 160.dp)) {
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = SvgOrange.copy(alpha = 0.9f)
+                                Text(
+                                    text = event.category,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                )
+                            }
+                            
+                            if (event.viewCount > 0) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color.Black.copy(alpha = 0.35f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Icon(
+                                            Icons.Outlined.FavoriteBorder,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = event.category,
+                                            "${formatViewCount(event.viewCount)}",
                                             color = Color.White,
                                             fontSize = 11.sp,
-                                            fontFamily = PlusJakartaSansFont,
                                             fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
+                                            fontFamily = PlusJakartaSansFont
                                         )
                                     }
                                 }
-                                if (event.viewCount > 0) {
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color.White.copy(alpha = 0.25f)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.FavoriteBorder,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                "${formatViewCount(event.viewCount)} x dilihat",
-                                                color = Color.White,
-                                                fontSize = 10.sp,
-                                                fontFamily = PlusJakartaSansFont
-                                            )
-                                        }
-                                    }
-                                }
                             }
+                        }
 
-                            Column {
+                        Column {
+                            Text(
+                                text = event.title,
+                                color = Color.White,
+                                style = TextStyle(
+                                    fontFamily = NunitoFont, 
+                                    fontWeight = FontWeight.ExtraBold, 
+                                    fontSize = 20.sp,
+                                    lineHeight = 24.sp
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Outlined.LocationOn, 
+                                    contentDescription = null, 
+                                    tint = Color.White.copy(alpha = 0.9f), 
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = event.title,
-                                    color = Color.White,
-                                    style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                                    maxLines = 2,
+                                    text = event.location, 
+                                    color = Color.White.copy(alpha = 0.9f), 
+                                    style = TextStyle(
+                                        fontFamily = PlusJakartaSansFont, 
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 12.sp
+                                    ),
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = event.date, color = Color.White.copy(alpha = 0.8f), style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
-                                }
                             }
                         }
                     }
@@ -259,18 +246,17 @@ fun PopularEventSection(popularEvents: List<Event>, onEventClick: (Event) -> Uni
         }
 
         // Page indicator dots
-        val currentPage = pagerState.currentPage % popularEvents.size
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             popularEvents.indices.forEach { index ->
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
-                        .size(if (index == currentPage) 14.dp else 8.dp, 8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (index == currentPage) SvgPrimaryBlue else Gray300)
+                        .size(if (index == pagerState.currentPage) 16.dp else 6.dp, 6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(if (index == pagerState.currentPage) Primary500 else Gray200)
                 )
             }
         }
@@ -313,12 +299,9 @@ fun CategoryEventSection(
     onSeeAll: () -> Unit,
     onBookmarkClick: (String) -> Unit = {}
 ) {
-    var visible by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) { visible = true }
-    val alpha by animateFloatAsState(if (visible) 1f else 0f, animationSpec = tween(350), label = "fade")
     val previewEvents = remember(events) { events.take(10) }
 
-    Column(modifier = Modifier.padding(top = 12.dp).graphicsLayer(alpha = alpha)) {
+    Column(modifier = Modifier.padding(top = 12.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -352,7 +335,7 @@ fun CategoryEventSection(
                 )
             }
         }
-}
+    }
 }
 
 @Composable

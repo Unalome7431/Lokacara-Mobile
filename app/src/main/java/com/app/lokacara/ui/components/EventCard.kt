@@ -41,14 +41,18 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.ui.theme.*
 
 @Composable
-fun rememberEventImageRequest(imageUrl: String?, sizePx: Int): ImageRequest {
+fun rememberEventImageRequest(
+    imageUrl: String?,
+    sizePx: Int,
+    crossfade: Boolean = true
+): ImageRequest {
     val context = LocalContext.current
-    return remember(context, imageUrl, sizePx) {
+    return remember(context, imageUrl, sizePx, crossfade) {
         ImageRequest.Builder(context)
             .data(imageUrl)
             .size(sizePx)
             .precision(Precision.INEXACT)
-            .crossfade(true)
+            .crossfade(crossfade)
             .build()
     }
 }
@@ -120,7 +124,8 @@ fun EventCard(
             if (trailingContent != null) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                     content = trailingContent
                 )
@@ -152,7 +157,7 @@ fun EventCardCompact(
         Column {
             Box {
                 AsyncImage(
-                    model = rememberEventImageRequest(event.imageUrl, 160),
+                    model = rememberEventImageRequest(event.imageUrl, 160, crossfade = false),
                     contentDescription = event.title,
                     modifier = Modifier
                         .fillMaxWidth()

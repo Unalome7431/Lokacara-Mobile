@@ -1,5 +1,6 @@
 package com.app.lokacara.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.AnalyticsTracker
@@ -12,7 +13,11 @@ import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.model.Event
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.SnackbarManager
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -55,7 +60,9 @@ class ExploreViewModel @Inject constructor(
     private val imageUrlProvider: ImageUrlProvider,
     private val bookmarkSyncHelper: BookmarkSyncHelper,
     private val apiService: ApiService,
-    private val analytics: AnalyticsTracker
+    private val analytics: AnalyticsTracker,
+    private val imageLoader: ImageLoader,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
@@ -187,6 +194,7 @@ class ExploreViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var loadMoreJob: Job? = null
+    private val prefetchedImageUrls = mutableSetOf<String>()
 
     init {
         analytics.logScreenView("Explore")
@@ -347,7 +355,7 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(keyword = query.ifBlank { null }, categoryId = catId)) {
                 is ApiResult.Success -> {
                     val events = result.data.data.map { it.toEvent(imageUrlProvider) }
-                    _allEvents.value = events
+                    applyEvents(events)
                     hasMorePages = result.data.current_page < result.data.last_page
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
@@ -378,7 +386,7 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(keyword = _eventName.value.ifBlank { null }, categoryId = catId, page = currentPage)) {
                 is ApiResult.Success -> {
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
-                    _allEvents.value = _allEvents.value + newEvents
+                    applyEvents(_allEvents.value + newEvents)
                     hasMorePages = result.data.current_page < result.data.last_page
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
@@ -421,6 +429,39 @@ class ExploreViewModel @Inject constructor(
         _isSearchExpanded.value = false
         searchEvents("")
         analytics.logEvent("filters_reset")
+    }
+
+    private fun applyEvents(events: List<Event>) {
+        _allEvents.value = events
+        prefetchExploreImages(events)
+    }
+
+    private fun prefetchExploreImages(events: List<Event>) {
+        val urls = events.asSequence()
+            .mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) }
+            .distinct()
+            .take(8)
+            .toList()
+
+        if (urls.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            urls.forEach { imageUrl ->
+                val shouldPrefetch = synchronized(prefetchedImageUrls) {
+                    prefetchedImageUrls.add(imageUrl)
+                }
+                if (!shouldPrefetch) return@forEach
+
+                imageLoader.enqueue(
+                    ImageRequest.Builder(appContext)
+                        .data(imageUrl)
+                        .size(500)
+                        .precision(Precision.INEXACT)
+                        .crossfade(false)
+                        .build()
+                )
+            }
+        }
     }
 
     fun refresh() {

@@ -168,7 +168,7 @@ private fun TicketPosterThumb(
             )
         } else {
             AsyncImage(
-                model = rememberEventImageRequest(imageUrl, 160),
+                model = rememberEventImageRequest(imageUrl, 160, crossfade = false),
                 contentDescription = title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -336,7 +336,7 @@ fun HistoryDetailDialog(
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
                 AsyncImage(
-                    model = event.imageUrl,
+                    model = rememberEventImageRequest(event.imageUrl, 320),
                     contentDescription = event.title,
                     modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop

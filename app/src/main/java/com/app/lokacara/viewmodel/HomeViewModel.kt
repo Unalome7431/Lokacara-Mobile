@@ -21,6 +21,9 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.repository.HomeRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import com.google.android.gms.location.LocationServices
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -38,7 +41,8 @@ class HomeViewModel @Inject constructor(
     private val imageUrlProvider: ImageUrlProvider,
     private val apiService: ApiService,
     private val analytics: AnalyticsTracker,
-    private val cache: HomeCache
+    private val cache: HomeCache,
+    private val imageLoader: ImageLoader
 ) : AndroidViewModel(application) {
 
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
@@ -88,14 +92,23 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // ── Category grouping ──
-    val selectedCategory = MutableStateFlow("Semua")
+    private val _selectedCategory = MutableStateFlow("Semua")
+    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+
+    private val groupedEventsSource: StateFlow<Map<String, List<Event>>> = _allEvents
+        .map { events ->
+            events.groupBy { it.category.ifEmpty { "Lainnya" } }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val groupedEvents: StateFlow<Map<String, List<Event>>> = combine(
-        _allEvents, selectedCategory
-    ) { events, category ->
-        val filtered = if (category == "Semua") events else events.filter { it.category == category }
-        filtered.groupBy { it.category.ifEmpty { "Lainnya" } }
+        groupedEventsSource, selectedCategory
+    ) { grouped, category ->
+        if (category == "Semua") grouped
+        else grouped[category]?.let { mapOf(category to it) } ?: emptyMap()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    private val prefetchedImageUrls = mutableSetOf<String>()
 
     init {
         analytics.logScreenView("Home")
@@ -191,10 +204,7 @@ class HomeViewModel @Inject constructor(
             val cachedEvents = cache.events
             if (cachedEvents != null && _allEvents.value.isEmpty()) {
                 val events = cachedEvents.map { it.toEvent(imageUrlProvider) }
-                if (events.isNotEmpty()) {
-                    _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
-                    _allEvents.value = events
-                }
+                applyFeedEvents(events)
                 _isLoading.value = false
             }
 
@@ -216,11 +226,8 @@ class HomeViewModel @Inject constructor(
             when (val result = repository.getFeedEvents(forceRefresh = true)) {
                 is ApiResult.Success -> {
                     val events = result.data.map { it.toEvent(imageUrlProvider) }
-                    if (events.isNotEmpty()) {
-                        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
-                        _allEvents.value = events
-                        _feedError.value = null
-                    }
+                    applyFeedEvents(events)
+                    if (events.isNotEmpty()) _feedError.value = null
                     analytics.logEvent("feed_loaded", mapOf("count" to events.size.toString()))
                 }
                 is ApiResult.Error -> {
@@ -273,7 +280,7 @@ class HomeViewModel @Inject constructor(
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
                     currentPage = result.data.current_page
                     totalPages = result.data.last_page
-                    _allEvents.value = (_allEvents.value + newEvents).take(200)
+                    applyFeedEvents((_allEvents.value + newEvents).take(200))
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
                 }
@@ -308,7 +315,44 @@ class HomeViewModel @Inject constructor(
     }
 
     fun updateCategory(category: String) {
-        selectedCategory.value = category
+        _selectedCategory.value = category
+    }
+
+    private fun applyFeedEvents(events: List<Event>) {
+        if (events.isEmpty()) return
+
+        _popularEvents.value = events.sortedByDescending { it.viewCount }.take(10)
+        _allEvents.value = events
+        prefetchHomeImages(events)
+    }
+
+    private fun prefetchHomeImages(events: List<Event>) {
+        val urls = events.asSequence()
+            .mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) }
+            .distinct()
+            .take(8)
+            .toList()
+
+        if (urls.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            urls.forEach { imageUrl ->
+                val shouldPrefetch = synchronized(prefetchedImageUrls) {
+                    prefetchedImageUrls.add(imageUrl)
+                }
+                if (!shouldPrefetch) return@forEach
+
+                imageLoader.enqueue(
+                    ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .size(500)
+                        .precision(Precision.INEXACT)
+                        .crossfade(false)
+                        .build()
+                )
+            }
+        }
     }
 
 }

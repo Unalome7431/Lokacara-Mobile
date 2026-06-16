@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -62,34 +63,41 @@ fun SavedEventsScreen(
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     item {
-                        ProfileSubpageSummaryCard(
-                            title = "Event Tersimpan",
-                            subtitle = "Event favorit yang bisa kamu akses lagi nanti.",
-                            value = savedEvents.size.toString(),
-                            valueLabel = "event",
-                            icon = Icons.Rounded.Bookmark,
-                            accentColor = Secondary500
-                        )
+                        com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0) {
+                            ProfileSubpageSummaryCard(
+                                title = "Event Tersimpan",
+                                subtitle = "Event favorit yang bisa kamu akses lagi nanti.",
+                                value = savedEvents.size.toString(),
+                                valueLabel = "event",
+                                icon = Icons.Rounded.Bookmark,
+                                accentColor = Secondary500
+                            )
+                        }
                     }
                     if (savedEvents.isEmpty()) {
                         item {
-                            EmptyEventState(
-                                text = "Belum Ada Event Tersimpan\nCari Event Disini",
-                                onClick = { navController.navigateToExplore() }
-                            )
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(20.dp))
+                                EmptyEventState(
+                                    text = "Kamu belum memiliki event favorit. Temukan event menarik di halaman Eksplor!",
+                                    onClick = { navController.navigateToExplore() }
+                                )
+                            }
                         }
                     } else {
                         items(
                             items = savedEvents,
                             key = { event: Event -> event.id }
                         ) { event ->
-                            EventCard(
-                                event = event,
-                                onClick = {
-                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                },
-                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                            )
+                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
+                                EventCard(
+                                    event = event,
+                                    onClick = {
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                )
+                            }
                         }
                     }
                 }

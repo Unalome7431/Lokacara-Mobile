@@ -89,16 +89,8 @@ fun BottomNavbar(navController: NavController) {
                 .height(64.dp)
                 .shadow(elevation = 4.dp, shape = barShape, clip = false)
                 .clip(barShape)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.98f),
-                            Primary100.copy(alpha = 0.28f),
-                            Color.White.copy(alpha = 0.98f)
-                        )
-                    )
-                )
-                .border(width = 1.dp, color = Color.White.copy(alpha = 0.72f), shape = barShape)
+                .background(Color.White)
+                .border(width = 1.dp, color = Gray100, shape = barShape)
                 .padding(horizontal = 7.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
@@ -142,25 +134,26 @@ private fun RowScope.NavItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val iconScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 700f),
+        targetValue = if (isPressed) 0.9f else if (isSelected) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 900f),
         label = "navIconScale"
     )
     val pillColor by animateColorAsState(
-        targetValue = if (isSelected) item.activeColor.copy(alpha = 0.14f) else Color.Transparent,
+        targetValue = if (isSelected) SvgOrange.copy(alpha = 0.14f) else Color.Transparent,
         label = "navPillColor"
     )
+    val pillWidth by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isSelected) 48.dp else 32.dp,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 900f),
+        label = "navPillWidth"
+    )
     val iconTint by animateColorAsState(
-        targetValue = if (isSelected) item.activeColor else Gray500,
+        targetValue = if (isSelected) SvgOrange else Gray500,
         label = "navIconTint"
     )
     val labelColor by animateColorAsState(
         targetValue = if (isSelected) Gray900 else Gray500,
         label = "navLabelColor"
-    )
-    val indicatorColor by animateColorAsState(
-        targetValue = if (isSelected) item.activeColor else Color.Transparent,
-        label = "navIndicatorColor"
     )
 
     Column(
@@ -179,8 +172,8 @@ private fun RowScope.NavItem(
     ) {
         Box(
             modifier = Modifier
-                .width(if (isSelected) 46.dp else 42.dp)
-                .height(29.dp)
+                .width(pillWidth)
+                .height(28.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(pillColor),
             contentAlignment = Alignment.Center
@@ -190,7 +183,7 @@ private fun RowScope.NavItem(
                 contentDescription = item.contentDescription,
                 tint = iconTint,
                 modifier = Modifier
-                    .size(23.dp)
+                    .size(22.dp)
                     .scale(iconScale)
             )
         }
@@ -206,16 +199,6 @@ private fun RowScope.NavItem(
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = labelColor
             )
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Box(
-            modifier = Modifier
-                .width(16.dp)
-                .height(3.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(indicatorColor)
         )
     }
 }

@@ -16,7 +16,11 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
 import com.app.lokacara.ui.components.SnackbarManager
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,8 +36,11 @@ class ProfileViewModel @Inject constructor(
     private val settingsManager: SettingsManager,
     private val imageUrlProvider: ImageUrlProvider,
     private val fileStorageManager: FileStorageManager,
-    private val pushTokenManager: PushTokenManager
+    private val pushTokenManager: PushTokenManager,
+    private val imageLoader: ImageLoader
 ) : AndroidViewModel(application) {
+
+    private val prefetchedImageUrls = mutableSetOf<String>()
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -143,8 +150,8 @@ class ProfileViewModel @Inject constructor(
                 when (val result = repository.getDashboard()) {
                     is ApiResult.Success -> {
                         val dashboard = result.data
-                        _myEvents.value = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
-                        _certificates.value = dashboard.certificates.map { cert ->
+                        val events = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
+                        val certificates = dashboard.certificates.map { cert ->
                             val eventTitle = cert.event_registration?.event?.title ?: "Sertifikat"
                             CertificateData(
                                 id = cert.id.toString(),
@@ -156,11 +163,44 @@ class ProfileViewModel @Inject constructor(
                                 imageUrl = imageUrlProvider.certificateUrl(cert.file_url)
                             )
                         }
+                        _myEvents.value = events
+                        _certificates.value = certificates
+                        prefetchProfileImages(events, certificates)
                     }
                     is ApiResult.Error -> { }
                 }
             } catch (_: Exception) { }
             _isLoading.value = false
+        }
+    }
+
+    private fun prefetchProfileImages(events: List<Event>, certificates: List<CertificateData>) {
+        val urls = buildList {
+            addAll(events.mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) })
+            addAll(certificates.mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) })
+        }
+            .distinct()
+            .take(8)
+
+        if (urls.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            urls.forEach { imageUrl ->
+                val shouldPrefetch = synchronized(prefetchedImageUrls) {
+                    prefetchedImageUrls.add(imageUrl)
+                }
+                if (!shouldPrefetch) return@forEach
+
+                imageLoader.enqueue(
+                    ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .size(700)
+                        .precision(Precision.INEXACT)
+                        .crossfade(false)
+                        .build()
+                )
+            }
         }
     }
 
