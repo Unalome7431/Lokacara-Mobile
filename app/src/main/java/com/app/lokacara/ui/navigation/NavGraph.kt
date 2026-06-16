@@ -229,6 +229,7 @@ fun MainContainer(
                     popExitTransition = { fadeOut(tween(200)) }
                 ) {
                     CreateEventScreen(
+                        eventId = null,
                         onBack = { internalNavController.navigateBackOrHome() },
                         onPublish = {
                             internalNavController.navigate(Screen.MyEvents.route) {
@@ -238,6 +239,21 @@ fun MainContainer(
                                 launchSingleTop = true
                             }
                         }
+                    )
+                }
+                composable(
+                    route = "edit_event/{eventId}",
+                    arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
+                    enterTransition = { fadeIn(tween(300)) },
+                    exitTransition = { fadeOut(tween(200)) },
+                    popEnterTransition = { fadeIn(tween(300)) },
+                    popExitTransition = { fadeOut(tween(200)) }
+                ) { backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getLong("eventId") ?: 0L
+                    CreateEventScreen(
+                        eventId = eventId,
+                        onBack = { internalNavController.popBackStack() },
+                        onPublish = { internalNavController.popBackStack() }
                     )
                 }
                 composable(

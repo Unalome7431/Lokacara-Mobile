@@ -72,6 +72,8 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.Dispatchers
@@ -330,6 +332,13 @@ fun MapSearchPicker(
             GoogleMap(
                 modifier = Modifier.matchParentSize(),
                 cameraPositionState = cameraPositionState,
+                properties = MapProperties(
+                    isMyLocationEnabled = ActivityCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ),
+                uiSettings = MapUiSettings(zoomControlsEnabled = true),
                 onMapClick = { latLng ->
                     resolveAndSelectLocation(
                         latLng = latLng,

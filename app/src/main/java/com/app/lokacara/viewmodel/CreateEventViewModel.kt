@@ -43,6 +43,8 @@ class CreateEventViewModel @Inject constructor(
     private val draftManager: DraftManager
 ) : AndroidViewModel(application) {
 
+    val eventIdToEdit = MutableStateFlow<Long?>(null)
+
     val namaEvent = MutableStateFlow("")
     val penyelenggara = MutableStateFlow("")
     val waktuMulai = MutableStateFlow("")
@@ -79,6 +81,57 @@ class CreateEventViewModel @Inject constructor(
         loadCategories()
         autoFillOrganizer()
         checkDraft()
+    }
+
+    fun loadEventForEditing(eventId: Long) {
+        if (eventId <= 0L || eventIdToEdit.value == eventId) return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            eventIdToEdit.value = eventId
+            _errorMessage.value = null
+
+            when (val result = safeApiCall { apiService.getEventDetail(eventId) }) {
+                is ApiResult.Success -> {
+                    val event = result.data.event
+                    if (event == null) {
+                        _errorMessage.value = "Event tidak ditemukan"
+                    } else {
+                        namaEvent.value = event.title
+                        deskripsi.value = event.description
+                        penyelenggara.value = event.user?.name ?: userSessionManager.userSession.first().name
+                        kuota.value = event.capacity ?: 50
+                        waktuMulai.value = event.start_datetime
+                        waktuSelesai.value = event.end_datetime
+                        selectedCategoryId.value = event.category_id
+
+                        if (event.type == "offline") {
+                            isOnline.value = false
+                            latitude.value = event.latitude?.toString().orEmpty()
+                            longitude.value = event.longitude?.toString().orEmpty()
+                            alamat.value = event.address.orEmpty()
+                            aplikasiTempat.value = event.location_name.orEmpty()
+                        } else {
+                            isOnline.value = true
+                            alamat.value = event.link.orEmpty()
+                            aplikasiTempat.value = event.platform_name.orEmpty()
+                            latitude.value = ""
+                            longitude.value = ""
+                        }
+
+                        event.poster_url?.takeIf { it.isNotBlank() }?.let {
+                            posterUri.value = Uri.parse(it)
+                        }
+                    }
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+
+            _isLoading.value = false
+        }
     }
 
     private fun checkDraft() {
@@ -281,29 +334,32 @@ class CreateEventViewModel @Inject constructor(
 
             val posterBody = try {
                 posterUri.value?.let { uri ->
-                    val ctx = getApplication<Application>()
-                    withContext(Dispatchers.IO) {
-                        val inputStream = ctx.contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Poster tidak dapat dibuka")
-                        var bytes = inputStream.use { it.readBytes() }
-                        if (bytes.size > 10_000_000) throw IllegalArgumentException("Ukuran poster maksimal 10 MB")
-                        val fileName = "poster_${System.currentTimeMillis()}.jpg"
-                        // Compress image to avoid 413 error
-                        if (bytes.size > 300_000) {
-                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                                ?: throw IllegalArgumentException("Format poster tidak didukung")
-                            val maxDim = 1600f
-                            val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
-                            val scaled = if (scale < 1f) {
-                                android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                            } else bitmap
-                            val out = ByteArrayOutputStream()
-                            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                            bytes = out.toByteArray()
-                            if (scaled !== bitmap) scaled.recycle()
-                            bitmap.recycle()
+                    if (uri.scheme == "http" || uri.scheme == "https") {
+                        null
+                    } else {
+                        val ctx = getApplication<Application>()
+                        withContext(Dispatchers.IO) {
+                            val inputStream = ctx.contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Poster tidak dapat dibuka")
+                            var bytes = inputStream.use { it.readBytes() }
+                            if (bytes.size > 10_000_000) throw IllegalArgumentException("Ukuran poster maksimal 10 MB")
+                            val fileName = "poster_${System.currentTimeMillis()}.jpg"
+                            if (bytes.size > 300_000) {
+                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                    ?: throw IllegalArgumentException("Format poster tidak didukung")
+                                val maxDim = 1600f
+                                val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
+                                val scaled = if (scale < 1f) {
+                                    android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+                                } else bitmap
+                                val out = ByteArrayOutputStream()
+                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                                bytes = out.toByteArray()
+                                if (scaled !== bitmap) scaled.recycle()
+                                bitmap.recycle()
+                            }
+                            val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
+                            MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
                         }
-                        val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
-                        MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
                     }
                 }
             } catch (e: IllegalArgumentException) {
@@ -312,29 +368,52 @@ class CreateEventViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = safeApiCall {
-                apiService.createEvent(
-                    title = titlePart,
-                    categoryId = catPart,
-                    description = descPart,
-                    type = typePart,
-                    locationName = locPart,
-                    address = addrPart,
-                    latitude = latPart,
-                    longitude = lngPart,
-                    platformName = platPart,
-                    link = linkPart,
-                    startDatetime = startPart,
-                    endDatetime = endPart,
-                    capacity = capPart,
-                    poster = posterBody
-                )
-            }) {
+            val currentEditId = eventIdToEdit.value
+            val result = safeApiCall {
+                if (currentEditId != null) {
+                    apiService.updateEvent(
+                        eventId = currentEditId,
+                        title = titlePart,
+                        categoryId = catPart,
+                        description = descPart,
+                        type = typePart,
+                        locationName = locPart,
+                        address = addrPart,
+                        latitude = latPart,
+                        longitude = lngPart,
+                        platformName = platPart,
+                        link = linkPart,
+                        startDatetime = startPart,
+                        endDatetime = endPart,
+                        capacity = capPart,
+                        poster = posterBody
+                    )
+                } else {
+                    apiService.createEvent(
+                        title = titlePart,
+                        categoryId = catPart,
+                        description = descPart,
+                        type = typePart,
+                        locationName = locPart,
+                        address = addrPart,
+                        latitude = latPart,
+                        longitude = lngPart,
+                        platformName = platPart,
+                        link = linkPart,
+                        startDatetime = startPart,
+                        endDatetime = endPart,
+                        capacity = capPart,
+                        poster = posterBody
+                    )
+                }
+            }
+
+            when (result) {
                 is ApiResult.Success -> {
                     resetForm()
                     clearDraft()
                     _publishSuccess.value = true
-                    SnackbarManager.show("Event berhasil diterbitkan")
+                    SnackbarManager.show(if (currentEditId != null) "Perubahan disimpan" else "Event berhasil diterbitkan")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
@@ -464,6 +543,7 @@ class CreateEventViewModel @Inject constructor(
     }
 
     fun resetForm() {
+        eventIdToEdit.value = null
         namaEvent.value = ""
         penyelenggara.value = ""
         waktuMulai.value = ""

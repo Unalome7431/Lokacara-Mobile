@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.ConfirmationNumber
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
@@ -698,6 +699,13 @@ private fun HostManagementPanel(
                 onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) }
             )
         }
+        HostActionCard(
+            icon = Icons.Outlined.Edit,
+            title = "Edit Detail Acara",
+            subtitle = "Ubah informasi event",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate("edit_event/$eventId") }
+        )
         ReminderSchedulePanel(startDatetime = startDatetime)
     }
 }

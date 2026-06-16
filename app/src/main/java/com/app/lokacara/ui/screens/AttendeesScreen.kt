@@ -25,9 +25,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -109,9 +113,11 @@ fun AttendeesScreen(
     val togglingIds by viewModel.togglingIds.collectAsState()
     val totalCount by viewModel.totalCount.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isReminderSending by viewModel.isReminderSending.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(AttendeeFilter.ALL) }
+    var showReminderConfirm by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     val shouldLoadMore by remember {
@@ -146,6 +152,31 @@ fun AttendeesScreen(
 
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore && !isLoadingMore && !isLoading) viewModel.loadNextPage()
+    }
+
+    if (showReminderConfirm) {
+        AlertDialog(
+            onDismissRequest = { showReminderConfirm = false },
+            title = { Text(stringResource(R.string.attendees_send_reminder), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.attendees_reminder_confirm), color = Gray600) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.sendReminders()
+                        showReminderConfirm = false
+                    }
+                ) {
+                    Text(stringResource(R.string.attendees_send), color = Primary500, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReminderConfirm = false }) {
+                    Text(stringResource(R.string.cancel), color = Gray500)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(22.dp)
+        )
     }
 
     Column(
@@ -183,7 +214,9 @@ fun AttendeesScreen(
                         onClearSearch = { searchQuery = "" },
                         selectedFilter = filter,
                         onFilterChange = { filter = it },
-                        matchCount = filteredAttendees.size
+                        matchCount = filteredAttendees.size,
+                        isReminderSending = isReminderSending,
+                        onSendReminder = { showReminderConfirm = true }
                     )
                 }
 
@@ -330,7 +363,9 @@ private fun AttendeeControlPanel(
     onClearSearch: () -> Unit,
     selectedFilter: AttendeeFilter,
     onFilterChange: (AttendeeFilter) -> Unit,
-    matchCount: Int
+    matchCount: Int,
+    isReminderSending: Boolean,
+    onSendReminder: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).border(1.dp, Gray100, RoundedCornerShape(22.dp)).padding(14.dp),
@@ -394,6 +429,28 @@ private fun AttendeeControlPanel(
                     color = Gray500,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
+
+        Button(
+            onClick = onSendReminder,
+            enabled = !isReminderSending,
+            modifier = Modifier.fillMaxWidth().height(46.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+        ) {
+            if (isReminderSending) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Mengirim...", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
+            } else {
+                Icon(Icons.Outlined.Mail, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.attendees_send_reminder), fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
             }
         }
     }

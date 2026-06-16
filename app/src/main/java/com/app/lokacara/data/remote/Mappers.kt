@@ -100,7 +100,8 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         type = type.ifEmpty { null },
         startDatetime = start_datetime,
         endDatetime = end_datetime.ifEmpty { null },
-        capacity = capacity
+        capacity = capacity,
+        kuota = capacity ?: 100
     )
 }
 

@@ -24,5 +24,8 @@ data class Event(
     val type: String? = null,
     val startDatetime: String = "",
     val endDatetime: String? = null,
-    val capacity: Int? = null
+    val capacity: Int? = null,
+    val kuota: Int = 100,
+    val pendaftarCount: Int = 80,
+    val hadirCount: Int = 40
 )
