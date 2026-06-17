@@ -105,6 +105,8 @@ fun CreateEventScreen(
     val waktuMulai by viewModel.waktuMulai.collectAsState()
     val waktuSelesai by viewModel.waktuSelesai.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
+    val isFreePrice by viewModel.isFreePrice.collectAsState()
+    val priceAmount by viewModel.priceAmount.collectAsState()
     val aplikasiTempat by viewModel.aplikasiTempat.collectAsState()
     val alamat by viewModel.alamat.collectAsState()
     val latitude by viewModel.latitude.collectAsState()
@@ -122,12 +124,14 @@ fun CreateEventScreen(
     } else {
         aplikasiTempat.isNotBlank() && alamat.isNotBlank() && latitude.isNotBlank() && longitude.isNotBlank()
     }
+    val priceReady = isFreePrice || priceAmount.isNotBlank()
     val requiredChecks = listOf(
         namaEvent.isNotBlank(),
         selectedCategoryName.isNotBlank(),
         scheduleReady,
         locationReady,
         deskripsi.isNotBlank(),
+        priceReady,
         kuota in 1..100_000
     )
     val completedRequirements = requiredChecks.count { it }
@@ -524,6 +528,19 @@ fun CreateEventScreen(
                 onClick = { showEndDatePicker = true },
                 label = "Selesai",
                 placeholder = "dd MMM yyyy, --:--"
+            )
+        }
+
+        SectionContainer(
+            title = "Harga Event",
+            subtitle = "Gratis atau berbayar",
+            backgroundColor = darkerBlueBg
+        ) {
+            PriceSection(
+                isFree = isFreePrice,
+                onToggleFree = { viewModel.setPriceMode(it) },
+                priceAmount = priceAmount,
+                onPriceAmountChange = { viewModel.updatePriceAmount(it) }
             )
         }
 

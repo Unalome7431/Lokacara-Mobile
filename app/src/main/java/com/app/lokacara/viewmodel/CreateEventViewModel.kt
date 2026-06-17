@@ -50,6 +50,8 @@ class CreateEventViewModel @Inject constructor(
     val waktuMulai = MutableStateFlow("")
     val waktuSelesai = MutableStateFlow("")
     val isOnline = MutableStateFlow(true)
+    val isFreePrice = MutableStateFlow(true)
+    val priceAmount = MutableStateFlow("")
     val aplikasiTempat = MutableStateFlow("")
     val alamat = MutableStateFlow("")
     val deskripsi = MutableStateFlow("")
@@ -119,6 +121,15 @@ class CreateEventViewModel @Inject constructor(
                             longitude.value = ""
                         }
 
+                        val eventPrice = event.price ?: 0
+                        if (eventPrice <= 0) {
+                            isFreePrice.value = true
+                            priceAmount.value = ""
+                        } else {
+                            isFreePrice.value = false
+                            priceAmount.value = eventPrice.toString()
+                        }
+
                         event.poster_url?.takeIf { it.isNotBlank() }?.let {
                             posterUri.value = Uri.parse(it)
                         }
@@ -148,6 +159,8 @@ class CreateEventViewModel @Inject constructor(
             waktuMulai.value = draft.waktuMulai
             waktuSelesai.value = draft.waktuSelesai
             isOnline.value = draft.isOnline
+            isFreePrice.value = draft.isFreePrice
+            priceAmount.value = draft.priceAmount
             aplikasiTempat.value = draft.aplikasiTempat
             alamat.value = draft.alamat
             deskripsi.value = draft.deskripsi
@@ -245,6 +258,11 @@ class CreateEventViewModel @Inject constructor(
             _errorMessage.value = "Kuota peserta harus di antara 1 sampai 100000"
             return
         }
+        val priceValue = resolvePriceValue()
+        if (priceValue == null) {
+            _errorMessage.value = "Harga event tidak valid"
+            return
+        }
         val venueOrPlatform = aplikasiTempat.value.trim()
         val addressOrLink = alamat.value.trim()
         if (eventIsOnline) {
@@ -260,6 +278,7 @@ class CreateEventViewModel @Inject constructor(
 
         val startDt = formatToApiDatetime(waktuMulai.value)
         val endDt = formatEndApiDatetime(waktuMulai.value, waktuSelesai.value)
+        val pricePart = priceValue.toString().toRequestBody("text/plain".toMediaTypeOrNull())
 
         if (waktuMulai.value.isNotBlank() && waktuSelesai.value.isNotBlank()) {
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
@@ -385,6 +404,7 @@ class CreateEventViewModel @Inject constructor(
                         link = linkPart,
                         startDatetime = startPart,
                         endDatetime = endPart,
+                        price = pricePart,
                         capacity = capPart,
                         poster = posterBody
                     )
@@ -402,6 +422,7 @@ class CreateEventViewModel @Inject constructor(
                         link = linkPart,
                         startDatetime = startPart,
                         endDatetime = endPart,
+                        price = pricePart,
                         capacity = capPart,
                         poster = posterBody
                     )
@@ -549,6 +570,8 @@ class CreateEventViewModel @Inject constructor(
         waktuMulai.value = ""
         waktuSelesai.value = ""
         isOnline.value = true
+        isFreePrice.value = true
+        priceAmount.value = ""
         aplikasiTempat.value = ""
         alamat.value = ""
         deskripsi.value = ""
@@ -568,6 +591,8 @@ class CreateEventViewModel @Inject constructor(
         waktuMulai = waktuMulai.value,
         waktuSelesai = waktuSelesai.value,
         isOnline = isOnline.value,
+        isFreePrice = isFreePrice.value,
+        priceAmount = priceAmount.value,
         aplikasiTempat = aplikasiTempat.value,
         alamat = alamat.value,
         deskripsi = deskripsi.value,
@@ -587,9 +612,29 @@ class CreateEventViewModel @Inject constructor(
             alamat.value.isNotBlank() ||
             deskripsi.value.isNotBlank() ||
             kuota.value != 50 ||
+            !isFreePrice.value ||
+            priceAmount.value.isNotBlank() ||
             selectedCategoryId.value != null ||
             latitude.value.isNotBlank() ||
             longitude.value.isNotBlank() ||
             posterUri.value != null
+    }
+
+    fun setPriceMode(isFree: Boolean) {
+        isFreePrice.value = isFree
+        _errorMessage.value = null
+    }
+
+    fun updatePriceAmount(rawValue: String) {
+        priceAmount.value = rawValue.filter(Char::isDigit).take(9)
+    }
+
+    private fun resolvePriceValue(): Int? {
+        return if (isFreePrice.value) {
+            0
+        } else {
+            val digits = priceAmount.value.filter(Char::isDigit)
+            if (digits.isBlank()) null else digits.toIntOrNull()?.takeIf { it >= 1 }
+        }
     }
 }

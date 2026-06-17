@@ -141,6 +141,7 @@ interface ApiService {
         @Part("link") link: RequestBody?,
         @Part("start_datetime") startDatetime: RequestBody,
         @Part("end_datetime") endDatetime: RequestBody,
+        @Part("price") price: RequestBody,
         @Part("capacity") capacity: RequestBody?,
         @Part poster: MultipartBody.Part?
     ): CreateEventResponse
@@ -161,6 +162,7 @@ interface ApiService {
         @Part("link") link: RequestBody?,
         @Part("start_datetime") startDatetime: RequestBody,
         @Part("end_datetime") endDatetime: RequestBody,
+        @Part("price") price: RequestBody,
         @Part("capacity") capacity: RequestBody?,
         @Part poster: MultipartBody.Part?
     ): CreateEventResponse

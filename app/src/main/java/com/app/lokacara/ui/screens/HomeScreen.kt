@@ -16,9 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,9 +30,9 @@ import androidx.navigation.NavController
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.navigation.Screen
-import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.HomeViewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun HomeScreen(
@@ -61,20 +61,23 @@ fun HomeScreen(
         }
     }
 
-    // Load more when reaching the end
-    val shouldLoadMore by remember {
-        derivedStateOf {
+    val hasMorePagesState by rememberUpdatedState(hasMorePages)
+    val isLoadingMoreState by rememberUpdatedState(isLoadingMore)
+    val isLoadingState by rememberUpdatedState(isLoading)
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val totalItems = layoutInfo.totalItemsCount
             lastVisible >= totalItems - 3
         }
-    }
-
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore && hasMorePages && !isLoadingMore && !isLoading) {
-            viewModel.loadMore()
-        }
+            .distinctUntilChanged()
+            .collect { shouldLoadMore ->
+                if (shouldLoadMore && hasMorePagesState && !isLoadingMoreState && !isLoadingState) {
+                    viewModel.loadMore()
+                }
+            }
     }
 
     // Location picker dialog
@@ -89,9 +92,9 @@ fun HomeScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(SvgBackground)) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         when {
-            isLoading && groupedEvents.isEmpty() && feedError == null && popularEvents.isEmpty() -> LoadingShimmer()
+            isLoading && groupedEvents.isEmpty() && feedError == null -> LoadingShimmer()
             feedError != null && groupedEvents.isEmpty() -> {
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -108,7 +111,7 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
                         Button(
-                            onClick = { navController.navigateToExplore() },
+                            onClick = { navController.navigate(Screen.Explore.route) },
                             colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
@@ -125,67 +128,56 @@ fun HomeScreen(
                 ) {
 
                     item(key = "header", contentType = "header") {
-                        AnimatedEntry(delayMillis = 0) {
-                            HomeHeader(navController = navController)
-                        }
+                        HomeHeader(navController = navController)
                     }
 
                     // ── Popular Events ──
                     item(key = "popular_section", contentType = "popular") {
                         if (popularEvents.isNotEmpty()) {
-                            AnimatedEntry(delayMillis = 40) {
-                                PopularEventSection(
-                                    popularEvents = popularEvents,
-                                    onEventClick = onEventClick
-                                )
-                            }
+                            PopularEventSection(
+                                popularEvents = popularEvents,
+                                onEventClick = { onEventClick(it) }
+                            )
                         }
                     }
 
                     // ── Nearby Events ──
                     item(key = "nearby_header", contentType = "nearby_header") {
-                        AnimatedEntry(delayMillis = 80) {
-                            NearbyEventsHeader(
-                                currentLocation = currentLocation,
-                                onLocationClick = { viewModel.showLocationPicker() }
-                            )
-                        }
+                        NearbyEventsHeader(
+                            currentLocation = currentLocation,
+                            onLocationClick = { viewModel.showLocationPicker() }
+                        )
                     }
 
                     if (nearbyEvents.isNotEmpty()) {
                         item(key = "nearby_events", contentType = "nearby_row") {
-                            AnimatedEntry(delayMillis = 100) {
-                                val onBookmarkNearbyClick: (String) -> Unit = remember { { id -> viewModel.toggleBookmark(id) } }
-                                LazyRow(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                    contentPadding = PaddingValues(horizontal = 24.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(nearbyEvents, key = { it.id }) { event ->
-                                        EventCardCompact(
-                                            event = event,
-                                            onClick = { onEventClick(event) },
-                                            onBookmarkClick = { onBookmarkNearbyClick(event.id.toString()) }
-                                        )
-                                    }
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                contentPadding = PaddingValues(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(nearbyEvents, key = { it.id }) { event ->
+                                    EventCardCompact(
+                                        event = event,
+                                        onClick = { onEventClick(event) },
+                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                    )
                                 }
                             }
                         }
                     } else {
                         item(key = "nearby_empty", contentType = "nearby_empty") {
-                            AnimatedEntry(delayMillis = 100) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 24.dp, vertical = 16.dp)
-                                ) {
-                                    Text(
-                                        "Tidak ada event di sekitar Anda saat ini",
-                                        fontFamily = PlusJakartaSansFont,
-                                        fontSize = 13.sp,
-                                        color = Gray400
-                                    )
-                                }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                            ) {
+                                Text(
+                                    "Tidak ada event di sekitar Anda saat ini",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 13.sp,
+                                    color = Gray400
+                                )
                             }
                         }
                     }
@@ -196,33 +188,28 @@ fun HomeScreen(
 
                     if (sortedCategories.isNotEmpty()) {
                         item(key = "categories_title", contentType = "section_title") {
-                            AnimatedEntry(delayMillis = 120) {
-                                Text(
-                                    text = "Kategori",
-                                    fontFamily = NunitoFont,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 22.sp,
-                                    color = Primary500,
-                                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 0.dp)
-                                )
-                            }
+                            Text(
+                                text = "Kategori",
+                                fontFamily = NunitoFont,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 28.sp,
+                                color = Primary500,
+                                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 0.dp)
+                            )
                         }
 
                         items(items = sortedCategories, key = { it }, contentType = { "category" }) { categoryName ->
                             val events = groupedEvents[categoryName] ?: emptyList()
                             if (events.isNotEmpty()) {
-                                AnimatedEntry(delayMillis = 140) {
-                                    val onBookmarkCategoryClick: (String) -> Unit = remember { { id -> viewModel.toggleBookmark(id) } }
-                                    CategoryEventSection(
-                                        categoryName = categoryName,
-                                        events = events,
-                                        onEventClick = onEventClick,
-                                        onSeeAll = {
-                                            navController.navigateToExplore(categoryName)
-                                        },
-                                        onBookmarkClick = onBookmarkCategoryClick
-                                    )
-                                }
+                                CategoryEventSection(
+                                    categoryName = categoryName,
+                                    events = events,
+                                    onEventClick = onEventClick,
+                                    onSeeAll = {
+                                        navController.navigate(Screen.Explore.createRoute(categoryName))
+                                    },
+                                    onBookmarkClick = { eventId -> viewModel.toggleBookmark(eventId) }
+                                )
                             }
                         }
                     }
@@ -247,9 +234,16 @@ fun HomeScreen(
 
                     // ── Load more indicator ──
                     if (isLoadingMore) {
-                        item(key = "loading_more") {
-                            Column(modifier = Modifier.padding(top = 8.dp)) {
-                                ShimmerSkeletonCardRow(cardCount = 3, height = 110)
+                        item(key = "loading_more", contentType = "loading") {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = SvgPrimaryBlue,
+                                    strokeWidth = 2.dp
+                                )
                             }
                         }
                     }
@@ -263,7 +257,6 @@ fun HomeScreen(
 
 @Composable
 private fun LoadingShimmer() {
-    val brush = shimmerBrush()
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 80.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -277,14 +270,14 @@ private fun LoadingShimmer() {
                 modifier = Modifier
                     .width(120.dp)
                     .height(34.dp)
-                    .background(brush, RoundedCornerShape(8.dp))
+                    .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(2) {
                     Box(
                         modifier = Modifier
                             .size(34.dp)
-                            .background(brush, RoundedCornerShape(8.dp))
+                            .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
                     )
                 }
             }
@@ -305,7 +298,6 @@ private fun LoadingShimmer() {
 
 @Composable
 private fun ShimmerSkeletonCardRow(cardCount: Int, height: Int) {
-    val brush = shimmerBrush()
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         horizontalArrangement = if (cardCount == 1) Arrangement.Start else Arrangement.spacedBy(12.dp)
@@ -315,7 +307,7 @@ private fun ShimmerSkeletonCardRow(cardCount: Int, height: Int) {
                 modifier = Modifier
                     .then(if (cardCount == 1) Modifier.fillMaxWidth() else Modifier.width(if (height > 100) 160.dp else 80.dp))
                     .height(height.dp)
-                    .background(brush, RoundedCornerShape(12.dp))
+                    .background(Gray200.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
             )
         }
     }

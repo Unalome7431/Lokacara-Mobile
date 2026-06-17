@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,104 +111,96 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0, durationMillis = 160, offsetY = 12) {
-                    FlatProfileIdentity(
-                        name = userProfile.name.ifBlank { "Pengguna" },
-                        email = userProfile.email,
-                        location = userProfile.location,
-                        imageUrl = userProfile.profileImageUrl,
-                        myEventCount = myEvents.size,
-                        certificateCount = certificates.size,
-                        onEditClick = { navController.navigate(Screen.EditProfile.route) }
+                FlatProfileIdentity(
+                    name = userProfile.name.ifBlank { "Pengguna" },
+                    email = userProfile.email,
+                    location = userProfile.location,
+                    imageUrl = userProfile.profileImageUrl,
+                    myEventCount = myEvents.size,
+                    certificateCount = certificates.size,
+                    onEditClick = { navController.navigate(Screen.EditProfile.route) }
+                )
+            }
+
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Aktivitas Saya",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Gray900,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ProfileShortcutTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Rounded.Event,
+                            title = stringResource(R.string.profile_my_events),
+                            subtitle = "${myEvents.size} event",
+                            accentColor = Primary500,
+                            onClick = { navController.navigate(Screen.MyEvents.route) }
+                        )
+                        ProfileShortcutTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Rounded.Bookmark,
+                            title = stringResource(R.string.profile_saved_events),
+                            subtitle = "Event favorit",
+                            accentColor = Secondary500,
+                            onClick = { navController.navigate(Screen.SavedEvents.route) }
+                        )
+                    }
+                    ProfileShortcutTile(
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Rounded.WorkspacePremium,
+                        title = stringResource(R.string.profile_certificates),
+                        subtitle = "${certificates.size} sertifikat dikumpulkan",
+                        accentColor = SvgOrange,
+                        onClick = { navController.navigate(Screen.Certificates.route) }
                     )
                 }
             }
 
             item {
-                com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 50, durationMillis = 160, offsetY = 10) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = "Aktivitas Saya",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Gray900,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            ProfileShortcutTile(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Rounded.Event,
-                                title = stringResource(R.string.profile_my_events),
-                                subtitle = "${myEvents.size} event",
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Informasi & Pengaturan",
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Gray900,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(22.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            ProfileUtilityRow(
+                                icon = Icons.Rounded.Settings,
+                                title = stringResource(R.string.profile_settings),
+                                subtitle = "Keamanan dan preferensi",
+                                onClick = { navController.navigate(Screen.Settings.route) },
                                 accentColor = Primary500,
-                                onClick = { navController.navigate(Screen.MyEvents.route) }
+                                showDivider = true
                             )
-                            ProfileShortcutTile(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Rounded.Bookmark,
-                                title = stringResource(R.string.profile_saved_events),
-                                subtitle = "Event favorit",
+                            ProfileUtilityRow(
+                                icon = Icons.Rounded.Info,
+                                title = stringResource(R.string.profile_about),
+                                subtitle = "Tentang Lokacara",
+                                onClick = { navController.navigate(Screen.About.route) },
                                 accentColor = Secondary500,
-                                onClick = { navController.navigate(Screen.SavedEvents.route) }
+                                showDivider = false
                             )
                         }
-                        ProfileShortcutTile(
-                            modifier = Modifier.fillMaxWidth(),
-                            icon = Icons.Rounded.WorkspacePremium,
-                            title = stringResource(R.string.profile_certificates),
-                            subtitle = "${certificates.size} sertifikat dikumpulkan",
-                            accentColor = SvgOrange,
-                            onClick = { navController.navigate(Screen.Certificates.route) }
-                        )
                     }
                 }
             }
 
             item {
-                com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 90, durationMillis = 160, offsetY = 10) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = "Informasi & Pengaturan",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = Gray900,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            shape = RoundedCornerShape(22.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column {
-                                ProfileUtilityRow(
-                                    icon = Icons.Rounded.Settings,
-                                    title = stringResource(R.string.profile_settings),
-                                    subtitle = "Keamanan dan preferensi",
-                                    onClick = { navController.navigate(Screen.Settings.route) },
-                                    accentColor = Primary500,
-                                    showDivider = true
-                                )
-                                ProfileUtilityRow(
-                                    icon = Icons.Rounded.Info,
-                                    title = stringResource(R.string.profile_about),
-                                    subtitle = "Tentang Lokacara",
-                                    onClick = { navController.navigate(Screen.About.route) },
-                                    accentColor = Secondary500,
-                                    showDivider = false
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 120, durationMillis = 160, offsetY = 8) {
-                    ProfileLogoutRow(onClick = { showLogoutConfirm = true })
-                }
+                ProfileLogoutRow(onClick = { showLogoutConfirm = true })
             }
         }
     }

@@ -1,16 +1,8 @@
 package com.app.lokacara.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
@@ -46,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.navigation.NavController
 import com.app.lokacara.R
-import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.SortOption
@@ -297,24 +287,13 @@ private fun SearchAutocompleteField(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
         if (expanded && filtered.isNotEmpty()) {
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color.White)
-            ) {
-                filtered.forEachIndexed { index, option ->
-                    AnimatedVisibility(
-                        visible = expanded,
-                        enter = fadeIn(tween(120, delayMillis = index * 15)) +
-                                expandVertically(tween(120, delayMillis = index * 15)) { it / 2 },
-                        exit = fadeOut(tween(80)) + slideOutVertically(tween(80)) { it / 4 }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
-                            onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                            leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
-                        )
-                    }
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
+                filtered.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
+                        onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
+                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    )
                 }
             }
         }
@@ -331,7 +310,7 @@ fun ExploreCategories(
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(top = 6.dp, bottom = 12.dp)
+        modifier = Modifier.padding(bottom = 12.dp)
     ) {
         items(categories) { cat ->
             CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) }
@@ -341,31 +320,15 @@ fun ExploreCategories(
 
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    val chipColor by animateColorAsState(
-        targetValue = if (isSelected) Primary500 else Gray100,
-        label = "categoryChipColor"
-    )
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else Gray700,
-        label = "categoryChipTextColor"
-    )
-    val chipScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.03f else 1f,
-        animationSpec = tween(140),
-        label = "categoryChipScale"
-    )
-
     Surface(
-        color = chipColor,
+        color = if (isSelected) Primary500 else Gray100,
         shape = RoundedCornerShape(100.dp),
-        modifier = Modifier
-            .scale(chipScale)
-            .clickable { onClick() }
+        modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
-            color = textColor,
+            color = if (isSelected) Color.White else Gray700,
             style = TextStyle(
                 fontFamily = PlusJakartaSansFont,
                 fontSize = 12.sp,
@@ -606,15 +569,10 @@ fun EmptyStateView(
         )
         if (hasActiveFilter) {
             Spacer(modifier = Modifier.height(16.dp))
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(tween(140)) + scaleIn(tween(140), initialScale = 0.92f)
-            ) {
-                TextButton(onClick = onResetFilters) {
-                    Icon(Icons.Outlined.Clear, null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reset Filter", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
-                }
+            TextButton(onClick = onResetFilters) {
+                Icon(Icons.Outlined.Clear, null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Reset Filter", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -632,11 +590,6 @@ fun FilterBottomSheet(
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
-    val handleWidth by animateDpAsState(
-        targetValue = if (visible) 44.dp else 28.dp,
-        animationSpec = tween(180),
-        label = "filterHandleWidth"
-    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -649,24 +602,9 @@ fun FilterBottomSheet(
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 18.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(handleWidth)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(Gray200)
-                )
-            }
-
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(160)) + slideInVertically(tween(160)) { it / 4 }
+                enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 3 }
             ) {
                 Text(
                     "Filter Pencarian",
@@ -680,7 +618,7 @@ fun FilterBottomSheet(
 
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 4 }
+                enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { it / 3 }
             ) {
                 Column {
                     Text(
@@ -720,7 +658,7 @@ fun FilterBottomSheet(
 
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 4 }
+                enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 3 }
             ) {
                 Column {
                     Text(
@@ -759,7 +697,7 @@ fun FilterBottomSheet(
             Spacer(modifier = Modifier.height(28.dp))
             AnimatedVisibility(
                 visible = visible,
-                enter = fadeIn(tween(240)) + slideInVertically(tween(240)) { it / 4 }
+                enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 3 }
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -774,7 +712,7 @@ fun FilterBottomSheet(
                         )
                     }
                     Button(
-                        onClick = { onDismiss(); SnackbarManager.show("Filter diterapkan") },
+                        onClick = onDismiss,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500)
                     ) {
@@ -812,17 +750,12 @@ fun ErrorStateView(
         Text(message, fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray500)
         if (onRetry != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(tween(140)) + scaleIn(tween(140), initialScale = 0.92f)
+            Button(
+                onClick = onRetry,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary500)
             ) {
-                Button(
-                    onClick = onRetry,
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                ) {
-                    Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold, color = Color.White)
-                }
+                Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }

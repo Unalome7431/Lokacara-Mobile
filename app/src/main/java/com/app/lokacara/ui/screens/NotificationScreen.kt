@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.NotificationViewModel
 import androidx.compose.ui.res.stringResource
 import com.app.lokacara.R
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun NotificationScreen(
@@ -73,6 +75,13 @@ fun NotificationScreen(
                 color = Gray900
             )
         }
+        Text(
+            text = "Aktivitas dan informasi dari event yang kamu ikuti.",
+            fontFamily = PlusJakartaSansFont,
+            fontSize = 13.sp,
+            color = Gray500,
+            modifier = Modifier.padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 16.dp)
+        )
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, title ->
                 Column(
@@ -86,28 +95,67 @@ fun NotificationScreen(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            val grouped = notifications.groupBy { it.dateGroup }
-            grouped.forEach { (dateGroup, items) ->
-                item {
-                    Text(dateGroup, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
+        if (notifications.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Belum ada notifikasi",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = Gray900
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Notifikasi event, tiket, dan informasi akun akan muncul di sini.",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 13.sp,
+                            color = Gray500
+                        )
+                    }
                 }
-                items(items) { notification ->
-                    val route = notificationTargetRoute(notification)
-                    NotificationCard(
-                        notification = notification,
-                        onClick = route?.let {
-                            {
-                                navController.navigate(it) {
-                                    launchSingleTop = true
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val grouped = notifications.groupBy { it.dateGroup }
+                grouped.forEach { (dateGroup, items) ->
+                    item {
+                        Text(
+                            dateGroup,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Gray900,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    items(items) { notification ->
+                        val route = notificationTargetRoute(notification)
+                        NotificationCard(
+                            notification = notification,
+                            onClick = route?.let {
+                                {
+                                    navController.navigate(it) {
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
