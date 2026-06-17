@@ -42,7 +42,8 @@ class HomeViewModel @Inject constructor(
     private val apiService: ApiService,
     private val analytics: AnalyticsTracker,
     private val cache: HomeCache,
-    private val imageLoader: ImageLoader
+    private val imageLoader: ImageLoader,
+    private val userSessionManager: com.app.lokacara.data.UserSessionManager
 ) : AndroidViewModel(application) {
 
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
@@ -65,6 +66,9 @@ class HomeViewModel @Inject constructor(
     // ── Events ──
     private val _popularEvents = MutableStateFlow<List<Event>>(emptyList())
     val popularEvents: StateFlow<List<Event>> = _popularEvents.asStateFlow()
+
+    private val _myUpcomingEvents = MutableStateFlow<List<com.app.lokacara.model.UpcomingEvent>?>(null)
+    val myUpcomingEvents: StateFlow<List<com.app.lokacara.model.UpcomingEvent>?> = _myUpcomingEvents.asStateFlow()
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
@@ -115,6 +119,27 @@ class HomeViewModel @Inject constructor(
         loadData()
         loadFilterData()
         autoDetectLocation()
+        
+        viewModelScope.launch {
+            userSessionManager.userSession.collect { session ->
+                if (session.isLoggedIn) {
+                    loadUpcomingEvents()
+                } else {
+                    _myUpcomingEvents.value = emptyList()
+                }
+            }
+        }
+    }
+
+    private fun loadUpcomingEvents() {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getDashboard()
+                _myUpcomingEvents.value = response.data.upcoming.map { it.toUpcomingEvent() }
+            } catch (_: Exception) {
+                _myUpcomingEvents.value = emptyList()
+            }
+        }
     }
 
     // ── Haversine formula ──

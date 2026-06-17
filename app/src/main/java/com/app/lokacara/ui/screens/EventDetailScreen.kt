@@ -172,59 +172,33 @@ fun EventDetailScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         item {
-                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 0) {
-                                EventHero(
-                                    event = event,
-                                    onBack = { navController.navigateBackOrHome() },
-                                    onShare = { shareEvent(context, event) },
-                                    onBookmark = { viewModel.toggleBookmark() }
-                                )
-                            }
+                            EventHero(
+                                event = event,
+                                onBack = { navController.navigateBackOrHome() },
+                                onShare = { shareEvent(context, event) },
+                                onBookmark = { viewModel.toggleBookmark() }
+                            )
                         }
 
                         item {
-                            com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 100) {
-                                EventDetailContent(
-                                    event = event,
-                                    isRegistered = isRegistered,
-                                    isHost = isHost,
-                                    isQrLoading = isQrLoading,
-                                    qrToken = qrToken,
-                                    onOpenMap = { openEventMap(context, event) },
-                                    onOpenLink = { openEventLink(context, event) }
-                                )
-                            }
+                            EventDetailContent(
+                                event = event,
+                                isRegistered = isRegistered,
+                                isHost = isHost,
+                                isQrLoading = isQrLoading,
+                                qrToken = qrToken,
+                                onOpenMap = { openEventMap(context, event) },
+                                onOpenLink = { openEventLink(context, event) }
+                            )
                         }
 
                         if (isHost) {
                             item {
-                                com.app.lokacara.ui.components.AnimatedEntry(delayMillis = 200) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 24.dp, vertical = 4.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "Kelola Event",
-                                            fontFamily = NunitoFont,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp,
-                                            color = Gray900
-                                        )
-                                        HostActionCard(
-                                            icon = Icons.Outlined.Edit,
-                                            title = "Edit Detail Acara",
-                                            subtitle = "Ubah informasi event",
-                                            modifier = Modifier.fillMaxWidth(),
-                                            onClick = { navController.navigate("edit_event/${event.id}") }
-                                        )
-                                        val startDatetime = event.startDatetime
-                                        if (!startDatetime.isNullOrBlank()) {
-                                            ReminderSchedulePanel(startDatetime = startDatetime)
-                                        }
-                                    }
-                                }
+                                HostManagementPanel(
+                                    eventId = event.id,
+                                    startDatetime = event.startDatetime,
+                                    navController = navController,
+                                )
                             }
                         }
                     }
@@ -687,6 +661,52 @@ private fun FlatEventDescription(text: String) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun HostManagementPanel(
+    eventId: Long,
+    startDatetime: String,
+    navController: NavController,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Kelola Event",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = Gray900
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HostActionCard(
+                icon = Icons.Outlined.Groups,
+                title = stringResource(R.string.event_detail_view_attendees),
+                subtitle = "Pantau peserta",
+                modifier = Modifier.weight(1f),
+                onClick = { navController.navigate(Screen.Attendees.createRoute(eventId)) }
+            )
+            HostActionCard(
+                icon = Icons.Outlined.QrCode2,
+                title = stringResource(R.string.event_detail_scan_qr),
+                subtitle = "Check-in cepat",
+                modifier = Modifier.weight(1f),
+                onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) }
+            )
+        }
+        HostActionCard(
+            icon = Icons.Outlined.Edit,
+            title = "Edit Detail Acara",
+            subtitle = "Ubah informasi event",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate("edit_event/$eventId") }
+        )
+        ReminderSchedulePanel(startDatetime = startDatetime)
     }
 }
 

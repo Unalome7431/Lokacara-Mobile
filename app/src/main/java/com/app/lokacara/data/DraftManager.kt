@@ -22,6 +22,8 @@ data class EventDraft(
     val alamat: String = "",
     val deskripsi: String = "",
     val kuota: Int = 50,
+    val isFreePrice: Boolean = true,
+    val priceAmount: String = "",
     val selectedCategoryId: Int? = null,
     val latitude: String = "",
     val longitude: String = "",
@@ -39,6 +41,8 @@ class DraftManager(private val context: Context) {
         val ALAMAT = stringPreferencesKey("draft_alamat")
         val DESKRIPSI = stringPreferencesKey("draft_deskripsi")
         val KUOTA = intPreferencesKey("draft_kuota")
+        val IS_FREE_PRICE = booleanPreferencesKey("draft_is_free_price")
+        val PRICE_AMOUNT = stringPreferencesKey("draft_price_amount")
         val CATEGORY_ID = intPreferencesKey("draft_category_id")
         val LATITUDE = stringPreferencesKey("draft_latitude")
         val LONGITUDE = stringPreferencesKey("draft_longitude")
@@ -62,6 +66,8 @@ class DraftManager(private val context: Context) {
             prefs[ALAMAT] = draft.alamat
             prefs[DESKRIPSI] = draft.deskripsi
             prefs[KUOTA] = draft.kuota
+            prefs[IS_FREE_PRICE] = draft.isFreePrice
+            prefs[PRICE_AMOUNT] = draft.priceAmount
             if (draft.selectedCategoryId != null) prefs[CATEGORY_ID] = draft.selectedCategoryId
             else prefs.remove(CATEGORY_ID)
             prefs[LATITUDE] = draft.latitude
@@ -83,6 +89,8 @@ class DraftManager(private val context: Context) {
             alamat = prefs[ALAMAT] ?: "",
             deskripsi = prefs[DESKRIPSI] ?: "",
             kuota = prefs[KUOTA] ?: 50,
+            isFreePrice = prefs[IS_FREE_PRICE] ?: true,
+            priceAmount = prefs[PRICE_AMOUNT] ?: "",
             selectedCategoryId = prefs[CATEGORY_ID],
             latitude = prefs[LATITUDE] ?: "",
             longitude = prefs[LONGITUDE] ?: "",

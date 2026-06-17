@@ -157,7 +157,7 @@ fun EventCardCompact(
         Column {
             Box {
                 AsyncImage(
-                    model = rememberEventImageRequest(event.imageUrl, 160, crossfade = false),
+                    model = rememberEventImageRequest(event.imageUrl, 160),
                     contentDescription = event.title,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,6 +300,13 @@ private fun DetailItem(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
         Icon(icon, contentDescription = text, tint = Gray600, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(6.dp))
-        Text(text, color = Gray600, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 12.sp))
+        Text(
+            text = text,
+            color = Gray600,
+            style = TextStyle(
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 12.sp
+            )
+        )
     }
 }
