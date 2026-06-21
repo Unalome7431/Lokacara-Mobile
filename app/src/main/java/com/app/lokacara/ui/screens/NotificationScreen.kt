@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,8 +38,9 @@ fun NotificationScreen(
     navController: NavController,
     viewModel: NotificationViewModel = hiltViewModel()
 ) {
-    val selectedTab by viewModel.selectedTab.collectAsState()
-    val notifications by viewModel.filteredNotifications.collectAsState(initial = emptyList())
+    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
+    val notifications by viewModel.filteredNotifications.collectAsStateWithLifecycle(initialValue = emptyList())
+    val groupedNotifications = remember(notifications) { notifications.groupBy { it.dateGroup } }
     val tabs = listOf(
         stringResource(R.string.tab_notifications_activity),
         stringResource(R.string.tab_notifications_info)
@@ -131,9 +133,8 @@ fun NotificationScreen(
                 contentPadding = PaddingValues(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                val grouped = notifications.groupBy { it.dateGroup }
-                grouped.forEach { (dateGroup, items) ->
-                    item {
+                groupedNotifications.forEach { (dateGroup, items) ->
+                    item(key = "date_$dateGroup", contentType = "date_header") {
                         Text(
                             dateGroup,
                             fontFamily = NunitoFont,
@@ -143,7 +144,11 @@ fun NotificationScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    items(items) { notification ->
+                    items(
+                        items = items,
+                        key = { notification -> notification.id },
+                        contentType = { "notification" }
+                    ) { notification ->
                         val route = notificationTargetRoute(notification)
                         NotificationCard(
                             notification = notification,

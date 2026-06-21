@@ -38,11 +38,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,6 +79,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.launch
@@ -91,6 +94,16 @@ data class MapLocation(
     val longitude: Double
 )
 
+private class MapPickerJobs {
+    var location: Job? = null
+    var place: Job? = null
+
+    fun cancelAll() {
+        location?.cancel()
+        place?.cancel()
+    }
+}
+
 @SuppressLint("MissingPermission")
 @Composable
 fun MapSearchPicker(
@@ -104,6 +117,7 @@ fun MapSearchPicker(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val currentOnLocationSelected by rememberUpdatedState(onLocationSelected)
     val initialPosition = LatLng(selectedLatitude ?: initialLat, selectedLongitude ?: initialLng)
 
     val cameraPositionState = rememberCameraPositionState {
@@ -120,13 +134,18 @@ fun MapSearchPicker(
     var isResolvingLocation by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
+    val jobs = remember { MapPickerJobs() }
+
+    DisposableEffect(Unit) {
+        onDispose { jobs.cancelAll() }
+    }
 
     fun applySelectedLocation(location: MapLocation, animateCamera: Boolean = true) {
         val latLng = LatLng(location.latitude, location.longitude)
         markerState.position = latLng
         pickedName = location.name
         pickedAddress = location.address
-        onLocationSelected(location)
+        currentOnLocationSelected(location)
         if (animateCamera) {
             scope.launch {
                 cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
@@ -137,27 +156,35 @@ fun MapSearchPicker(
     fun resolveAndSelectLocation(latLng: LatLng, fallbackName: String, animateCamera: Boolean = true) {
         markerState.position = latLng
         isResolvingLocation = true
-        scope.launch {
-            val location = resolveMapLocation(context, latLng, fallbackName)
-            applySelectedLocation(location, animateCamera)
-            isResolvingLocation = false
+        jobs.location?.cancel()
+        jobs.location = scope.launch {
+            try {
+                val location = resolveMapLocation(context, latLng, fallbackName)
+                applySelectedLocation(location, animateCamera)
+            } finally {
+                isResolvingLocation = false
+            }
         }
     }
 
     fun useCurrentLocation() {
         if (hasLocationPermission(context)) {
             isResolvingLocation = true
-            scope.launch {
-                val location = getCurrentDeviceLocation(context)
-                if (location != null) {
-                    val latLng = LatLng(location.latitude, location.longitude)
-                    markerState.position = latLng
-                    val resolvedLocation = resolveMapLocation(context, latLng, "Lokasi Saat Ini")
-                    applySelectedLocation(resolvedLocation)
-                } else {
-                    SnackbarManager.showError("Lokasi saat ini belum tersedia")
+            jobs.location?.cancel()
+            jobs.location = scope.launch {
+                try {
+                    val location = getCurrentDeviceLocation(context)
+                    if (location != null) {
+                        val latLng = LatLng(location.latitude, location.longitude)
+                        markerState.position = latLng
+                        val resolvedLocation = resolveMapLocation(context, latLng, "Lokasi Saat Ini")
+                        applySelectedLocation(resolvedLocation)
+                    } else {
+                        SnackbarManager.showError("Lokasi saat ini belum tersedia")
+                    }
+                } finally {
+                    isResolvingLocation = false
                 }
-                isResolvingLocation = false
             }
         }
     }
@@ -305,8 +332,14 @@ fun MapSearchPicker(
                             searchQuery = ""
                             showDropdown = false
                             val client = placesClient ?: return@DropdownMenuItem
-                            fetchPlace(client, placeId, primary, secondary) { loc ->
-                                applySelectedLocation(loc)
+                            jobs.place?.cancel()
+                            jobs.place = scope.launch {
+                                val location = fetchPlace(client, placeId, primary, secondary)
+                                if (location != null) {
+                                    applySelectedLocation(location)
+                                } else {
+                                    SnackbarManager.showError("Detail koordinat tempat tidak tersedia")
+                                }
                             }
                         }
                     )
@@ -500,22 +533,21 @@ private suspend fun findPredictions(
             .build()
         client.findAutocompletePredictions(request)
             .addOnSuccessListener { response ->
-                cont.resume(response.autocompletePredictions)
+                if (cont.isActive) cont.resume(response.autocompletePredictions)
             }
             .addOnFailureListener {
-                cont.resume(emptyList())
+                if (cont.isActive) cont.resume(emptyList())
             }
     }
 }
 
 @Suppress("DEPRECATION")
-private fun fetchPlace(
+private suspend fun fetchPlace(
     client: PlacesClient,
     placeId: String,
     primaryText: String,
-    secondaryText: String,
-    onResult: (MapLocation) -> Unit
-) {
+    secondaryText: String
+): MapLocation? = suspendCancellableCoroutine { continuation ->
     val request = FetchPlaceRequest.builder(
         placeId,
         listOf(Place.Field.LAT_LNG, Place.Field.NAME, Place.Field.ADDRESS)
@@ -525,19 +557,19 @@ private fun fetchPlace(
             val place = response.place
             val latLng = place.latLng
             if (latLng == null) {
-                SnackbarManager.showError("Detail koordinat tempat tidak tersedia")
+                if (continuation.isActive) continuation.resume(null)
                 return@addOnSuccessListener
             }
-            onResult(
-                MapLocation(
+            if (continuation.isActive) {
+                continuation.resume(MapLocation(
                     name = place.name?.trim().orEmpty().ifBlank { primaryText },
                     address = place.address?.trim().orEmpty().ifBlank { secondaryText.ifBlank { primaryText } },
                     latitude = latLng.latitude,
                     longitude = latLng.longitude
-                )
-            )
+                ))
+            }
         }
         .addOnFailureListener {
-            SnackbarManager.showError("Gagal mengambil detail tempat")
+            if (continuation.isActive) continuation.resume(null)
         }
 }

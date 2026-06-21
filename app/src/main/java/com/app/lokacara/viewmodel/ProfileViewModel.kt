@@ -9,6 +9,8 @@ import com.app.lokacara.data.PushTokenManager
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.markCertificateDownloaded
+import com.app.lokacara.data.remote.BoundedImagePrefetcher
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.CertificateData
@@ -17,15 +19,14 @@ import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,7 +41,11 @@ class ProfileViewModel @Inject constructor(
     private val imageLoader: ImageLoader
 ) : AndroidViewModel(application) {
 
-    private val prefetchedImageUrls = mutableSetOf<String>()
+    private val imagePrefetcher = BoundedImagePrefetcher(
+        context = application,
+        imageLoader = imageLoader,
+        maxRequests = 6
+    )
 
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -56,6 +61,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _cancellingEventId = MutableStateFlow<Long?>(null)
+    val cancellingEventId: StateFlow<Long?> = _cancellingEventId.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
@@ -117,7 +125,29 @@ class ProfileViewModel @Inject constructor(
 
     fun refresh() {
         loadUserProfile()
-        loadDashboard()
+        loadDashboard(forceRefresh = true)
+    }
+
+    fun cancelMyEvent(eventId: Long) {
+        if (_cancellingEventId.value != null) return
+
+        viewModelScope.launch {
+            _cancellingEventId.value = eventId
+            _errorMessage.value = null
+
+            when (val result = repository.cancelEvent(eventId)) {
+                is ApiResult.Success -> {
+                    SnackbarManager.show(result.data.message.ifBlank { "Event berhasil dibatalkan" })
+                    loadDashboard(forceRefresh = true)
+                }
+                is ApiResult.Error -> {
+                    _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+
+            _cancellingEventId.value = null
+        }
     }
 
     private fun resolveLocalProfileImagePath(): String? {
@@ -143,25 +173,28 @@ class ProfileViewModel @Inject constructor(
         return "$this${separator}v=$safeVersion"
     }
 
-    private fun loadDashboard() {
+    private fun loadDashboard(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                when (val result = repository.getDashboard()) {
+                when (val result = repository.getDashboard(forceRefresh)) {
                     is ApiResult.Success -> {
                         val dashboard = result.data
-                        val events = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
-                        val certificates = dashboard.certificates.map { cert ->
-                            val eventTitle = cert.event_registration?.event?.title ?: "Sertifikat"
-                            CertificateData(
-                                id = cert.id.toString(),
-                                title = eventTitle,
-                                date = cert.issued_at?.take(10) ?: "",
-                                time = "",
-                                location = "",
-                                category = "",
-                                imageUrl = imageUrlProvider.certificateUrl(cert.file_url)
-                            )
+                        val (events, certificates) = withContext(Dispatchers.Default) {
+                            val mappedEvents = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
+                            val mappedCertificates = dashboard.certificates.map { cert ->
+                                val eventTitle = cert.event_registration?.event?.title ?: "Sertifikat"
+                                CertificateData(
+                                    id = cert.id.toString(),
+                                    title = eventTitle,
+                                    date = cert.issued_at?.take(10) ?: "",
+                                    time = "",
+                                    location = "",
+                                    category = "",
+                                    imageUrl = imageUrlProvider.certificateUrl(cert.file_url)
+                                )
+                            }
+                            mappedEvents to mappedCertificates
                         }
                         _myEvents.value = events
                         _certificates.value = certificates
@@ -182,26 +215,7 @@ class ProfileViewModel @Inject constructor(
             .distinct()
             .take(8)
 
-        if (urls.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            urls.forEach { imageUrl ->
-                val shouldPrefetch = synchronized(prefetchedImageUrls) {
-                    prefetchedImageUrls.add(imageUrl)
-                }
-                if (!shouldPrefetch) return@forEach
-
-                imageLoader.enqueue(
-                    ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(700)
-                        .precision(Precision.INEXACT)
-                        .crossfade(false)
-                        .build()
-                )
-            }
-        }
+        imagePrefetcher.replace(urls, sizePx = 700)
     }
 
     fun updateProfileField(field: UserSessionManager.Field, newValue: String) {
@@ -318,10 +332,7 @@ class ProfileViewModel @Inject constructor(
 
     fun downloadCertificate(cert: CertificateData) {
         viewModelScope.launch {
-            _certificates.value = _certificates.value.map {
-                if (it.id == cert.id) it.copy(filePath = cert.imageUrl)
-                else it
-            }
+            _certificates.value = markCertificateDownloaded(_certificates.value, cert.id, cert.imageUrl)
         }
     }
 
@@ -331,5 +342,10 @@ class ProfileViewModel @Inject constructor(
             userSessionManager.logout()
             onComplete()
         }
+    }
+
+    override fun onCleared() {
+        imagePrefetcher.clear()
+        super.onCleared()
     }
 }

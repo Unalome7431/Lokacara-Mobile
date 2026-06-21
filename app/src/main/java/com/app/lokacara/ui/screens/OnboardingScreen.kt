@@ -2,11 +2,7 @@ package com.app.lokacara.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.InfiniteRepeatableSpec
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -128,23 +124,19 @@ private fun PhaseContent(logoRes: Int, textColor: Color, showText: Boolean) {
 
 @Composable
 private fun PulsingLogo(logoRes: Int, size: Int) {
-    val infiniteTransition = rememberInfiniteTransition(label = "Pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "PulseScale"
-    )
+    val scale = remember { Animatable(1f) }
+
+    LaunchedEffect(Unit) {
+        scale.animateTo(1.05f, tween(500))
+        scale.animateTo(1f, tween(500))
+    }
 
     Image(
         painter = painterResource(id = logoRes),
         contentDescription = "Logo",
         modifier = Modifier
             .size(size.dp)
-            .scale(scale),
+            .scale(scale.value),
         contentScale = ContentScale.Fit
     )
 }

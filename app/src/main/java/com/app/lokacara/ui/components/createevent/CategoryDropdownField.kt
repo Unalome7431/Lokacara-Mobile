@@ -42,7 +42,7 @@ fun CategoryDropdownField(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = selectedCategoryName.ifEmpty { "Pilih Kategori" },
+                    text = selectedCategoryName.ifEmpty { "Pilih kategori acara" },
                     color = if (selectedCategoryName.isEmpty()) Gray500 else Gray900,
                     fontSize = 14.sp, fontFamily = NunitoFont
                 )

@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -10,10 +11,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewList
@@ -24,15 +23,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
@@ -52,24 +48,22 @@ fun ExploreScreen(
     initialCategory: String = "",
     viewModel: ExploreViewModel = hiltViewModel()
 ) {
-    val isSearchExpanded by viewModel.isSearchExpanded.collectAsState()
-    val eventName by viewModel.eventName.collectAsState()
-    val eventLocation by viewModel.eventLocation.collectAsState()
-    val eventCategory by viewModel.eventCategory.collectAsState()
-    val selectedCategoryChip by viewModel.selectedCategoryChip.collectAsState()
-    val events by viewModel.filteredEvents.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val errorType by viewModel.errorType.collectAsState()
-    val sortOption by viewModel.sortOption.collectAsState()
-    val dateFilter by viewModel.dateFilter.collectAsState()
-    val priceFilter by viewModel.priceFilter.collectAsState()
-    val isGridView by viewModel.isGridView.collectAsState()
-    val searchHistory by viewModel.searchHistory.collectAsState()
-    val locationSuggestions by viewModel.locationSuggestions.collectAsState()
-    val categorySuggestions by viewModel.categorySuggestions.collectAsState()
-    val showDatePicker by viewModel.showDatePicker.collectAsState()
+    val isSearchExpanded by viewModel.isSearchExpanded.collectAsStateWithLifecycle()
+    val selectedCategoryChip by viewModel.selectedCategoryChip.collectAsStateWithLifecycle()
+    val events by viewModel.filteredEvents.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val hasMorePages by viewModel.hasMorePages.collectAsStateWithLifecycle()
+    val totalEvents by viewModel.totalEvents.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val errorType by viewModel.errorType.collectAsStateWithLifecycle()
+    val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
+    val dateFilter by viewModel.dateFilter.collectAsStateWithLifecycle()
+    val priceFilter by viewModel.priceFilter.collectAsStateWithLifecycle()
+    val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
+    val categorySuggestions by viewModel.categorySuggestions.collectAsStateWithLifecycle()
+    val showDatePicker by viewModel.showDatePicker.collectAsStateWithLifecycle()
+    val activeFilterCount by viewModel.activeFilterCount.collectAsStateWithLifecycle()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -105,18 +99,7 @@ fun ExploreScreen(
             }
     }
 
-    val allCategoryLabel = "Semua"
-    val hasActiveFilter = eventName.isNotEmpty() || eventLocation.isNotEmpty() ||
-            eventCategory.isNotEmpty() || selectedCategoryChip != allCategoryLabel ||
-            priceFilter != PriceFilter.SEMUA || dateFilter != DateFilter.SEMUA
-    val activeFilterCount = listOf(
-        eventName.isNotEmpty(),
-        eventLocation.isNotEmpty(),
-        eventCategory.isNotEmpty(),
-        selectedCategoryChip != allCategoryLabel,
-        priceFilter != PriceFilter.SEMUA,
-        dateFilter != DateFilter.SEMUA
-    ).count { it }
+    val hasActiveFilter = activeFilterCount > 0
 
     BackHandler(enabled = isSearchExpanded || hasActiveFilter) {
         if (isSearchExpanded) {
@@ -130,18 +113,12 @@ fun ExploreScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        AnimatedContent(
-            targetState = when {
-                isLoading && events.isEmpty() && error == null -> "loading"
-                error != null && events.isEmpty() -> "error"
-                else -> "content"
-            },
-            transitionSpec = {
-                fadeIn(tween(250)) togetherWith fadeOut(tween(150))
-            },
-            label = "explore_state"
-        ) { state ->
-            when (state) {
+        val state = when {
+            isLoading && events.isEmpty() && error == null -> "loading"
+            error != null && events.isEmpty() -> "error"
+            else -> "content"
+        }
+        when (state) {
                 "loading" -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item { ExploreHeader() }
@@ -196,17 +173,9 @@ fun ExploreScreen(
                                     enter = expandVertically(tween(300)) + fadeIn(tween(300)),
                                     exit = shrinkVertically(tween(200)) + fadeOut(tween(200))
                                 ) {
-                                    ExpandedSearchSection(
-                                        eventName = eventName,
-                                        onEventNameChange = { viewModel.updateEventName(it) },
-                                        onClearEventName = { viewModel.clearEventName() },
-                                        eventLocation = eventLocation,
-                                        onEventLocationChange = { viewModel.updateEventLocation(it) },
-                                        onClearEventLocation = { viewModel.clearEventLocation() },
-                                        locationSuggestions = locationSuggestions,
+                                    ExploreExpandedSearch(
+                                        viewModel = viewModel,
                                         categorySuggestions = categorySuggestions,
-                                        searchHistory = searchHistory,
-                                        onClearHistory = { viewModel.clearSearchHistory() },
                                         onSearchSubmit = {
                                             viewModel.onSearchSubmit()
                                             focusManager.clearFocus()
@@ -242,7 +211,7 @@ fun ExploreScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
+                                    Text(resultCountLabel(events.size, totalEvents, hasActiveFilter), fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
                                             Icon(Icons.AutoMirrored.Outlined.ViewList, "List view", tint = Gray500, modifier = Modifier.size(18.dp))
@@ -262,16 +231,15 @@ fun ExploreScreen(
                                 }
                             }
                             items(events, key = { it.id }, contentType = { "event_grid" }) { event ->
-                                Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "grid_crossfade") {
-                                    EventCardCompact(
-                                        event = event,
-                                        onClick = {
-                                            viewModel.onEventClick(event.id)
-                                            navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                        },
-                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                    )
-                                }
+                                EventCardCompact(
+                                    event = event,
+                                    onClick = {
+                                        viewModel.onEventClick(event.id)
+                                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                    },
+                                    onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) },
+                                    imageCrossfade = false
+                                )
                             }
                             if (isLoadingMore) {
                                 item(key = "loading_more", span = { GridItemSpan(2) }) {
@@ -280,6 +248,11 @@ fun ExploreScreen(
                                         Spacer(modifier = Modifier.height(12.dp))
                                         LoadMoreSkeleton()
                                     }
+                                }
+                            }
+                            if (!hasMorePages && events.isNotEmpty()) {
+                                item(key = "end_of_grid", span = { GridItemSpan(2) }) {
+                                    EndOfExploreList()
                                 }
                             }
                             item(key = "bottom_spacer", span = { GridItemSpan(2) }) { Spacer(modifier = Modifier.height(80.dp)) }
@@ -296,17 +269,9 @@ fun ExploreScreen(
                                     enter = expandVertically(tween(300)) + fadeIn(tween(300)),
                                     exit = shrinkVertically(tween(200)) + fadeOut(tween(200))
                                 ) {
-                                    ExpandedSearchSection(
-                                        eventName = eventName,
-                                        onEventNameChange = { viewModel.updateEventName(it) },
-                                        onClearEventName = { viewModel.clearEventName() },
-                                        eventLocation = eventLocation,
-                                        onEventLocationChange = { viewModel.updateEventLocation(it) },
-                                        onClearEventLocation = { viewModel.clearEventLocation() },
-                                        locationSuggestions = locationSuggestions,
+                                    ExploreExpandedSearch(
+                                        viewModel = viewModel,
                                         categorySuggestions = categorySuggestions,
-                                        searchHistory = searchHistory,
-                                        onClearHistory = { viewModel.clearSearchHistory() },
                                         onSearchSubmit = {
                                             viewModel.onSearchSubmit()
                                             focusManager.clearFocus()
@@ -342,7 +307,7 @@ fun ExploreScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("${events.size} event ditemukan", fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
+                                    Text(resultCountLabel(events.size, totalEvents, hasActiveFilter), fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
                                             Icon(
@@ -368,19 +333,16 @@ fun ExploreScreen(
                             if (events.isEmpty() && !isLoading) {
                                 item { EmptyStateView(hasActiveFilter = hasActiveFilter, onResetFilters = { viewModel.resetFilters() }) }
                             } else {
-                                itemsIndexed(items = events, key = { _, event -> event.id }, contentType = { _, _ -> "event_list" }) { index, event ->
-                                    Crossfade(targetState = selectedCategoryChip, animationSpec = tween(160), label = "list_crossfade") {
-                                        StaggeredCardItem(index = index) {
-                                            EventCard(
-                                                event = event,
-                                                onClick = {
-                                                    viewModel.onEventClick(event.id)
-                                                    navController.navigate(Screen.EventDetail.createRoute(event.id))
-                                                },
-                                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                            )
-                                        }
-                                    }
+                                items(items = events, key = { event -> event.id }, contentType = { "event_list" }) { event ->
+                                    EventCard(
+                                        event = event,
+                                        onClick = {
+                                            viewModel.onEventClick(event.id)
+                                            navController.navigate(Screen.EventDetail.createRoute(event.id))
+                                        },
+                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) },
+                                        imageCrossfade = false
+                                    )
                                 }
                             }
                             if (isLoadingMore) {
@@ -392,11 +354,15 @@ fun ExploreScreen(
                                     }
                                 }
                             }
+                            if (!hasMorePages && events.isNotEmpty()) {
+                                item(key = "end_of_list") {
+                                    EndOfExploreList()
+                                }
+                            }
                             item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(80.dp)) }
                         }
                     }
                 }
-            }
         }
     }
 
@@ -437,18 +403,52 @@ fun ExploreScreen(
 }
 
 @Composable
-private fun StaggeredCardItem(index: Int, content: @Composable () -> Unit) {
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(index.coerceAtMost(8) * 24L)
-        visible = true
+private fun ExploreExpandedSearch(
+    viewModel: ExploreViewModel,
+    categorySuggestions: List<String>,
+    onSearchSubmit: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val eventName by viewModel.eventName.collectAsStateWithLifecycle()
+    val eventLocation by viewModel.eventLocation.collectAsStateWithLifecycle()
+    val locationSuggestions by viewModel.locationSuggestions.collectAsStateWithLifecycle()
+    val searchHistory by viewModel.searchHistory.collectAsStateWithLifecycle()
+
+    ExpandedSearchSection(
+        eventName = eventName,
+        onEventNameChange = viewModel::updateEventName,
+        onClearEventName = viewModel::clearEventName,
+        eventLocation = eventLocation,
+        onEventLocationChange = viewModel::updateEventLocation,
+        onClearEventLocation = viewModel::clearEventLocation,
+        locationSuggestions = locationSuggestions,
+        categorySuggestions = categorySuggestions,
+        searchHistory = searchHistory,
+        onClearHistory = viewModel::clearSearchHistory,
+        onSearchSubmit = onSearchSubmit,
+        onCancel = onCancel
+    )
+}
+
+private fun resultCountLabel(visibleCount: Int, totalEvents: Int, hasActiveFilter: Boolean): String {
+    return if (!hasActiveFilter && totalEvents > visibleCount) {
+        "$visibleCount dari $totalEvents event"
+    } else {
+        "$visibleCount event ditemukan"
     }
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 }
-    ) {
-        content()
-    }
+}
+
+@Composable
+private fun EndOfExploreList() {
+    Text(
+        text = "Semua event sudah ditampilkan",
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        fontFamily = PlusJakartaSansFont,
+        fontSize = 12.sp,
+        color = Gray500
+    )
 }
 
 @Composable

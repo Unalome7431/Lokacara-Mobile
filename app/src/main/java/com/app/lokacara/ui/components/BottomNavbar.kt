@@ -134,7 +134,7 @@ private fun RowScope.NavItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val iconScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else if (isSelected) 1.06f else 1f,
+        targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = spring(dampingRatio = 0.75f, stiffness = 900f),
         label = "navIconScale"
     )
@@ -142,19 +142,11 @@ private fun RowScope.NavItem(
         targetValue = if (isSelected) SvgOrange.copy(alpha = 0.14f) else Color.Transparent,
         label = "navPillColor"
     )
-    val pillWidth by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (isSelected) 48.dp else 32.dp,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 900f),
-        label = "navPillWidth"
-    )
     val iconTint by animateColorAsState(
         targetValue = if (isSelected) SvgOrange else Gray500,
         label = "navIconTint"
     )
-    val labelColor by animateColorAsState(
-        targetValue = if (isSelected) Gray900 else Gray500,
-        label = "navLabelColor"
-    )
+    val labelColor = if (isSelected) Gray900 else Gray500
 
     Column(
         modifier = Modifier
@@ -172,7 +164,7 @@ private fun RowScope.NavItem(
     ) {
         Box(
             modifier = Modifier
-                .width(pillWidth)
+                .width(42.dp)
                 .height(28.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(pillColor),

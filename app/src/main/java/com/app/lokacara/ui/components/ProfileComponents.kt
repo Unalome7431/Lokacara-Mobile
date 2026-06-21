@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -43,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Precision
 import com.app.lokacara.R
 import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.MyEventData
@@ -255,13 +258,22 @@ fun ProfileAvatarImage(
             else -> imageModel
         }
     }
+    val context = LocalContext.current
+    val imageRequest = remember(context, resolvedModel) {
+        ImageRequest.Builder(context)
+            .data(resolvedModel)
+            .size(400)
+            .precision(Precision.INEXACT)
+            .crossfade(false)
+            .build()
+    }
     var hasError by remember(resolvedModel) { mutableStateOf(false) }
 
     if (resolvedModel == null || hasError) {
         ProfileAvatarPlaceholder(modifier = modifier)
     } else {
         AsyncImage(
-            model = resolvedModel,
+            model = imageRequest,
             contentDescription = contentDescription,
             contentScale = ContentScale.Crop,
             onError = { hasError = true },

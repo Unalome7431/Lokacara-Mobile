@@ -43,12 +43,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -89,14 +90,14 @@ fun SettingsScreen(
     rootNavController: NavController? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
-    val isDeleting by viewModel.isDeleting.collectAsState()
-    val deleteError by viewModel.deleteError.collectAsState()
-    val deleteSuccess by viewModel.deleteSuccess.collectAsState()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
+    val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
+    val deleteError by viewModel.deleteError.collectAsStateWithLifecycle()
+    val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(deleteSuccess) {
         if (deleteSuccess) {
@@ -109,7 +110,7 @@ fun SettingsScreen(
     }
 
     if (showDeleteDialog) {
-        var password by remember { mutableStateOf("") }
+        var password by rememberSaveable { mutableStateOf("") }
 
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false; password = "" },

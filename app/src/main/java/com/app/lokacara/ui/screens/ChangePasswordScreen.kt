@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,12 +34,9 @@ fun ChangePasswordScreen(
     navController: NavController,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    val oldPassword by viewModel.oldPassword.collectAsState()
-    val newPassword by viewModel.newPassword.collectAsState()
-    val confirmPassword by viewModel.confirmPassword.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val changePasswordSuccess by viewModel.changePasswordSuccess.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val changePasswordSuccess by viewModel.changePasswordSuccess.collectAsStateWithLifecycle()
 
     LaunchedEffect(changePasswordSuccess) {
         if (changePasswordSuccess) {
@@ -112,38 +110,7 @@ fun ChangePasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    LokacaraTextField(
-                        value = oldPassword,
-                        onValueChange = { viewModel.oldPassword.value = it },
-                        placeholder = stringResource(R.string.change_password_old_placeholder),
-                        label = stringResource(R.string.change_password_old_label),
-                        isPassword = true,
-                        isOutlined = true,
-                        containerColor = Gray50,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    LokacaraTextField(
-                        value = newPassword,
-                        onValueChange = { viewModel.newPassword.value = it },
-                        placeholder = stringResource(R.string.change_password_new_placeholder),
-                        label = stringResource(R.string.change_password_new_label),
-                        isPassword = true,
-                        isOutlined = true,
-                        containerColor = Gray50,
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    LokacaraTextField(
-                        value = confirmPassword,
-                        onValueChange = { viewModel.confirmPassword.value = it },
-                        placeholder = stringResource(R.string.change_password_confirm_placeholder),
-                        label = stringResource(R.string.change_password_confirm_label),
-                        isPassword = true,
-                        isOutlined = true,
-                        containerColor = Gray50,
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    ChangePasswordFields(viewModel)
                 }
             }
 
@@ -185,4 +152,15 @@ fun ChangePasswordScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ChangePasswordFields(viewModel: AuthViewModel) {
+    val oldPassword by viewModel.oldPassword.collectAsStateWithLifecycle()
+    val newPassword by viewModel.newPassword.collectAsStateWithLifecycle()
+    val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
+
+    LokacaraTextField(value = oldPassword, onValueChange = { viewModel.oldPassword.value = it }, placeholder = stringResource(R.string.change_password_old_placeholder), label = stringResource(R.string.change_password_old_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
+    LokacaraTextField(value = newPassword, onValueChange = { viewModel.newPassword.value = it }, placeholder = stringResource(R.string.change_password_new_placeholder), label = stringResource(R.string.change_password_new_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
+    LokacaraTextField(value = confirmPassword, onValueChange = { viewModel.confirmPassword.value = it }, placeholder = stringResource(R.string.change_password_confirm_placeholder), label = stringResource(R.string.change_password_confirm_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
 }

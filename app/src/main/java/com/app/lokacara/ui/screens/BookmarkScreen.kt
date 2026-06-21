@@ -11,7 +11,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -34,8 +34,8 @@ fun BookmarkScreen(
     navController: NavController,
     viewModel: BookmarkViewModel = hiltViewModel()
 ) {
-    val savedEvents by viewModel.savedEvents.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val savedEvents by viewModel.savedEvents.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().background(Color.White).systemBarsPadding()) {
 
@@ -84,7 +84,8 @@ fun BookmarkScreen(
                 ) {
                     items(
                         items = savedEvents,
-                        key = { it.id }
+                        key = { it.id },
+                        contentType = { "bookmarked_event" }
                     ) { event ->
                         EventCard(
                             event = event,

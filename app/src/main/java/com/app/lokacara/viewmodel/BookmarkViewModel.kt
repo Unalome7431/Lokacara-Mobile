@@ -55,7 +55,9 @@ class BookmarkViewModel @Inject constructor(
             val loaded = mutableListOf<Event>()
             val fromServer = safeApiCall { apiService.getBookmarks() }
             if (fromServer is ApiResult.Success) {
-                val serverEvents = fromServer.data.data.map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
+                val serverEvents = withContext(Dispatchers.Default) {
+                    fromServer.data.data.map { it.toEvent(imageUrlProvider).copy(isBookmarked = true) }
+                }
                 loaded.addAll(serverEvents)
             }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +19,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.DateRange
@@ -47,7 +47,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,12 +64,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Precision
 import com.app.lokacara.ui.theme.CreateEventDarkerBlue
 import com.app.lokacara.ui.theme.CreateEventDashedBorder
 import com.app.lokacara.ui.theme.CreateEventLightBlue
@@ -85,6 +88,7 @@ import com.app.lokacara.ui.theme.SvgPrimaryBlue
 import com.app.lokacara.ui.components.MapSearchPicker
 import com.app.lokacara.ui.components.createevent.*
 import com.app.lokacara.viewmodel.CreateEventViewModel
+import com.app.lokacara.data.completedEventRequirements
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -98,26 +102,26 @@ fun CreateEventScreen(
 ) {
     val isEditMode = eventId != null && eventId > 0L
 
-    val namaEvent by viewModel.namaEvent.collectAsState()
-    val selectedCategoryName by viewModel.selectedCategoryName.collectAsState()
-    val categories by viewModel.categories.collectAsState()
-    val penyelenggara by viewModel.penyelenggara.collectAsState()
-    val waktuMulai by viewModel.waktuMulai.collectAsState()
-    val waktuSelesai by viewModel.waktuSelesai.collectAsState()
-    val isOnline by viewModel.isOnline.collectAsState()
-    val isFreePrice by viewModel.isFreePrice.collectAsState()
-    val priceAmount by viewModel.priceAmount.collectAsState()
-    val aplikasiTempat by viewModel.aplikasiTempat.collectAsState()
-    val alamat by viewModel.alamat.collectAsState()
-    val latitude by viewModel.latitude.collectAsState()
-    val longitude by viewModel.longitude.collectAsState()
-    val deskripsi by viewModel.deskripsi.collectAsState()
-    val kuota by viewModel.kuota.collectAsState()
-    val posterUri by viewModel.posterUri.collectAsState()
-    val publishSuccess by viewModel.publishSuccess.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val hasDraft by viewModel.hasDraft.collectAsState()
+    val namaEvent by viewModel.namaEvent.collectAsStateWithLifecycle()
+    val selectedCategoryName by viewModel.selectedCategoryName.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val penyelenggara by viewModel.penyelenggara.collectAsStateWithLifecycle()
+    val waktuMulai by viewModel.waktuMulai.collectAsStateWithLifecycle()
+    val waktuSelesai by viewModel.waktuSelesai.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val isFreePrice by viewModel.isFreePrice.collectAsStateWithLifecycle()
+    val priceAmount by viewModel.priceAmount.collectAsStateWithLifecycle()
+    val aplikasiTempat by viewModel.aplikasiTempat.collectAsStateWithLifecycle()
+    val alamat by viewModel.alamat.collectAsStateWithLifecycle()
+    val latitude by viewModel.latitude.collectAsStateWithLifecycle()
+    val longitude by viewModel.longitude.collectAsStateWithLifecycle()
+    val deskripsi by viewModel.deskripsi.collectAsStateWithLifecycle()
+    val kuota by viewModel.kuota.collectAsStateWithLifecycle()
+    val posterUri by viewModel.posterUri.collectAsStateWithLifecycle()
+    val publishSuccess by viewModel.publishSuccess.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val hasDraft by viewModel.hasDraft.collectAsStateWithLifecycle()
     val scheduleReady = waktuMulai.isNotBlank() && waktuSelesai.isNotBlank()
     val locationReady = if (isOnline) {
         aplikasiTempat.isNotBlank() && alamat.isNotBlank()
@@ -125,17 +129,16 @@ fun CreateEventScreen(
         aplikasiTempat.isNotBlank() && alamat.isNotBlank() && latitude.isNotBlank() && longitude.isNotBlank()
     }
     val priceReady = isFreePrice || priceAmount.isNotBlank()
-    val requiredChecks = listOf(
-        namaEvent.isNotBlank(),
-        selectedCategoryName.isNotBlank(),
-        scheduleReady,
-        locationReady,
-        deskripsi.isNotBlank(),
-        priceReady,
-        kuota in 1..100_000
+    val completedRequirements = completedEventRequirements(
+        hasName = namaEvent.isNotBlank(),
+        hasCategory = selectedCategoryName.isNotBlank(),
+        hasSchedule = scheduleReady,
+        hasLocation = locationReady,
+        hasDescription = deskripsi.isNotBlank(),
+        hasPrice = priceReady,
+        hasValidCapacity = kuota in 1..100_000
     )
-    val completedRequirements = requiredChecks.count { it }
-    val totalRequirements = requiredChecks.size
+    val totalRequirements = 7
     val formProgress = completedRequirements / totalRequirements.toFloat()
 
     val imagePicker = rememberLauncherForActivityResult(
@@ -165,6 +168,20 @@ fun CreateEventScreen(
 
     val lightBlueBg = CreateEventLightBlue
     val darkerBlueBg = CreateEventDarkerBlue
+    val context = LocalContext.current
+    val posterRequest = remember(context, posterUri) {
+        ImageRequest.Builder(context)
+            .data(posterUri)
+            .size(1200)
+            .precision(Precision.INEXACT)
+            .crossfade(false)
+            .build()
+    }
+    val posterOverlayBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f))
+        )
+    }
 
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
@@ -278,9 +295,8 @@ fun CreateEventScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SvgBackground)
-            .verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -363,12 +379,16 @@ fun CreateEventScreen(
         EventReadinessCard(
             completed = completedRequirements,
             total = totalRequirements,
-            progress = formProgress,
-            isOnline = isOnline,
-            scheduleReady = scheduleReady,
-            locationReady = locationReady
+            progress = formProgress
         )
 
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+        item(key = "poster", contentType = "media") {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = "Poster Event",
@@ -405,7 +425,7 @@ fun CreateEventScreen(
             ) {
                 if (posterUri != null) {
                     AsyncImage(
-                        model = posterUri,
+                        model = posterRequest,
                         contentDescription = "Poster",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -413,14 +433,7 @@ fun CreateEventScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.45f)
-                                    )
-                                )
-                            )
+                            .background(posterOverlayBrush)
                     )
                     Surface(
                         modifier = Modifier
@@ -478,12 +491,15 @@ fun CreateEventScreen(
                 textAlign = TextAlign.Center
             )
         }
+        }
 
+        item(key = "basic_information", contentType = "form") {
+        Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         CreateEventTextField(
             value = namaEvent,
             onValueChange = { viewModel.namaEvent.value = it },
             label = "Nama Event",
-            placeholder = "Nama Event",
+            placeholder = "Masukkan nama acara",
             containerColor = lightBlueBg,
             supportingText = "${namaEvent.length}/255",
             supportingColor = if (namaEvent.length > 255) SemanticErrorBase else Gray500
@@ -501,10 +517,13 @@ fun CreateEventScreen(
             value = penyelenggara,
             onValueChange = { viewModel.penyelenggara.value = it },
             label = "Penyelenggara",
-            placeholder = "Nama organisasi / EO",
+            placeholder = "Masukkan nama penyelenggara atau organisasi",
             containerColor = lightBlueBg
         )
+        }
+        }
 
+        item(key = "schedule", contentType = "form") {
         SectionContainer(
             title = "Waktu dan Tanggal",
             backgroundColor = lightBlueBg,
@@ -521,16 +540,18 @@ fun CreateEventScreen(
                 value = if (waktuMulai.isNotBlank()) viewModel.getDisplayDateTime(waktuMulai) else "",
                 onClick = { showStartDatePicker = true },
                 label = "Mulai",
-                placeholder = "dd MMM yyyy, --:--"
+                placeholder = "Pilih tanggal dan waktu mulai"
             )
             DatePickerField(
                 value = if (waktuSelesai.isNotBlank()) viewModel.getDisplayDateTime(waktuSelesai) else "",
                 onClick = { showEndDatePicker = true },
                 label = "Selesai",
-                placeholder = "dd MMM yyyy, --:--"
+                placeholder = "Pilih tanggal dan waktu selesai"
             )
         }
+        }
 
+        item(key = "price", contentType = "form") {
         SectionContainer(
             title = "Harga Event",
             subtitle = "Gratis atau berbayar",
@@ -543,7 +564,9 @@ fun CreateEventScreen(
                 onPriceAmountChange = { viewModel.updatePriceAmount(it) }
             )
         }
+        }
 
+        item(key = "event_details", contentType = "form") {
         Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
 
             SectionContainer(
@@ -560,7 +583,7 @@ fun CreateEventScreen(
                         value = aplikasiTempat,
                         onValueChange = { viewModel.aplikasiTempat.value = it },
                         label = "Aplikasi",
-                        placeholder = "nama aplikasi",
+                        placeholder = "Masukkan nama platform atau aplikasi",
                         containerColor = Color.White,
                         labelSize = 14.sp
                     )
@@ -568,7 +591,7 @@ fun CreateEventScreen(
                         value = alamat,
                         onValueChange = { viewModel.alamat.value = it },
                         label = "Link",
-                        placeholder = "uns.id/ivogamteng",
+                        placeholder = "Masukkan tautan acara daring",
                         containerColor = Color.White,
                         labelSize = 14.sp
                     )
@@ -598,7 +621,7 @@ fun CreateEventScreen(
                         .height(200.dp),
                     placeholder = {
                         Text(
-                            text = "Deskripsikan event Anda secara detail...",
+                            text = "Tuliskan deskripsi acara secara lengkap",
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 12.sp,
                             color = Gray500
@@ -625,7 +648,9 @@ fun CreateEventScreen(
                 )
             }
         }
+        }
 
+        item(key = "capacity", contentType = "form") {
         SectionContainer(
             title = "Kuota Peserta",
             backgroundColor = lightBlueBg,
@@ -638,12 +663,15 @@ fun CreateEventScreen(
                 }
             )
         }
-
-        errorMessage?.let { msg ->
-            ErrorMessageBanner(message = msg)
-            Spacer(modifier = Modifier.height(12.dp))
         }
 
+        if (errorMessage != null) {
+            item(key = "error", contentType = "error") {
+                ErrorMessageBanner(message = errorMessage.orEmpty())
+            }
+        }
+
+        item(key = "publish", contentType = "action") {
         val publishElevation by animateDpAsState(
             targetValue = if (isLoading) 0.dp else 4.dp,
             label = "publishElevation"
@@ -679,8 +707,7 @@ fun CreateEventScreen(
                 Text(
                     text = when {
                         isEditMode -> "Simpan Perubahan"
-                        formProgress >= 1f -> "Terbitkan Event"
-                        else -> "Cek dan Terbitkan"
+                        else -> "Terbitkan"
                     },
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
@@ -698,7 +725,11 @@ fun CreateEventScreen(
                 }
             }
         }
+        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        item(key = "bottom_spacer", contentType = "spacer") {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
+}
 }
