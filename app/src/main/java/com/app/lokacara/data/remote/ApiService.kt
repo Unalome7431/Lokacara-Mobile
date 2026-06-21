@@ -139,8 +139,9 @@ interface ApiService {
         @Part("longitude") longitude: RequestBody?,
         @Part("platform_name") platformName: RequestBody?,
         @Part("link") link: RequestBody?,
-        @Part("start_datetime") startDatetime: RequestBody,
-        @Part("end_datetime") endDatetime: RequestBody,
+        @Part("start_date") startDate: RequestBody,
+        @Part("start_time") startTime: RequestBody,
+        @Part("end_time") endTime: RequestBody,
         @Part("price") price: RequestBody,
         @Part("capacity") capacity: RequestBody?,
         @Part poster: MultipartBody.Part?
@@ -160,8 +161,9 @@ interface ApiService {
         @Part("longitude") longitude: RequestBody?,
         @Part("platform_name") platformName: RequestBody?,
         @Part("link") link: RequestBody?,
-        @Part("start_datetime") startDatetime: RequestBody,
-        @Part("end_datetime") endDatetime: RequestBody,
+        @Part("start_date") startDate: RequestBody,
+        @Part("start_time") startTime: RequestBody,
+        @Part("end_time") endTime: RequestBody,
         @Part("price") price: RequestBody,
         @Part("capacity") capacity: RequestBody?,
         @Part poster: MultipartBody.Part?
