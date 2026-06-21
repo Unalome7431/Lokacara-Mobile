@@ -267,15 +267,16 @@ class CreateEventViewModel @Inject constructor(
         _fieldErrors.value = emptyMap()
         _errorMessage.value = null
 
-        val startDt = formatToApiDatetime(waktuMulai.value)
-        val endDt = formatEndApiDatetime(waktuMulai.value, waktuSelesai.value)
+        val startDateStr = waktuMulai.value.take(10)
+        val startTimeStr = if (waktuMulai.value.length >= 16) waktuMulai.value.substring(11, 16) else ""
+        val endTimeStr = if (waktuSelesai.value.length >= 16) waktuSelesai.value.substring(11, 16) else ""
         val pricePart = priceValue.toString().toRequestBody("text/plain".toMediaTypeOrNull())
 
         if (waktuMulai.value.isNotBlank() && waktuSelesai.value.isNotBlank()) {
-            val localSdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
             try {
-                val startMillis = localSdf.parse(waktuMulai.value)?.time ?: 0L
-                val endMillis = localSdf.parse(waktuSelesai.value)?.time ?: 0L
+                val startMillis = sdf.parse(waktuMulai.value)?.time ?: 0L
+                val endMillis = sdf.parse(waktuSelesai.value)?.time ?: 0L
                 if (endMillis <= startMillis) {
                     _fieldErrors.value = mapOf("end_time" to "Waktu selesai harus setelah waktu mulai")
                     _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
@@ -314,8 +315,9 @@ class CreateEventViewModel @Inject constructor(
             val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
             val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
             val typePart = type.toRequestBody("text/plain".toMediaTypeOrNull())
-            val startPart = startDt.toRequestBody("text/plain".toMediaTypeOrNull())
-            val endPart = endDt.toRequestBody("text/plain".toMediaTypeOrNull())
+            val startDatePart = startDateStr.toRequestBody("text/plain".toMediaTypeOrNull())
+            val startTimePart = startTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
+            val endTimePart = endTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
 
             val catPart = selectedCategoryId.value?.toString()
                 ?.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -386,8 +388,9 @@ class CreateEventViewModel @Inject constructor(
                         longitude = lngPart,
                         platformName = platPart,
                         link = linkPart,
-                        startDatetime = startPart,
-                        endDatetime = endPart,
+                        startDate = startDatePart,
+                        startTime = startTimePart,
+                        endTime = endTimePart,
                         price = pricePart,
                         capacity = capPart,
                         poster = posterBody
@@ -404,8 +407,9 @@ class CreateEventViewModel @Inject constructor(
                         longitude = lngPart,
                         platformName = platPart,
                         link = linkPart,
-                        startDatetime = startPart,
-                        endDatetime = endPart,
+                        startDate = startDatePart,
+                        startTime = startTimePart,
+                        endTime = endTimePart,
                         price = pricePart,
                         capacity = capPart,
                         poster = posterBody
@@ -431,29 +435,23 @@ class CreateEventViewModel @Inject constructor(
     }
 
     private fun formatToApiDatetime(input: String): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-        iso.timeZone = java.util.TimeZone.getTimeZone("UTC")
         if (input.isBlank()) {
-            return iso.format(java.util.Date())
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            return sdf.format(java.util.Date())
         }
-        return try {
-            val date = sdf.parse(input) ?: return iso.format(java.util.Date())
-            iso.format(date)
-        } catch (_: Exception) {
-            iso.format(java.util.Date())
-        }
+        return input
     }
 
+    /* Keep end time one hour after start when it has to be inferred. */
     private fun formatEndApiDatetime(startInput: String, endInput: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-        iso.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
         if (startInput.isBlank() && endInput.isBlank()) {
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-            return iso.format(cal.time)
+            return sdf.format(cal.time)
         }
         if (endInput.isBlank()) {
             if (startInput.isNotBlank()) {
@@ -462,20 +460,15 @@ class CreateEventViewModel @Inject constructor(
                     val cal = java.util.Calendar.getInstance()
                     cal.time = startDate
                     cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-                    return iso.format(cal.time)
+                    return sdf.format(cal.time)
                 } catch (_: Exception) {}
             }
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-            return iso.format(cal.time)
+            return sdf.format(cal.time)
         }
-        return try {
-            val date = sdf.parse(endInput) ?: iso.format(java.util.Date())
-            iso.format(date)
-        } catch (_: Exception) {
-            iso.format(java.util.Date())
-        }
+        return endInput
     }
 
     val latitude = MutableStateFlow("")

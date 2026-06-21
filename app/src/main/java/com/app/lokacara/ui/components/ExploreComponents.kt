@@ -249,7 +249,6 @@ fun ExpandedSearchSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchAutocompleteField(
     value: String,
@@ -262,46 +261,51 @@ private fun SearchAutocompleteField(
     focusManager: androidx.compose.ui.focus.FocusManager
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var isFocused by remember { mutableStateOf(false) }
     val filtered = remember(value) {
         if (value.isBlank()) suggestions else suggestions.filter { it.contains(value, true) }
     }
 
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+    Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = value,
-            onValueChange = { newVal -> onValueChange(newVal); expanded = newVal.isNotEmpty() || filtered.isNotEmpty() },
+            onValueChange = { newVal ->
+                onValueChange(newVal)
+                expanded = newVal.isNotEmpty() || filtered.isNotEmpty()
+            },
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
                 Row {
                     if (value.isNotEmpty()) {
                         IconButton(onClick = onClear) {
-                            Icon(Icons.Filled.Close, "Hapus", tint = Gray400, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Filled.Close, null, tint = Gray400, modifier = Modifier.size(18.dp))
                         }
                     }
-                    Icon(icon, "Dropdown", tint = Primary500, modifier = Modifier.size(20.dp))
+                    Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp))
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .onFocusChanged { f -> isFocused = f.isFocused; if (f.isFocused && suggestions.isNotEmpty()) expanded = true },
+                .onFocusChanged { f ->
+                    if (f.isFocused && suggestions.isNotEmpty()) expanded = true
+                },
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
-        if (expanded && filtered.isNotEmpty()) {
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(Color.White)) {
-                filtered.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont) },
-                        onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
-                    )
-                }
+        DropdownMenu(
+            expanded = expanded && filtered.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            filtered.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont, fontSize = 14.sp) },
+                    onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
+                    leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                )
             }
         }
     }
