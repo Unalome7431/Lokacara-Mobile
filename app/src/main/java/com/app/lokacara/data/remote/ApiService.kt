@@ -170,6 +170,9 @@ interface ApiService {
     @DELETE("api/organizer/events/{event}")
     suspend fun deleteEvent(@Path("event") eventId: Long): MessageResponse
 
+    @POST("api/organizer/events/{event}/cancel")
+    suspend fun cancelEvent(@Path("event") eventId: Long): MessageResponse
+
     @GET("api/organizer/events/{event}/attendees")
     suspend fun getAttendees(
         @Path("event") eventId: Long,
@@ -197,11 +200,11 @@ interface ApiService {
     suspend fun uploadCertificateTemplate(
         @Path("event") eventId: Long,
         @Part template: MultipartBody.Part
-    ): MessageResponse
+    ): CertificateTemplateUploadResponse
 
     @POST("api/organizer/events/{event}/certificates/distribute")
     suspend fun distributeCertificates(
         @Path("event") eventId: Long,
-        @Body body: Map<String, Any>
+        @Body body: DistributeCertificatesRequest
     ): MessageResponse
 }
