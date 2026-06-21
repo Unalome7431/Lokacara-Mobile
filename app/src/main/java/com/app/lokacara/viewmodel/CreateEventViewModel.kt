@@ -272,10 +272,10 @@ class CreateEventViewModel @Inject constructor(
         val pricePart = priceValue.toString().toRequestBody("text/plain".toMediaTypeOrNull())
 
         if (waktuMulai.value.isNotBlank() && waktuSelesai.value.isNotBlank()) {
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val localSdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
             try {
-                val startMillis = sdf.parse(startDt)?.time ?: 0L
-                val endMillis = sdf.parse(endDt)?.time ?: 0L
+                val startMillis = localSdf.parse(waktuMulai.value)?.time ?: 0L
+                val endMillis = localSdf.parse(waktuSelesai.value)?.time ?: 0L
                 if (endMillis <= startMillis) {
                     _fieldErrors.value = mapOf("end_time" to "Waktu selesai harus setelah waktu mulai")
                     _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
@@ -431,23 +431,29 @@ class CreateEventViewModel @Inject constructor(
     }
 
     private fun formatToApiDatetime(input: String): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        iso.timeZone = java.util.TimeZone.getTimeZone("UTC")
         if (input.isBlank()) {
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
-            return sdf.format(java.util.Date())
+            return iso.format(java.util.Date())
         }
-        return input
+        return try {
+            val date = sdf.parse(input) ?: return iso.format(java.util.Date())
+            iso.format(date)
+        } catch (_: Exception) {
+            iso.format(java.util.Date())
+        }
     }
 
-    /* Keep end time one hour after start when it has to be inferred. */
     private fun formatEndApiDatetime(startInput: String, endInput: String): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        val iso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        iso.timeZone = java.util.TimeZone.getTimeZone("UTC")
         if (startInput.isBlank() && endInput.isBlank()) {
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-            return sdf.format(cal.time)
+            return iso.format(cal.time)
         }
         if (endInput.isBlank()) {
             if (startInput.isNotBlank()) {
@@ -456,15 +462,20 @@ class CreateEventViewModel @Inject constructor(
                     val cal = java.util.Calendar.getInstance()
                     cal.time = startDate
                     cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-                    return sdf.format(cal.time)
+                    return iso.format(cal.time)
                 } catch (_: Exception) {}
             }
             val cal = java.util.Calendar.getInstance()
             cal.time = java.util.Date()
             cal.add(java.util.Calendar.HOUR_OF_DAY, 1)
-            return sdf.format(cal.time)
+            return iso.format(cal.time)
         }
-        return endInput
+        return try {
+            val date = sdf.parse(endInput) ?: iso.format(java.util.Date())
+            iso.format(date)
+        } catch (_: Exception) {
+            iso.format(java.util.Date())
+        }
     }
 
     val latitude = MutableStateFlow("")
