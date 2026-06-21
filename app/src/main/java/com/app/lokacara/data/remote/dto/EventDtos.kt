@@ -16,6 +16,7 @@ data class EventDto(
     val start_datetime: String,
     val end_datetime: String,
     val capacity: Int? = null,
+    val status: String? = null,
     val view_count: Int = 0,
     val poster: String? = null,
     val poster_url: String? = null,
