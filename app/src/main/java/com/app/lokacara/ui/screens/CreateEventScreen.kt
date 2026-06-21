@@ -520,8 +520,8 @@ fun CreateEventScreen(
         CreateEventTextField(
             value = penyelenggara,
             onValueChange = { viewModel.penyelenggara.value = it },
-            label = "Penyelenggara",
-            placeholder = "Masukkan nama penyelenggara atau organisasi",
+            label = "Penyelenggara & Kontak",
+            placeholder = "Masukkan nama penyelenggara atau kontak",
             containerColor = lightBlueBg
         )
         }
