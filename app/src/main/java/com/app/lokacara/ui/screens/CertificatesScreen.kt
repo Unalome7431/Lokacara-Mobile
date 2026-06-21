@@ -11,7 +11,7 @@ import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +38,8 @@ fun CertificatesScreen(
     navController: NavController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val certificates by viewModel.certificates.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val certificates by viewModel.certificates.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     ProfilePageScaffold(title = "Sertifikat", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && certificates.isEmpty()) {
@@ -60,7 +60,7 @@ fun CertificatesScreen(
                         .background(Gray50),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
-                    item {
+                    item(key = "summary", contentType = "summary") {
                         ProfileSubpageSummaryCard(
                             title = "Sertifikat",
                             subtitle = "Sertifikat event yang sudah kamu selesaikan.",
@@ -71,7 +71,7 @@ fun CertificatesScreen(
                         )
                     }
                     if (certificates.isEmpty()) {
-                        item {
+                        item(key = "empty", contentType = "empty") {
                             androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(20.dp))
                             EmptyEventState(
                                 text = "Kamu belum mengumpulkan sertifikat. Ikuti event dan dapatkan sertifikatmu!",
@@ -81,7 +81,8 @@ fun CertificatesScreen(
                     } else {
                         items(
                             items = certificates,
-                            key = { cert: CertificateData -> cert.id }
+                            key = { cert: CertificateData -> cert.id },
+                            contentType = { "certificate" }
                         ) { cert ->
                             CertificateCard(
                                 cert = cert,

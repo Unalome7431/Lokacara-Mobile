@@ -23,7 +23,7 @@ class ImageUrlProvider @Inject constructor() {
         if (avatarUrl.startsWith("https://")) return avatarUrl
         if (avatarUrl.startsWith("http://")) return avatarUrl.replaceFirst("http://", "https://")
         val filename = avatarUrl.substringAfterLast("/")
-        return "$BASE/api/avatars/$filename"
+        return "$BASE/api/profile/avatar/$filename"
     }
 
     fun certificateUrl(fileUrl: String?): String? {

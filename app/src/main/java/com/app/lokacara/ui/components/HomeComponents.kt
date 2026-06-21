@@ -52,6 +52,9 @@ import kotlinx.coroutines.withContext
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.input.TextFieldValue
 
+import androidx.compose.material.icons.filled.Add
+import com.app.lokacara.model.UpcomingEvent
+
 @Composable
 fun HomeHeader(navController: NavController) {
     Row(
@@ -338,6 +341,132 @@ fun CategoryEventSection(
                     event = event,
                     onClick = { onEventClick(event) },
                     onBookmarkClick = { onBookmarkClick(event.id.toString()) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UpcomingEventSection(
+    upcomingEvents: List<UpcomingEvent>?,
+    onEventClick: (Long) -> Unit,
+    onExploreClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 16.dp)
+    ) {
+        Text(
+            text = "Event Mendatang",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 22.sp,
+            color = Color.Black,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+
+        if (upcomingEvents == null) {
+            // Loading state for upcoming events if needed
+            Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = SvgPrimaryBlue, modifier = Modifier.size(24.dp))
+            }
+        } else if (upcomingEvents.isEmpty()) {
+            UpcomingEmptyState(onExploreClick)
+        } else {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(upcomingEvents, key = { it.id }, contentType = { "upcoming_event" }) { event ->
+                    UpcomingEventCard(event = event, onClick = { onEventClick(event.id) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UpcomingEmptyState(onExploreClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .background(Gray100, RoundedCornerShape(16.dp))
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Belum Ikut Event Apapun",
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Gray900
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Temukan berbagai event menarik di bawah ini",
+            fontFamily = PlusJakartaSansFont,
+            fontSize = 13.sp,
+            color = Gray500
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        FilledIconButton(
+            onClick = onExploreClick,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = SvgPrimaryBlue),
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Tambah Event", tint = Color.White)
+        }
+    }
+}
+
+@Composable
+fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.width(280.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = event.imageUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = event.title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${event.date} • ${event.time}",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray500
+                )
+                Text(
+                    text = event.location,
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = SvgPrimaryBlue,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

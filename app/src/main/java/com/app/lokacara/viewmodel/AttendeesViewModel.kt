@@ -7,12 +7,15 @@ import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AttendeeDto
 import com.app.lokacara.data.remote.dto.EventDto
 import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.data.mergeAttendeesById
+import com.app.lokacara.data.replaceAttendeeById
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 @HiltViewModel
@@ -50,10 +53,15 @@ class AttendeesViewModel @Inject constructor(
     private var currentEventId: Long = 0
     private var currentPage = 1
     private var hasMorePages = true
+    private var loadJob: Job? = null
+    private var loadMoreJob: Job? = null
 
     fun loadAttendees(eventId: Long, refresh: Boolean = false) {
         currentEventId = eventId
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadMoreJob?.cancel()
+        _isLoadingMore.value = false
+        loadJob = viewModelScope.launch {
             currentPage = 1
             hasMorePages = true
             if (refresh) _isRefreshing.value = true else _isLoading.value = true
@@ -83,9 +91,9 @@ class AttendeesViewModel @Inject constructor(
     }
 
     fun loadNextPage() {
-        if (currentEventId == 0L || !hasMorePages || _isLoadingMore.value || _isLoading.value) return
-        viewModelScope.launch {
-            _isLoadingMore.value = true
+        if (currentEventId == 0L || !hasMorePages || _isLoadingMore.value || _isLoading.value || loadMoreJob?.isActive == true) return
+        _isLoadingMore.value = true
+        loadMoreJob = viewModelScope.launch {
             _error.value = null
             val nextPage = currentPage + 1
             when (val result = safeApiCall { apiService.getAttendees(currentEventId, nextPage) }) {
@@ -94,8 +102,7 @@ class AttendeesViewModel @Inject constructor(
                     currentPage = result.data.attendees.current_page
                     hasMorePages = result.data.attendees.current_page < result.data.attendees.last_page
                     _totalCount.value = result.data.attendees.total
-                    val existingIds = _attendees.value.map { it.id }.toSet()
-                    _attendees.value = _attendees.value + result.data.attendees.data.filterNot { it.id in existingIds }
+                    _attendees.value = mergeAttendeesById(_attendees.value, result.data.attendees.data)
                 }
                 is ApiResult.Error -> {
                     _error.value = result.message
@@ -115,11 +122,10 @@ class AttendeesViewModel @Inject constructor(
             }) {
                 is ApiResult.Success -> {
                     val updated = result.data.registration
-                    _attendees.value = _attendees.value.map {
-                        if (it.id == registrationId) it.copy(
-                            status = updated.status,
-                            checked_in_at = updated.checked_in_at
-                        ) else it
+                    val replacement = _attendees.value.firstOrNull { it.id == registrationId }
+                        ?.copy(status = updated.status, checked_in_at = updated.checked_in_at)
+                    if (replacement != null) {
+                        _attendees.value = replaceAttendeeById(_attendees.value, replacement)
                     }
                     SnackbarManager.show(if (updated.status == "present") "Peserta ditandai hadir" else "Status peserta diperbarui")
                 }

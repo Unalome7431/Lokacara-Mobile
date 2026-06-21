@@ -312,7 +312,7 @@ fun ExploreCategories(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 12.dp)
     ) {
-        items(categories) { cat ->
+        items(categories, key = { it }, contentType = { "category_filter" }) { cat ->
             CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) }
         }
     }
@@ -476,7 +476,7 @@ fun DateFilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        items(DateFilter.entries) { filter ->
+        items(DateFilter.entries, key = { it.name }, contentType = { "date_filter" }) { filter ->
             FilterChip(
                 selected = selected == filter,
                 onClick = { onSelected(filter) },
@@ -509,7 +509,7 @@ fun PriceFilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        items(PriceFilter.entries) { filter ->
+        items(PriceFilter.entries, key = { it.name }, contentType = { "price_filter" }) { filter ->
             FilterChip(
                 selected = selected == filter,
                 onClick = { onSelected(filter) },

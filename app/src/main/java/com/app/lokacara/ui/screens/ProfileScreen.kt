@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -61,10 +62,10 @@ fun ProfileScreen(
     rootNavController: NavController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val userProfile by viewModel.userProfile.collectAsState()
-    val myEvents by viewModel.myEvents.collectAsState()
-    val certificates by viewModel.certificates.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val myEvents by viewModel.myEvents.collectAsStateWithLifecycle()
+    val certificates by viewModel.certificates.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasProfileIdentity = userProfile.name.isNotBlank() || userProfile.email.isNotBlank()
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
@@ -110,7 +111,7 @@ fun ProfileScreen(
             contentPadding = PaddingValues(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 104.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            item {
+            item(key = "identity", contentType = "identity") {
                 FlatProfileIdentity(
                     name = userProfile.name.ifBlank { "Pengguna" },
                     email = userProfile.email,
@@ -122,7 +123,7 @@ fun ProfileScreen(
                 )
             }
 
-            item {
+            item(key = "activity", contentType = "shortcuts") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Aktivitas Saya",
@@ -161,7 +162,7 @@ fun ProfileScreen(
                 }
             }
 
-            item {
+            item(key = "settings", contentType = "settings") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Informasi & Pengaturan",

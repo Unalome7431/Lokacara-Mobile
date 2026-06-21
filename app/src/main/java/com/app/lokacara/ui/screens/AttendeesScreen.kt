@@ -49,10 +49,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -91,6 +92,8 @@ import com.app.lokacara.ui.theme.SemanticSuccessBase
 import com.app.lokacara.ui.theme.SemanticSuccessLight
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.viewmodel.AttendeesViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private enum class AttendeeFilter(val label: String) {
     ALL("Semua"),
@@ -105,15 +108,15 @@ fun AttendeesScreen(
     eventId: Long,
     viewModel: AttendeesViewModel = hiltViewModel()
 ) {
-    val attendees by viewModel.attendees.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val event by viewModel.event.collectAsState()
-    val togglingIds by viewModel.togglingIds.collectAsState()
-    val totalCount by viewModel.totalCount.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val isReminderSending by viewModel.isReminderSending.collectAsState()
+    val attendees by viewModel.attendees.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val event by viewModel.event.collectAsStateWithLifecycle()
+    val togglingIds by viewModel.togglingIds.collectAsStateWithLifecycle()
+    val totalCount by viewModel.totalCount.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val isReminderSending by viewModel.isReminderSending.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(AttendeeFilter.ALL) }
@@ -128,19 +131,26 @@ fun AttendeesScreen(
         }
     }
 
-    val filteredAttendees = remember(attendees, searchQuery, filter) {
-        attendees.filter { attendee ->
-            val name = attendee.user?.name.orEmpty()
-            val email = attendee.user?.email.orEmpty()
-            val matchesSearch = searchQuery.isBlank() ||
+    val filteredAttendees by produceState(
+        initialValue = attendees,
+        attendees,
+        searchQuery,
+        filter
+    ) {
+        value = withContext(Dispatchers.Default) {
+            attendees.filter { attendee ->
+                val name = attendee.user?.name.orEmpty()
+                val email = attendee.user?.email.orEmpty()
+                val matchesSearch = searchQuery.isBlank() ||
                     name.contains(searchQuery, ignoreCase = true) ||
                     email.contains(searchQuery, ignoreCase = true)
-            val matchesFilter = when (filter) {
-                AttendeeFilter.ALL -> true
-                AttendeeFilter.PRESENT -> attendee.status == "present"
-                AttendeeFilter.PENDING -> attendee.status != "present"
+                val matchesFilter = when (filter) {
+                    AttendeeFilter.ALL -> true
+                    AttendeeFilter.PRESENT -> attendee.status == "present"
+                    AttendeeFilter.PENDING -> attendee.status != "present"
+                }
+                matchesSearch && matchesFilter
             }
-            matchesSearch && matchesFilter
         }
     }
     val presentCount = attendees.count { it.status == "present" }
@@ -199,15 +209,15 @@ fun AttendeesScreen(
                 contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 112.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                item {
+                item(key = "summary", contentType = "summary") {
                     AttendeesSummary(total = totalCount.takeIf { it > 0 } ?: attendees.size, present = presentCount, pending = pendingCount)
                 }
                 event?.start_datetime?.let { startDatetime ->
-                    item {
+                    item(key = "reminder_schedule", contentType = "reminder") {
                         ReminderSchedulePanel(startDatetime = startDatetime)
                     }
                 }
-                item {
+                item(key = "controls", contentType = "controls") {
                     AttendeeControlPanel(
                         searchQuery = searchQuery,
                         onSearchQueryChange = { searchQuery = it },
@@ -220,41 +230,47 @@ fun AttendeesScreen(
                     )
                 }
 
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(22.dp)).border(1.dp, Gray100, RoundedCornerShape(22.dp)).padding(vertical = 8.dp)
-                    ) {
-                        if (error != null && attendees.isNotEmpty()) {
-                            AttendeesInlineError(message = error.orEmpty(), onRetry = { viewModel.refresh() })
+                if (error != null && attendees.isNotEmpty()) {
+                    item(key = "inline_error", contentType = "error") {
+                        AttendeesInlineError(message = error.orEmpty(), onRetry = { viewModel.refresh() })
+                    }
+                }
+                when {
+                    isLoading && attendees.isEmpty() -> {
+                        items(count = 6, key = { "skeleton_$it" }, contentType = { "skeleton" }) {
+                            AttendeeSkeletonCard()
                         }
-
-                        when {
-                            isLoading && attendees.isEmpty() -> {
-                                repeat(6) { AttendeeSkeletonCard() }
-                            }
-                            error != null && attendees.isEmpty() -> {
-                                AttendeesErrorState(message = error.orEmpty(), onRetry = { viewModel.loadAttendees(eventId) })
-                            }
-                            filteredAttendees.isEmpty() -> {
-                                AttendeesEmptyState(
-                                    text = if (attendees.isEmpty()) stringResource(R.string.attendees_empty) else "Peserta tidak ditemukan"
-                                )
-                            }
-                            else -> {
-                                filteredAttendees.forEach { attendee ->
-                                    AttendeeCard(
-                                        attendee = attendee,
-                                        isToggling = attendee.id in togglingIds,
-                                        onToggle = { viewModel.toggleAttendance(attendee.id) }
-                                    )
-                                }
-                            }
+                    }
+                    error != null && attendees.isEmpty() -> {
+                        item(key = "error", contentType = "error") {
+                            AttendeesErrorState(message = error.orEmpty(), onRetry = { viewModel.loadAttendees(eventId) })
                         }
-
-                        if (isLoadingMore) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(12.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = Primary500, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            }
+                    }
+                    filteredAttendees.isEmpty() -> {
+                        item(key = "empty", contentType = "empty") {
+                            AttendeesEmptyState(
+                                text = if (attendees.isEmpty()) stringResource(R.string.attendees_empty) else "Peserta tidak ditemukan"
+                            )
+                        }
+                    }
+                    else -> {
+                        items(
+                            items = filteredAttendees,
+                            key = { it.id },
+                            contentType = { "attendee" }
+                        ) { attendee ->
+                            AttendeeCard(
+                                attendee = attendee,
+                                isToggling = attendee.id in togglingIds,
+                                onToggle = { viewModel.toggleAttendance(attendee.id) }
+                            )
+                        }
+                    }
+                }
+                if (isLoadingMore) {
+                    item(key = "loading_more", contentType = "loading") {
+                        Box(modifier = Modifier.fillMaxWidth().padding(12.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Primary500, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         }
                     }
                 }
@@ -489,7 +505,14 @@ private fun AttendeeCard(
     onToggle: () -> Unit
 ) {
     val isCheckedIn = attendee.status == "present"
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .border(1.dp, Gray100, RoundedCornerShape(16.dp))
+            .padding(horizontal = 12.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically

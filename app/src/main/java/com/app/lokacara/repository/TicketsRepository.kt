@@ -9,7 +9,7 @@ import javax.inject.Inject
 class TicketsRepository @Inject constructor(
     private val dashboardRepository: DashboardRepository
 ) {
-    suspend fun getDashboard(): ApiResult<DashboardResponse> {
-        return dashboardRepository.getDashboard()
+    suspend fun getDashboard(forceRefresh: Boolean = false): ApiResult<DashboardResponse> {
+        return dashboardRepository.getDashboard(forceRefresh)
     }
 }

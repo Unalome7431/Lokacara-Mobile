@@ -1,0 +1,38 @@
+﻿Startup benchmark: com.app.lokacara/.MainActivity
+Runs: 5
+
+Run 1
+Status: ok
+LaunchState: COLD
+Activity: com.app.lokacara/.MainActivity
+TotalTime: 7409
+WaitTime: 7445
+
+Run 2
+Status: ok
+LaunchState: COLD
+Activity: com.app.lokacara/.MainActivity
+TotalTime: 5577
+WaitTime: 5871
+
+Run 3
+Status: ok
+LaunchState: COLD
+Activity: com.app.lokacara/.MainActivity
+TotalTime: 5918
+WaitTime: 5987
+
+Run 4
+Status: ok
+LaunchState: COLD
+Activity: com.app.lokacara/.MainActivity
+TotalTime: 6443
+WaitTime: 6459
+
+Run 5
+Status: ok
+LaunchState: COLD
+Activity: com.app.lokacara/.MainActivity
+TotalTime: 5771
+WaitTime: 5776
+

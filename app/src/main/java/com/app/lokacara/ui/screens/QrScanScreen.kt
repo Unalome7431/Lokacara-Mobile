@@ -45,11 +45,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,17 +58,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.app.lokacara.R
 import com.app.lokacara.data.remote.dto.ScanResponse
+import com.app.lokacara.data.ResourceLifecycleGuard
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.theme.Gray100
 import com.app.lokacara.ui.theme.Gray200
@@ -102,10 +106,10 @@ fun QrScanScreen(
     viewModel: QrScanViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val qrToken by viewModel.qrToken.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val result by viewModel.result.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val result by viewModel.result.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
@@ -316,13 +320,14 @@ private fun QrCameraScanner(
 private fun QrCameraPreview(onQrFound: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnQrFound by rememberUpdatedState(onQrFound)
     val previewView = remember {
         PreviewView(context).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
-    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val analysisExecutor = remember(lifecycleOwner) { Executors.newSingleThreadExecutor() }
 
     AndroidView(
         factory = { previewView },
@@ -330,11 +335,34 @@ private fun QrCameraPreview(onQrFound: (String) -> Unit) {
     )
 
     DisposableEffect(context, lifecycleOwner, previewView) {
+        val lifecycleGuard = ResourceLifecycleGuard()
         var cameraProvider: ProcessCameraProvider? = null
+        var imageAnalysis: ImageAnalysis? = null
         val mainExecutor = ContextCompat.getMainExecutor(context)
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> imageAnalysis?.setAnalyzer(analysisExecutor) { imageProxy ->
+                    try {
+                        decodeQrCode(imageProxy)?.let { token ->
+                            mainExecutor.execute {
+                                lifecycleGuard.runIfActive { currentOnQrFound(token) }
+                            }
+                        }
+                    } finally {
+                        imageProxy.close()
+                    }
+                }
+                Lifecycle.Event.ON_STOP -> imageAnalysis?.clearAnalyzer()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
 
         cameraProviderFuture.addListener({
+            var shouldBind = false
+            lifecycleGuard.runIfActive { shouldBind = true }
+            if (!shouldBind) return@addListener
             val provider = cameraProviderFuture.get()
             cameraProvider = provider
             val preview = CameraPreview.Builder().build().also {
@@ -343,25 +371,32 @@ private fun QrCameraPreview(onQrFound: (String) -> Unit) {
             val analyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
-                .also { analysis ->
-                    analysis.setAnalyzer(analysisExecutor) { imageProxy ->
+            imageAnalysis = analyzer
+            if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                analyzer.setAnalyzer(analysisExecutor) { imageProxy ->
                         try {
                             decodeQrCode(imageProxy)?.let { token ->
-                                mainExecutor.execute { onQrFound(token) }
+                                mainExecutor.execute {
+                                    lifecycleGuard.runIfActive { currentOnQrFound(token) }
+                                }
                             }
                         } finally {
                             imageProxy.close()
                         }
                     }
-                }
+            }
 
             provider.unbindAll()
             provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer)
         }, mainExecutor)
 
         onDispose {
+            lifecycleGuard.close()
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+            imageAnalysis?.clearAnalyzer()
             cameraProvider?.unbindAll()
-            analysisExecutor.shutdown()
+            cameraProviderFuture.cancel(true)
+            analysisExecutor.shutdownNow()
         }
     }
 }

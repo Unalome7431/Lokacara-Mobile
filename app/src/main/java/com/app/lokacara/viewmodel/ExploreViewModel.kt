@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.AnalyticsTracker
 import com.app.lokacara.data.BookmarkSyncHelper
+import com.app.lokacara.data.LatestRequestGate
+import com.app.lokacara.data.mergeEventsById
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.BoundedImagePrefetcher
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.data.remote.dto.CategoryDto
@@ -14,8 +17,6 @@ import com.app.lokacara.model.Event
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,7 @@ enum class ErrorType {
     NO_RESULT
 }
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
     private val repository: ExploreRepository,
@@ -76,13 +78,19 @@ class ExploreViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<CategoryDto>>(emptyList())
 
     private var currentPage = 1
-    private var hasMorePages = true
+    private var canLoadMorePages = true
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _hasMorePages = MutableStateFlow(true)
+    val hasMorePages: StateFlow<Boolean> = _hasMorePages.asStateFlow()
+
+    private val _totalEvents = MutableStateFlow(0)
+    val totalEvents: StateFlow<Int> = _totalEvents.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -124,10 +132,27 @@ class ExploreViewModel @Inject constructor(
     val showDatePicker: StateFlow<Boolean> = _showDatePicker.asStateFlow()
 
     private val _customDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
+    private val debouncedEventName = _eventName.debounce(150).distinctUntilChanged()
+    private val debouncedEventLocation = _eventLocation.debounce(150).distinctUntilChanged()
+    private val debouncedEventCategory = _eventCategory.debounce(150).distinctUntilChanged()
+
+    val activeFilterCount: StateFlow<Int> = combine(
+        combine(_eventName, _eventLocation, _eventCategory) { name, location, category ->
+            listOf(name, location, category).count(String::isNotEmpty)
+        },
+        combine(_selectedCategoryChip, _dateFilter, _priceFilter) { category, date, price ->
+            listOf(
+                category != DEFAULT_CATEGORY,
+                date != DateFilter.SEMUA,
+                price != PriceFilter.SEMUA
+            ).count { it }
+        }
+    ) { textFilters, optionFilters -> textFilters + optionFilters }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val filteredEvents: StateFlow<List<Event>> = combine(
-        combine(_allEvents, _eventName) { events, name -> events to name },
-        combine(_eventLocation, _eventCategory) { loc, cat -> loc to cat },
+        combine(_allEvents, debouncedEventName) { events, name -> events to name },
+        combine(debouncedEventLocation, debouncedEventCategory) { loc, cat -> loc to cat },
         combine(_selectedCategoryChip, _sortOption) { chip, sort -> chip to sort },
         combine(_dateFilter, _priceFilter) { date, price -> date to price },
         _customDateRange
@@ -194,7 +219,8 @@ class ExploreViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var loadMoreJob: Job? = null
-    private val prefetchedImageUrls = mutableSetOf<String>()
+    private val requestGate = LatestRequestGate()
+    private val imagePrefetcher = BoundedImagePrefetcher(appContext, imageLoader, maxRequests = 6)
 
     init {
         analytics.logScreenView("Explore")
@@ -342,61 +368,72 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun searchEvents(query: String) {
+        val requestToken = requestGate.next()
         searchJob?.cancel()
         loadMoreJob?.cancel()
         searchJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             currentPage = 1
-            hasMorePages = true
+            canLoadMorePages = true
+            _hasMorePages.value = true
 
             val catId = _categories.value.find { it.name.equals(_selectedCategoryChip.value, ignoreCase = true) }?.id
 
             when (val result = repository.searchEvents(keyword = query.ifBlank { null }, categoryId = catId)) {
                 is ApiResult.Success -> {
+                    if (!requestGate.isLatest(requestToken)) return@launch
                     val events = result.data.data.map { it.toEvent(imageUrlProvider) }
                     applyEvents(events)
-                    hasMorePages = result.data.current_page < result.data.last_page
+                    canLoadMorePages = result.data.current_page < result.data.last_page
+                    _hasMorePages.value = canLoadMorePages
+                    _totalEvents.value = result.data.total
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
                     analytics.logEvent("search_results", mapOf("count" to events.size.toString(), "query" to query))
                 }
                 is ApiResult.Error -> {
+                    if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                     _errorType.value = if (result.message.contains("jaringan") || result.message.contains("koneksi")) ErrorType.NETWORK else ErrorType.SERVER
                     if (_allEvents.value.isEmpty()) {
                         _allEvents.value = emptyList()
+                        _totalEvents.value = 0
                     }
                 }
             }
 
-            _isLoading.value = false
+            if (requestGate.isLatest(requestToken)) _isLoading.value = false
         }
     }
 
     fun loadNextPage() {
-        if (!hasMorePages || _isLoadingMore.value || _isLoading.value) return
-        loadMoreJob?.cancel()
+        if (!canLoadMorePages || _isLoadingMore.value || _isLoading.value || loadMoreJob?.isActive == true) return
+        val requestToken = requestGate.next()
         loadMoreJob = viewModelScope.launch {
             _isLoadingMore.value = true
-            currentPage++
+            val targetPage = currentPage + 1
 
             val catId = _categories.value.find { it.name.equals(_selectedCategoryChip.value, ignoreCase = true) }?.id
 
-            when (val result = repository.searchEvents(keyword = _eventName.value.ifBlank { null }, categoryId = catId, page = currentPage)) {
+            when (val result = repository.searchEvents(keyword = _eventName.value.ifBlank { null }, categoryId = catId, page = targetPage)) {
                 is ApiResult.Success -> {
+                    if (!requestGate.isLatest(requestToken)) return@launch
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
-                    applyEvents(_allEvents.value + newEvents)
-                    hasMorePages = result.data.current_page < result.data.last_page
+                    applyEvents(mergeEventsById(_allEvents.value, newEvents))
+                    currentPage = result.data.current_page
+                    canLoadMorePages = result.data.current_page < result.data.last_page
+                    _hasMorePages.value = canLoadMorePages
+                    _totalEvents.value = result.data.total
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _allEvents)
                 }
                 is ApiResult.Error -> {
-                    currentPage--
+                    if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                 }
             }
-            _isLoadingMore.value = false
+            if (requestGate.isLatest(requestToken)) _isLoadingMore.value = false
         }
     }
 
@@ -437,31 +474,7 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun prefetchExploreImages(events: List<Event>) {
-        val urls = events.asSequence()
-            .mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) }
-            .distinct()
-            .take(8)
-            .toList()
-
-        if (urls.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            urls.forEach { imageUrl ->
-                val shouldPrefetch = synchronized(prefetchedImageUrls) {
-                    prefetchedImageUrls.add(imageUrl)
-                }
-                if (!shouldPrefetch) return@forEach
-
-                imageLoader.enqueue(
-                    ImageRequest.Builder(appContext)
-                        .data(imageUrl)
-                        .size(500)
-                        .precision(Precision.INEXACT)
-                        .crossfade(false)
-                        .build()
-                )
-            }
-        }
+        imagePrefetcher.replace(events.mapNotNull(Event::imageUrl), sizePx = 500)
     }
 
     fun refresh() {
@@ -475,5 +488,10 @@ class ExploreViewModel @Inject constructor(
 
     private companion object {
         const val DEFAULT_CATEGORY = "Semua"
+    }
+
+    override fun onCleared() {
+        imagePrefetcher.clear()
+        super.onCleared()
     }
 }

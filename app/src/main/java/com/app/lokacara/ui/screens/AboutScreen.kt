@@ -72,7 +72,7 @@ fun AboutScreen(navController: NavController) {
                 )
             }
 
-            items(highlights) { (title, description) ->
+            items(highlights, key = { it.first }, contentType = { "highlight" }) { (title, description) ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(14.dp),

@@ -101,6 +101,7 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         startDatetime = start_datetime,
         endDatetime = end_datetime.ifEmpty { null },
         capacity = capacity,
+        status = status?.ifBlank { null } ?: "active",
         kuota = capacity ?: 100
     )
 }

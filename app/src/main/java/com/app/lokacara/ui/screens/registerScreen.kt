@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,15 +41,10 @@ fun RegisterScreen(
     onLoginSuccess: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    val name by viewModel.name.collectAsState()
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val confirmPassword by viewModel.confirmPassword.collectAsState()
-    val isChecked by viewModel.isChecked.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val registerSuccess by viewModel.registerSuccess.collectAsState()
-    val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val registerSuccess by viewModel.registerSuccess.collectAsStateWithLifecycle()
+    val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
 
     var isVisible by remember { mutableStateOf(false) }
 
@@ -144,68 +140,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            LokacaraTextField(
-                value = name,
-                onValueChange = { viewModel.name.value = it },
-                placeholder = "Nama Lengkap"
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LokacaraTextField(
-                value = email,
-                onValueChange = { viewModel.email.value = it },
-                placeholder = "Email / Nomor Telepon"
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LokacaraTextField(
-                value = password,
-                onValueChange = { viewModel.password.value = it },
-                placeholder = "Kata Sandi",
-                isPassword = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LokacaraTextField(
-                value = confirmPassword,
-                onValueChange = { viewModel.confirmPassword.value = it },
-                placeholder = "Konfirmasi Kata Sandi",
-                isPassword = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = isChecked,
-                    onCheckedChange = { viewModel.isChecked.value = it },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = Primary500,
-                        uncheckedColor = Gray300
-                    ),
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-                Text(
-                    text = buildAnnotatedString {
-                        append("Saya setuju dengan ")
-                        withStyle(style = SpanStyle(color = Primary500)) {
-                            append("persyaratan layanan")
-                        }
-                        append(" dan ")
-                        withStyle(style = SpanStyle(color = Primary500)) {
-                            append("kebijakan privasi")
-                        }
-                    },
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = Gray500
-                )
-            }
+            RegisterCredentialFields(viewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -273,6 +208,52 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun RegisterCredentialFields(viewModel: AuthViewModel) {
+    val name by viewModel.name.collectAsStateWithLifecycle()
+    val email by viewModel.email.collectAsStateWithLifecycle()
+    val password by viewModel.password.collectAsStateWithLifecycle()
+    val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
+    val isChecked by viewModel.isChecked.collectAsStateWithLifecycle()
+
+    LokacaraTextField(value = name, onValueChange = { viewModel.name.value = it }, placeholder = "Nama Lengkap")
+    Spacer(modifier = Modifier.height(16.dp))
+    LokacaraTextField(value = email, onValueChange = { viewModel.email.value = it }, placeholder = "Email / Nomor Telepon")
+    Spacer(modifier = Modifier.height(16.dp))
+    LokacaraTextField(
+        value = password,
+        onValueChange = { viewModel.password.value = it },
+        placeholder = "Kata Sandi",
+        isPassword = true
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    LokacaraTextField(
+        value = confirmPassword,
+        onValueChange = { viewModel.confirmPassword.value = it },
+        placeholder = "Konfirmasi Kata Sandi",
+        isPassword = true
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = { viewModel.isChecked.value = it },
+            colors = CheckboxDefaults.colors(checkedColor = Primary500, uncheckedColor = Gray300),
+            modifier = Modifier.padding(end = 4.dp)
+        )
+        Text(
+            text = buildAnnotatedString {
+                append("Saya setuju dengan ")
+                withStyle(style = SpanStyle(color = Primary500)) { append("persyaratan layanan") }
+                append(" dan ")
+                withStyle(style = SpanStyle(color = Primary500)) { append("kebijakan privasi") }
+            },
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+            color = Gray500
+        )
     }
 }
 

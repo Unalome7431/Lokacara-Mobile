@@ -2,6 +2,8 @@ package com.app.lokacara.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.LatestRequestGate
+import com.app.lokacara.data.filterNotifications
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.model.NotificationType
@@ -13,6 +15,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +27,8 @@ class NotificationViewModel @Inject constructor(
     private val repository: NotificationRepository,
 ) : ViewModel() {
     private val _notifications = MutableStateFlow<List<NotificationItem>>(emptyList())
+    private val requestGate = LatestRequestGate()
+    private var loadJob: Job? = null
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -31,21 +39,25 @@ class NotificationViewModel @Inject constructor(
     val selectedTab = MutableStateFlow(0)
 
     val filteredNotifications = combine(_notifications, selectedTab) { notifs, tabIndex ->
-        val type = if (tabIndex == 0) NotificationType.SOCIAL else NotificationType.SYSTEM
-        notifs.filter { it.type == type }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        filterNotifications(notifs, tabIndex)
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         loadNotifications()
     }
 
-    private fun loadNotifications() {
-        viewModelScope.launch {
+    private fun loadNotifications(force: Boolean = false) {
+        if (!force && loadJob?.isActive == true) return
+        if (force) loadJob?.cancel()
+        val requestToken = requestGate.next()
+        loadJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             when (val result = repository.getNotifications()) {
                 is ApiResult.Success -> {
-                    _notifications.value = result.data.data.map { dto ->
+                    val notifications = withContext(Dispatchers.Default) {
+                        result.data.data.map { dto ->
                         val type = when (dto.type) {
                             "social" -> NotificationType.SOCIAL
                             else -> NotificationType.SYSTEM
@@ -65,17 +77,21 @@ class NotificationViewModel @Inject constructor(
                             target = dto.target,
                             eventId = dto.event_id
                         )
+                        }
                     }
+                    if (!requestGate.isLatest(requestToken)) return@launch
+                    _notifications.value = notifications
                 }
                 is ApiResult.Error -> {
+                    if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                 }
             }
-            _isLoading.value = false
+            if (requestGate.isLatest(requestToken)) _isLoading.value = false
         }
     }
 
     fun refresh() {
-        loadNotifications()
+        loadNotifications(force = true)
     }
 }

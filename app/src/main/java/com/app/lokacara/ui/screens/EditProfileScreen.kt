@@ -39,7 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,7 +81,7 @@ fun EditProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val userProfile by viewModel.userProfile.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     var showDialog by remember { mutableStateOf(false) }
     var editField by remember { mutableStateOf<UserSessionManager.Field?>(null) }

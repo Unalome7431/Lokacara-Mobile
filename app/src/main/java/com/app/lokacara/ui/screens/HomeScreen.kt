@@ -14,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -39,17 +39,18 @@ fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val groupedEvents by viewModel.groupedEvents.collectAsState()
-    val popularEvents by viewModel.popularEvents.collectAsState()
-    val nearbyEvents by viewModel.nearbyEvents.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val feedError by viewModel.feedError.collectAsState()
-    val categoryError by viewModel.categoryError.collectAsState()
-    val currentLocation by viewModel.currentLocationName.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val isLocationPickerVisible by viewModel.isLocationPickerVisible.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val groupedEvents by viewModel.groupedEvents.collectAsStateWithLifecycle()
+    val popularEvents by viewModel.popularEvents.collectAsStateWithLifecycle()
+    val upcomingEvents by viewModel.myUpcomingEvents.collectAsStateWithLifecycle()
+    val nearbyEvents by viewModel.nearbyEvents.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val feedError by viewModel.feedError.collectAsStateWithLifecycle()
+    val categoryError by viewModel.categoryError.collectAsStateWithLifecycle()
+    val currentLocation by viewModel.currentLocationName.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val isLocationPickerVisible by viewModel.isLocationPickerVisible.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val hasMorePages = viewModel.hasMorePages
 
     val listState = rememberLazyListState()
@@ -64,6 +65,10 @@ fun HomeScreen(
     val hasMorePagesState by rememberUpdatedState(hasMorePages)
     val isLoadingMoreState by rememberUpdatedState(isLoadingMore)
     val isLoadingState by rememberUpdatedState(isLoading)
+    val sortedCategories = remember(groupedEvents, selectedCategory) {
+        if (selectedCategory == "Semua") groupedEvents.keys.toList()
+        else listOf(selectedCategory)
+    }
 
     LaunchedEffect(listState) {
         snapshotFlow {
@@ -141,6 +146,19 @@ fun HomeScreen(
                         }
                     }
 
+                    // ── Upcoming Events ──
+                    item(key = "upcoming_section", contentType = "upcoming") {
+                        UpcomingEventSection(
+                            upcomingEvents = upcomingEvents,
+                            onEventClick = { eventId ->
+                                navController.navigate(Screen.EventDetail.createRoute(eventId))
+                            },
+                            onExploreClick = {
+                                navController.navigate(Screen.Explore.route)
+                            }
+                        )
+                    }
+
                     // ── Nearby Events ──
                     item(key = "nearby_header", contentType = "nearby_header") {
                         NearbyEventsHeader(
@@ -156,7 +174,7 @@ fun HomeScreen(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(nearbyEvents, key = { it.id }) { event ->
+                                items(nearbyEvents, key = { it.id }, contentType = { "nearby_event" }) { event ->
                                     EventCardCompact(
                                         event = event,
                                         onClick = { onEventClick(event) },
@@ -183,9 +201,6 @@ fun HomeScreen(
                     }
 
                     // ── Category Sections ──
-                    val sortedCategories = if (selectedCategory == "Semua") groupedEvents.keys.toList()
-                        else listOf(selectedCategory)
-
                     if (sortedCategories.isNotEmpty()) {
                         item(key = "categories_title", contentType = "section_title") {
                             Text(

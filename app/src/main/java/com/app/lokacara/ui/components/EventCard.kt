@@ -44,7 +44,7 @@ import com.app.lokacara.ui.theme.*
 fun rememberEventImageRequest(
     imageUrl: String?,
     sizePx: Int,
-    crossfade: Boolean = true
+    crossfade: Boolean = false
 ): ImageRequest {
     val context = LocalContext.current
     return remember(context, imageUrl, sizePx, crossfade) {
@@ -63,6 +63,7 @@ fun EventCard(
     onBookmarkClick: () -> Unit = {},
     onClick: (() -> Unit)? = null,
     showBookmark: Boolean = true,
+    imageCrossfade: Boolean = false,
     trailingContent: @Composable (ColumnScope.() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -86,7 +87,7 @@ fun EventCard(
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             AsyncImage(
-                model = rememberEventImageRequest(event.imageUrl, 110),
+                model = rememberEventImageRequest(event.imageUrl, 110, crossfade = imageCrossfade),
                 contentDescription = event.title,
                 modifier = Modifier.size(110.dp).clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
@@ -139,7 +140,8 @@ fun EventCardCompact(
     event: Event,
     onClick: () -> Unit = {},
     isBookmarked: Boolean = event.isBookmarked,
-    onBookmarkClick: () -> Unit = {}
+    onBookmarkClick: () -> Unit = {},
+    imageCrossfade: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -157,7 +159,7 @@ fun EventCardCompact(
         Column {
             Box {
                 AsyncImage(
-                    model = rememberEventImageRequest(event.imageUrl, 160),
+                    model = rememberEventImageRequest(event.imageUrl, 160, crossfade = imageCrossfade),
                     contentDescription = event.title,
                     modifier = Modifier
                         .fillMaxWidth()

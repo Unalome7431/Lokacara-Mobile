@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -49,8 +50,8 @@ fun TicketsScreen(
     rootNavController: NavController? = null,
     viewModel: TicketsViewModel = hiltViewModel()
 ) {
-    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
-    val isAuthChecked by viewModel.isAuthChecked.collectAsState()
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val isAuthChecked by viewModel.isAuthChecked.collectAsStateWithLifecycle()
 
     if (!isAuthChecked) {
         Box(Modifier.fillMaxSize().background(SvgBackground), contentAlignment = Alignment.Center) {
@@ -85,17 +86,17 @@ fun TicketsScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val upcomingEvents by viewModel.upcomingEvents.collectAsState()
-    val todayEvents by viewModel.todayEvents.collectAsState()
-    val historyEvents by viewModel.historyEvents.collectAsState()
+    val upcomingEvents by viewModel.upcomingEvents.collectAsStateWithLifecycle()
+    val todayEvents by viewModel.todayEvents.collectAsStateWithLifecycle()
+    val historyEvents by viewModel.historyEvents.collectAsStateWithLifecycle()
     val tabs = listOf(
         "${stringResource(R.string.tab_tickets_upcoming)} (${upcomingEvents.size})",
         "${stringResource(R.string.tab_tickets_history)} (${historyEvents.size})"
     )
-    val userName by viewModel.userName.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val downloadedCertIds by viewModel.downloadedCertIds.collectAsState()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val downloadedCertIds by viewModel.downloadedCertIds.collectAsStateWithLifecycle()
     val hasContent = todayEvents.isNotEmpty() || upcomingEvents.isNotEmpty() || historyEvents.isNotEmpty()
 
     if (isLoading && !hasContent) {
@@ -240,10 +241,8 @@ fun MendatangContent(
                 )
             }
         } else {
-            items(upcomingEvents, key = { it.id }) { event ->
-                AnimatedEntry(durationMillis = 150, offsetY = 8) {
-                    SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
-                }
+            items(upcomingEvents, key = { it.id }, contentType = { "upcoming_ticket" }) { event ->
+                SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -293,10 +292,8 @@ fun RiwayatContent(
                 )
             }
         } else {
-            items(historyEvents, key = { it.id }) { event ->
-                AnimatedEntry(durationMillis = 150, offsetY = 8) {
-                    HistoryItemCard(event, onClick = { selectedEvent = event })
-                }
+            items(historyEvents, key = { it.id }, contentType = { "history_ticket" }) { event ->
+                HistoryItemCard(event, onClick = { selectedEvent = event })
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }

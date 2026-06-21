@@ -57,7 +57,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -120,16 +120,16 @@ fun EventDetailScreen(
     eventId: Long = 0L,
     viewModel: EventDetailViewModel = hiltViewModel()
 ) {
-    val event by viewModel.event.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val isRegistered by viewModel.isRegistered.collectAsState()
-    val isHost by viewModel.isHost.collectAsState()
-    val isJoining by viewModel.isJoining.collectAsState()
-    val isQrLoading by viewModel.isQrLoading.collectAsState()
-    val qrToken by viewModel.qrToken.collectAsState()
-    val successMessage by viewModel.successMessage.collectAsState()
-    val lastAction by viewModel.lastAction.collectAsState()
+    val event by viewModel.event.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val isRegistered by viewModel.isRegistered.collectAsStateWithLifecycle()
+    val isHost by viewModel.isHost.collectAsStateWithLifecycle()
+    val isJoining by viewModel.isJoining.collectAsStateWithLifecycle()
+    val isQrLoading by viewModel.isQrLoading.collectAsStateWithLifecycle()
+    val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
+    val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
+    val lastAction by viewModel.lastAction.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     var showLeaveConfirm by remember { mutableStateOf(false) }
@@ -171,7 +171,7 @@ fun EventDetailScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        item {
+                        item(key = "hero", contentType = "hero") {
                             EventHero(
                                 event = event,
                                 onBack = { navController.navigateBackOrHome() },
@@ -180,7 +180,7 @@ fun EventDetailScreen(
                             )
                         }
 
-                        item {
+                        item(key = "content", contentType = "content") {
                             EventDetailContent(
                                 event = event,
                                 isRegistered = isRegistered,
@@ -193,7 +193,7 @@ fun EventDetailScreen(
                         }
 
                         if (isHost) {
-                            item {
+                            item(key = "host_management", contentType = "host_management") {
                                 HostManagementPanel(
                                     eventId = event.id,
                                     startDatetime = event.startDatetime,
@@ -293,6 +293,16 @@ private fun EventHero(
     onShare: () -> Unit,
     onBookmark: () -> Unit
 ) {
+    val countdown = remember(event.startDatetime) { countdownLabel(event.startDatetime) }
+    val overlayBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color.Black.copy(alpha = 0.18f),
+                Color.Transparent,
+                Color.Black.copy(alpha = 0.78f)
+            )
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -310,15 +320,7 @@ private fun EventHero(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.18f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.78f)
-                        )
-                    )
-                )
+                .background(overlayBrush)
         )
 
         Row(
@@ -349,7 +351,7 @@ private fun EventHero(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 EventPill(text = event.category, color = Secondary500, contentColor = Color.White)
-                countdownLabel(event.startDatetime)?.let {
+                countdown?.let {
                     EventPill(text = it, color = Color.White.copy(alpha = 0.92f), contentColor = Primary500)
                 }
             }
@@ -476,6 +478,7 @@ private fun FlatEventStatus(
 
 @Composable
 private fun EventInfoGrid(event: Event) {
+    val viewCountLabel = remember(event.viewCount) { "${formatViewCount(event.viewCount)}x" }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             EventMetricCard(
@@ -501,7 +504,7 @@ private fun EventInfoGrid(event: Event) {
             EventMetricCard(
                 icon = Icons.Outlined.Visibility,
                 label = "Dilihat",
-                value = "${formatViewCount(event.viewCount)}x",
+                value = viewCountLabel,
                 modifier = Modifier.weight(1f)
             )
         }

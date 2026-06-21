@@ -12,18 +12,20 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.AnalyticsTracker
 import com.app.lokacara.data.BookmarkSyncHelper
 import com.app.lokacara.data.HomeCache
+import com.app.lokacara.data.mergeEventsById
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.BoundedImagePrefetcher
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.toEvent
+import com.app.lokacara.data.remote.toUpcomingEvent
 import com.app.lokacara.model.Event
+import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.repository.HomeRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import com.google.android.gms.location.LocationServices
 import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -67,8 +69,8 @@ class HomeViewModel @Inject constructor(
     private val _popularEvents = MutableStateFlow<List<Event>>(emptyList())
     val popularEvents: StateFlow<List<Event>> = _popularEvents.asStateFlow()
 
-    private val _myUpcomingEvents = MutableStateFlow<List<com.app.lokacara.model.UpcomingEvent>?>(null)
-    val myUpcomingEvents: StateFlow<List<com.app.lokacara.model.UpcomingEvent>?> = _myUpcomingEvents.asStateFlow()
+    private val _myUpcomingEvents = MutableStateFlow<List<UpcomingEvent>?>(null)
+    val myUpcomingEvents: StateFlow<List<UpcomingEvent>?> = _myUpcomingEvents.asStateFlow()
 
     private val _allEvents = MutableStateFlow<List<Event>>(emptyList())
 
@@ -83,6 +85,7 @@ class HomeViewModel @Inject constructor(
     private var totalPages = 1
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+    private var loadMoreJob: kotlinx.coroutines.Job? = null
     val hasMorePages: Boolean get() = currentPage < totalPages
 
     // ── Nearby events (Haversine) ──
@@ -93,7 +96,8 @@ class HomeViewModel @Inject constructor(
         else events.filter { it.latitude != null && it.longitude != null }
             .sortedBy { haversine(latLng.first, latLng.second, it.latitude!!, it.longitude!!) }
             .take(5)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // ── Category grouping ──
     private val _selectedCategory = MutableStateFlow("Semua")
@@ -103,6 +107,7 @@ class HomeViewModel @Inject constructor(
         .map { events ->
             events.groupBy { it.category.ifEmpty { "Lainnya" } }
         }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val groupedEvents: StateFlow<Map<String, List<Event>>> = combine(
@@ -112,7 +117,11 @@ class HomeViewModel @Inject constructor(
         else grouped[category]?.let { mapOf(category to it) } ?: emptyMap()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val prefetchedImageUrls = mutableSetOf<String>()
+    private val imagePrefetcher = BoundedImagePrefetcher(
+        context = application,
+        imageLoader = imageLoader,
+        maxRequests = 6
+    )
 
     init {
         analytics.logScreenView("Home")
@@ -135,7 +144,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val response = apiService.getDashboard()
-                _myUpcomingEvents.value = response.data.upcoming.map { it.toUpcomingEvent() }
+                _myUpcomingEvents.value = response.joined_events.mapNotNull { it.toUpcomingEvent(imageUrlProvider) }
             } catch (_: Exception) {
                 _myUpcomingEvents.value = emptyList()
             }
@@ -228,7 +237,9 @@ class HomeViewModel @Inject constructor(
             // Show cached data immediately without triggering a network request.
             val cachedEvents = cache.events
             if (cachedEvents != null && _allEvents.value.isEmpty()) {
-                val events = cachedEvents.map { it.toEvent(imageUrlProvider) }
+                val events = withContext(Dispatchers.Default) {
+                    cachedEvents.map { it.toEvent(imageUrlProvider) }
+                }
                 applyFeedEvents(events)
                 _isLoading.value = false
             }
@@ -250,7 +261,9 @@ class HomeViewModel @Inject constructor(
 
             when (val result = repository.getFeedEvents(forceRefresh = true)) {
                 is ApiResult.Success -> {
-                    val events = result.data.map { it.toEvent(imageUrlProvider) }
+                    val events = withContext(Dispatchers.Default) {
+                        result.data.map { it.toEvent(imageUrlProvider) }
+                    }
                     applyFeedEvents(events)
                     if (events.isNotEmpty()) _feedError.value = null
                     analytics.logEvent("feed_loaded", mapOf("count" to events.size.toString()))
@@ -296,16 +309,18 @@ class HomeViewModel @Inject constructor(
 
     // ── Load more (pagination via search API) ──
     fun loadMore() {
-        if (_isLoadingMore.value || !hasMorePages) return
-        viewModelScope.launch {
-            _isLoadingMore.value = true
+        if (_isLoadingMore.value || !hasMorePages || loadMoreJob?.isActive == true) return
+        _isLoadingMore.value = true
+        loadMoreJob = viewModelScope.launch {
             val nextPage = currentPage + 1
             when (val result = safeApiCall { apiService.searchEvents(page = nextPage) }) {
                 is ApiResult.Success -> {
-                    val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }
+                    val newEvents = withContext(Dispatchers.Default) {
+                        result.data.data.map { it.toEvent(imageUrlProvider) }
+                    }
                     currentPage = result.data.current_page
                     totalPages = result.data.last_page
-                    applyFeedEvents((_allEvents.value + newEvents).take(200))
+                    applyFeedEvents(mergeEventsById(_allEvents.value, newEvents).take(200))
                     bookmarkSyncHelper.cancel()
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
                 }
@@ -326,6 +341,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
+        loadMoreJob?.cancel()
+        _isLoadingMore.value = false
         cache.invalidate()
         loadData()
         loadFilterData()
@@ -352,32 +369,12 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun prefetchHomeImages(events: List<Event>) {
-        val urls = events.asSequence()
-            .mapNotNull { it.imageUrl?.takeIf(String::isNotBlank) }
-            .distinct()
-            .take(8)
-            .toList()
+        imagePrefetcher.replace(events.mapNotNull(Event::imageUrl), sizePx = 500)
+    }
 
-        if (urls.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            urls.forEach { imageUrl ->
-                val shouldPrefetch = synchronized(prefetchedImageUrls) {
-                    prefetchedImageUrls.add(imageUrl)
-                }
-                if (!shouldPrefetch) return@forEach
-
-                imageLoader.enqueue(
-                    ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(500)
-                        .precision(Precision.INEXACT)
-                        .crossfade(false)
-                        .build()
-                )
-            }
-        }
+    override fun onCleared() {
+        imagePrefetcher.clear()
+        super.onCleared()
     }
 
 }

@@ -12,7 +12,7 @@ import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +40,8 @@ fun SavedEventsScreen(
     navController: NavController,
     viewModel: BookmarkViewModel = hiltViewModel()
 ) {
-    val savedEvents by viewModel.savedEvents.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val savedEvents by viewModel.savedEvents.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     ProfilePageScaffold(title = "Event Tersimpan", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && savedEvents.isEmpty()) {
@@ -83,7 +83,8 @@ fun SavedEventsScreen(
                     } else {
                         items(
                             items = savedEvents,
-                            key = { event: Event -> event.id }
+                            key = { event: Event -> event.id },
+                            contentType = { "saved_event" }
                         ) { event -> 
                             EventCard(
                                 event = event,

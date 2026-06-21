@@ -6,8 +6,10 @@ import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.data.LatestRequestGate
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
+import com.app.lokacara.data.remote.BoundedImagePrefetcher
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.safeApiCall
 import com.app.lokacara.data.remote.toHistoryEvent
@@ -17,8 +19,6 @@ import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.repository.TicketsRepository
 import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.size.Precision
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -43,7 +45,13 @@ class TicketsViewModel @Inject constructor(
     private val imageLoader: ImageLoader
 ) : AndroidViewModel(application) {
 
-    private val prefetchedImageUrls = mutableSetOf<String>()
+    private val imagePrefetcher = BoundedImagePrefetcher(
+        context = application,
+        imageLoader = imageLoader,
+        maxRequests = 5
+    )
+    private val dashboardGate = LatestRequestGate()
+    private var dashboardJob: Job? = null
 
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
@@ -84,6 +92,7 @@ class TicketsViewModel @Inject constructor(
                         loadDashboard()
                     }
                 } else {
+                    dashboardJob?.cancel()
                     _userName.value = ""
                     _todayEvents.value = emptyList()
                     _upcomingEvents.value = emptyList()
@@ -96,66 +105,74 @@ class TicketsViewModel @Inject constructor(
     }
 
     fun refresh() {
-        loadDashboard()
+        loadDashboard(force = true)
     }
 
-    fun loadDashboard() {
+    private fun loadDashboard(force: Boolean = false) {
         if (!_isLoggedIn.value) return
-        viewModelScope.launch {
+        if (!force && dashboardJob?.isActive == true) return
+        if (force) dashboardJob?.cancel()
+        val requestToken = dashboardGate.next()
+        dashboardJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
 
-            when (val result = repository.getDashboard()) {
+            when (val result = repository.getDashboard(forceRefresh = force)) {
                 is ApiResult.Success -> {
-                    val dashboard = result.data
-                    val nowMillis = System.currentTimeMillis()
+                    val (today, upcoming, history) = withContext(Dispatchers.Default) {
+                        val nowMillis = System.currentTimeMillis()
+                        val todayItems = mutableListOf<UpcomingEvent>()
+                        val upcomingItems = mutableListOf<UpcomingEvent>()
+                        val historyItems = mutableListOf<HistoryEvent>()
 
-                    val today = mutableListOf<UpcomingEvent>()
-                    val upcoming = mutableListOf<UpcomingEvent>()
-                    val history = mutableListOf<HistoryEvent>()
-
-                    dashboard.joined_events.forEach { reg ->
-                        val e = reg.event ?: return@forEach
-                        val startMillis = parseEventTimeMillis(e.start_datetime)
-                        val endMillis = parseEventTimeMillis(e.end_datetime).takeIf { it > 0 }
-                            ?: startMillis
-                        if (endMillis < nowMillis) {
-                            reg.toHistoryEvent(imageUrlProvider)?.let {
-                                history.add(
-                                    it.copy(
-                                        date = formatTicketDate(e.start_datetime),
-                                        time = formatTicketTime(e.start_datetime),
-                                        location = readableLocation(e.location_name, e.platform_name, e.type)
+                        result.data.joined_events.forEach { reg ->
+                            val event = reg.event ?: return@forEach
+                            val startMillis = parseEventTimeMillis(event.start_datetime)
+                            val endMillis = parseEventTimeMillis(event.end_datetime).takeIf { it > 0 } ?: startMillis
+                            if (endMillis < nowMillis) {
+                                reg.toHistoryEvent(imageUrlProvider)?.let { historyEvent ->
+                                    historyItems.add(
+                                        historyEvent.copy(
+                                            date = formatTicketDate(event.start_datetime),
+                                            time = formatTicketTime(event.start_datetime),
+                                            location = readableLocation(event.location_name, event.platform_name, event.type)
+                                        )
                                     )
-                                )
-                            }
-                        } else {
-                            reg.toUpcomingEvent(imageUrlProvider)?.let {
-                                val uiEvent = it.copy(
-                                    date = formatTicketDate(e.start_datetime),
-                                    time = formatTicketTime(e.start_datetime),
-                                    location = readableLocation(e.location_name, e.platform_name, e.type)
-                                )
-                                if (isSameDay(startMillis, nowMillis) || isSameDay(endMillis, nowMillis)) {
-                                    today.add(uiEvent)
-                                } else {
-                                    upcoming.add(uiEvent)
+                                }
+                            } else {
+                                reg.toUpcomingEvent(imageUrlProvider)?.let { upcomingEvent ->
+                                    val uiEvent = upcomingEvent.copy(
+                                        date = formatTicketDate(event.start_datetime),
+                                        time = formatTicketTime(event.start_datetime),
+                                        location = readableLocation(event.location_name, event.platform_name, event.type)
+                                    )
+                                    if (isSameDay(startMillis, nowMillis) || isSameDay(endMillis, nowMillis)) {
+                                        todayItems.add(uiEvent)
+                                    } else {
+                                        upcomingItems.add(uiEvent)
+                                    }
                                 }
                             }
                         }
+                        Triple(
+                            todayItems.sortedBy { parseDisplayDateMillis(it.date, it.time) },
+                            upcomingItems.sortedBy { parseDisplayDateMillis(it.date, it.time) },
+                            historyItems.sortedByDescending { parseDisplayDateMillis(it.date, it.time) }
+                        )
                     }
-
-                    _todayEvents.value = today.sortedBy { parseDisplayDateMillis(it.date, it.time) }
-                    _upcomingEvents.value = upcoming.sortedBy { parseDisplayDateMillis(it.date, it.time) }
-                    _historyEvents.value = history.sortedByDescending { parseDisplayDateMillis(it.date, it.time) }
+                    if (!dashboardGate.isLatest(requestToken)) return@launch
+                    _todayEvents.value = today
+                    _upcomingEvents.value = upcoming
+                    _historyEvents.value = history
                     prefetchTicketImages(today + upcoming + history)
                 }
                 is ApiResult.Error -> {
+                    if (!dashboardGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                 }
             }
 
-            _isLoading.value = false
+            if (dashboardGate.isLatest(requestToken)) _isLoading.value = false
         }
     }
 
@@ -172,26 +189,7 @@ class TicketsViewModel @Inject constructor(
             .take(6)
             .toList()
 
-        if (urls.isEmpty()) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            urls.forEach { imageUrl ->
-                val shouldPrefetch = synchronized(prefetchedImageUrls) {
-                    prefetchedImageUrls.add(imageUrl)
-                }
-                if (!shouldPrefetch) return@forEach
-
-                imageLoader.enqueue(
-                    ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .size(320)
-                        .precision(Precision.INEXACT)
-                        .crossfade(false)
-                        .build()
-                )
-            }
-        }
+        imagePrefetcher.replace(urls, sizePx = 320)
     }
 
     fun downloadCertificate(event: HistoryEvent) {
@@ -279,5 +277,11 @@ class TicketsViewModel @Inject constructor(
         val second = java.util.Calendar.getInstance().apply { timeInMillis = secondMillis }
         return first.get(java.util.Calendar.YEAR) == second.get(java.util.Calendar.YEAR) &&
             first.get(java.util.Calendar.DAY_OF_YEAR) == second.get(java.util.Calendar.DAY_OF_YEAR)
+    }
+
+    override fun onCleared() {
+        dashboardJob?.cancel()
+        imagePrefetcher.clear()
+        super.onCleared()
     }
 }

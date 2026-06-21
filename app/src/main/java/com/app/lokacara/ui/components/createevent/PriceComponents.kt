@@ -22,10 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
-import com.app.lokacara.ui.theme.CreateEventLightBlue
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray700
 import com.app.lokacara.ui.theme.Gray800
@@ -40,7 +40,7 @@ fun PriceSection(
     onToggleFree: (Boolean) -> Unit,
     priceAmount: String,
     onPriceAmountChange: (String) -> Unit,
-    containerColor: Color = CreateEventLightBlue
+    containerColor: Color = Color.White
 ) {
     val selectedFreeBg by animateColorAsState(
         targetValue = if (isFree) SvgPrimaryBlue else Color.White,
@@ -95,7 +95,7 @@ fun PriceSection(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    placeholder = { Text("25000", fontFamily = NunitoFont, fontSize = 12.sp, color = Gray500) },
+                    placeholder = { Text("Masukkan nominal harga", fontFamily = NunitoFont, fontSize = 12.sp, color = Gray500) },
                     prefix = {
                         Text(
                             text = "Rp",
@@ -161,7 +161,10 @@ private fun PriceChoiceChip(
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp,
             color = contentColor,
-            modifier = Modifier.padding(vertical = 11.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 11.dp),
+            textAlign = TextAlign.Center,
             maxLines = 1
         )
     }

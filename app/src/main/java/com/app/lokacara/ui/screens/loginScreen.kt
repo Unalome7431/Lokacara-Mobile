@@ -1,4 +1,5 @@
 package com.app.lokacara.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,14 +39,12 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val loginSuccess by viewModel.loginSuccess.collectAsState()
-    val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsState()
-    val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsState()
-    val forgotPasswordError by viewModel.forgotPasswordError.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
+    val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsStateWithLifecycle()
+    val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsStateWithLifecycle()
+    val forgotPasswordError by viewModel.forgotPasswordError.collectAsStateWithLifecycle()
 
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
@@ -145,20 +144,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            LokacaraTextField(
-                value = email,
-                onValueChange = { viewModel.email.value = it },
-                placeholder = stringResource(R.string.auth_email_placeholder)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LokacaraTextField(
-                value = password,
-                onValueChange = { viewModel.password.value = it },
-                placeholder = stringResource(R.string.auth_password_placeholder),
-                isPassword = true
-            )
+            LoginCredentialFields(viewModel)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -295,6 +281,25 @@ fun LoginScreen(
             }
         )
     }
+}
+
+@Composable
+private fun LoginCredentialFields(viewModel: AuthViewModel) {
+    val email by viewModel.email.collectAsStateWithLifecycle()
+    val password by viewModel.password.collectAsStateWithLifecycle()
+
+    LokacaraTextField(
+        value = email,
+        onValueChange = { viewModel.email.value = it },
+        placeholder = stringResource(R.string.auth_email_placeholder)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    LokacaraTextField(
+        value = password,
+        onValueChange = { viewModel.password.value = it },
+        placeholder = stringResource(R.string.auth_password_placeholder),
+        isPassword = true
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_7")

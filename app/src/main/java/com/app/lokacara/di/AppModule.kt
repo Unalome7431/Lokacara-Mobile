@@ -22,7 +22,7 @@ object AppModule {
         return ImageLoader.Builder(context)
             .memoryCache { MemoryCache.Builder(context).maxSizePercent(0.25).build() }
             .diskCache { DiskCache.Builder().directory(context.cacheDir.resolve("image_cache")).maxSizeBytes(250L * 1024 * 1024).build() }
-            .crossfade(true)
+            .crossfade(false)
             .build()
     }
 
