@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.filled.Close
@@ -261,12 +262,15 @@ private fun SearchAutocompleteField(
     focusManager: androidx.compose.ui.focus.FocusManager
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val filtered = remember(value) { suggestions.filter { it.contains(value, true) } }
+    var isFocused by remember { mutableStateOf(false) }
+    val filtered = remember(value) {
+        if (value.isBlank()) suggestions else suggestions.filter { it.contains(value, true) }
+    }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
         OutlinedTextField(
             value = value,
-            onValueChange = { onValueChange(it); expanded = it.isNotEmpty() && filtered.isNotEmpty() },
+            onValueChange = { newVal -> onValueChange(newVal); expanded = newVal.isNotEmpty() || filtered.isNotEmpty() },
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
@@ -279,7 +283,10 @@ private fun SearchAutocompleteField(
                     Icon(icon, "Dropdown", tint = Primary500, modifier = Modifier.size(20.dp))
                 }
             },
-            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .onFocusChanged { f -> isFocused = f.isFocused; if (f.isFocused && suggestions.isNotEmpty()) expanded = true },
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,
