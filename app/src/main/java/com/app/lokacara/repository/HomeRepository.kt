@@ -20,7 +20,7 @@ class HomeRepository @Inject constructor(
             val cached = cache.events
             if (cached != null) return ApiResult.Success(cached)
         }
-        val result = safeApiCall { apiService.getFeedEvents().data }
+        val result = safeApiCall { apiService.searchEvents().data }
         if (result is ApiResult.Success) {
             cache.putEvents(result.data)
         }
