@@ -40,7 +40,8 @@ fun PriceSection(
     onToggleFree: (Boolean) -> Unit,
     priceAmount: String,
     onPriceAmountChange: (String) -> Unit,
-    containerColor: Color = Color.White
+    containerColor: Color = Color.White,
+    isError: Boolean = false
 ) {
     val selectedFreeBg by animateColorAsState(
         targetValue = if (isFree) SvgPrimaryBlue else Color.White,

@@ -18,7 +18,8 @@ fun DatePickerField(
     value: String,
     onClick: () -> Unit,
     label: String,
-    placeholder: String
+    placeholder: String,
+    isError: Boolean = false
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -31,7 +32,7 @@ fun DatePickerField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, RoundedCornerShape(16.dp))
+                .background(if (isError) SemanticErrorBase.copy(alpha = 0.06f) else Color.White, RoundedCornerShape(16.dp))
                 .clickable { onClick() }
                 .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
