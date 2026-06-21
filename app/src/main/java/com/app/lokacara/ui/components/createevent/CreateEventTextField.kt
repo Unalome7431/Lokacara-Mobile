@@ -25,7 +25,8 @@ fun CreateEventTextField(
     containerColor: Color = CreateEventLightBlue,
     labelSize: TextUnit = 16.sp,
     supportingText: String? = null,
-    supportingColor: Color = Gray500
+    supportingColor: Color = Gray500,
+    isError: Boolean = false
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         if (label.isNotEmpty()) {
@@ -50,11 +51,11 @@ fun CreateEventTextField(
                 )
             },
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = containerColor,
-                unfocusedContainerColor = containerColor,
+                focusedContainerColor = if (isError) SemanticErrorBase.copy(alpha = 0.06f) else containerColor,
+                unfocusedContainerColor = if (isError) SemanticErrorBase.copy(alpha = 0.06f) else containerColor,
                 disabledContainerColor = containerColor,
                 focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = if (isError) SemanticErrorBase else Color.Transparent,
                 focusedTextColor = Gray900,
                 unfocusedTextColor = Gray900
             ),

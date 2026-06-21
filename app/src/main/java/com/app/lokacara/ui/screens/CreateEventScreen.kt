@@ -121,6 +121,7 @@ fun CreateEventScreen(
     val publishSuccess by viewModel.publishSuccess.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val fieldErrors by viewModel.fieldErrors.collectAsStateWithLifecycle()
     val hasDraft by viewModel.hasDraft.collectAsStateWithLifecycle()
     val scheduleReady = waktuMulai.isNotBlank() && waktuSelesai.isNotBlank()
     val locationReady = if (isOnline) {
@@ -497,21 +498,24 @@ fun CreateEventScreen(
         Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         CreateEventTextField(
             value = namaEvent,
-            onValueChange = { viewModel.namaEvent.value = it },
+            onValueChange = { viewModel.namaEvent.value = it; viewModel.clearError() },
             label = "Nama Event",
             placeholder = "Masukkan nama acara",
             containerColor = lightBlueBg,
             supportingText = "${namaEvent.length}/255",
-            supportingColor = if (namaEvent.length > 255) SemanticErrorBase else Gray500
+            supportingColor = if (namaEvent.length > 255) SemanticErrorBase else Gray500,
+            isError = fieldErrors.containsKey("title")
         )
+        FieldError(fieldErrors["title"])
 
         CategoryDropdownField(
             selectedCategoryName = selectedCategoryName,
             categories = categories,
-            onCategorySelected = { viewModel.selectedCategoryId.value = it.id },
+            onCategorySelected = { viewModel.selectedCategoryId.value = it.id; viewModel.clearError() },
             label = "Kategori",
             containerColor = lightBlueBg
         )
+        FieldError(fieldErrors["category"])
 
         CreateEventTextField(
             value = penyelenggara,
@@ -535,19 +539,23 @@ fun CreateEventScreen(
                     modifier = Modifier.size(24.dp)
                 )
             }
-        ) {
+            ) {
             DatePickerField(
                 value = if (waktuMulai.isNotBlank()) viewModel.getDisplayDateTime(waktuMulai) else "",
                 onClick = { showStartDatePicker = true },
                 label = "Mulai",
-                placeholder = "Pilih tanggal dan waktu mulai"
+                placeholder = "Pilih tanggal dan waktu mulai",
+                isError = fieldErrors.containsKey("start_time")
             )
+            FieldError(fieldErrors["start_time"])
             DatePickerField(
                 value = if (waktuSelesai.isNotBlank()) viewModel.getDisplayDateTime(waktuSelesai) else "",
                 onClick = { showEndDatePicker = true },
                 label = "Selesai",
-                placeholder = "Pilih tanggal dan waktu selesai"
+                placeholder = "Pilih tanggal dan waktu selesai",
+                isError = fieldErrors.containsKey("end_time")
             )
+            FieldError(fieldErrors["end_time"])
         }
         }
 
@@ -559,10 +567,12 @@ fun CreateEventScreen(
         ) {
             PriceSection(
                 isFree = isFreePrice,
-                onToggleFree = { viewModel.setPriceMode(it) },
+                onToggleFree = { viewModel.setPriceMode(it); viewModel.clearError() },
                 priceAmount = priceAmount,
-                onPriceAmountChange = { viewModel.updatePriceAmount(it) }
+                onPriceAmountChange = { viewModel.updatePriceAmount(it) },
+                isError = fieldErrors.containsKey("price")
             )
+            FieldError(fieldErrors["price"])
         }
         }
 
@@ -581,20 +591,24 @@ fun CreateEventScreen(
                 if (isOnline) {
                     CreateEventTextField(
                         value = aplikasiTempat,
-                        onValueChange = { viewModel.aplikasiTempat.value = it },
+                        onValueChange = { viewModel.aplikasiTempat.value = it; viewModel.clearError() },
                         label = "Aplikasi",
                         placeholder = "Masukkan nama platform atau aplikasi",
                         containerColor = Color.White,
-                        labelSize = 14.sp
+                        labelSize = 14.sp,
+                        isError = fieldErrors.containsKey("platform")
                     )
+                    FieldError(fieldErrors["platform"])
                     CreateEventTextField(
                         value = alamat,
-                        onValueChange = { viewModel.alamat.value = it },
+                        onValueChange = { viewModel.alamat.value = it; viewModel.clearError() },
                         label = "Link",
                         placeholder = "Masukkan tautan acara daring",
                         containerColor = Color.White,
-                        labelSize = 14.sp
+                        labelSize = 14.sp,
+                        isError = fieldErrors.containsKey("link")
                     )
+                    FieldError(fieldErrors["link"])
                 } else {
                     MapSearchPicker(
                         selectedLocationName = aplikasiTempat,
@@ -605,6 +619,7 @@ fun CreateEventScreen(
                             viewModel.setLocationFromMap(location)
                         }
                     )
+                    FieldError(fieldErrors["location"])
                 }
             }
 
@@ -615,7 +630,7 @@ fun CreateEventScreen(
             ) {
                 TextField(
                     value = deskripsi,
-                    onValueChange = { viewModel.deskripsi.value = it },
+                    onValueChange = { viewModel.deskripsi.value = it; viewModel.clearError() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
@@ -638,6 +653,7 @@ fun CreateEventScreen(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium
                 )
+                FieldError(fieldErrors["description"])
                 Text(
                     text = "${deskripsi.length}/5000",
                     fontFamily = NunitoFont,
@@ -660,8 +676,10 @@ fun CreateEventScreen(
                 value = kuota,
                 onValueChange = { nextValue ->
                     viewModel.kuota.value = nextValue.coerceIn(1, 100_000)
+                    viewModel.clearError()
                 }
             )
+            FieldError(fieldErrors["capacity"])
         }
         }
 

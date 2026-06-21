@@ -73,6 +73,9 @@ class CreateEventViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _fieldErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val fieldErrors: StateFlow<Map<String, String>> = _fieldErrors.asStateFlow()
+
     private val _publishSuccess = MutableStateFlow(false)
     val publishSuccess: StateFlow<Boolean> = _publishSuccess.asStateFlow()
 
@@ -229,52 +232,40 @@ class CreateEventViewModel @Inject constructor(
     fun publish() {
         val eventIsOnline = isOnline.value
         val title = namaEvent.value.trim()
-        if (title.isBlank()) {
-            _errorMessage.value = "Nama event harus diisi"
-            return
-        }
-        if (title.length > 255) {
-            _errorMessage.value = "Nama event maksimal 255 karakter"
-            return
-        }
         val desc = deskripsi.value.trim()
-        if (desc.isBlank()) {
-            _errorMessage.value = "Deskripsi event harus diisi"
-            return
-        }
-        if (desc.length > 5000) {
-            _errorMessage.value = "Deskripsi event maksimal 5000 karakter"
-            return
-        }
-        if (selectedCategoryId.value == null) {
-            _errorMessage.value = "Kategori event harus dipilih"
-            return
-        }
-        if (waktuMulai.value.isBlank() || waktuSelesai.value.isBlank()) {
-            _errorMessage.value = "Waktu mulai dan selesai harus diisi"
-            return
-        }
-        if (kuota.value <= 0 || kuota.value > 100_000) {
-            _errorMessage.value = "Kuota peserta harus di antara 1 sampai 100000"
-            return
-        }
-        val priceValue = resolvePriceValue()
-        if (priceValue == null) {
-            _errorMessage.value = "Harga event tidak valid"
-            return
-        }
         val venueOrPlatform = aplikasiTempat.value.trim()
         val addressOrLink = alamat.value.trim()
+        val latStr = latitude.value.trim()
+        val lngStr = longitude.value.trim()
+
+        val errors = mutableMapOf<String, String>()
+        if (title.isBlank()) errors["title"] = "Nama event harus diisi"
+        if (title.length > 255) errors["title"] = "Nama event maksimal 255 karakter"
+        if (desc.isBlank()) errors["description"] = "Deskripsi event harus diisi"
+        if (desc.length > 5000) errors["description"] = "Deskripsi event maksimal 5000 karakter"
+        if (selectedCategoryId.value == null) errors["category"] = "Kategori event harus dipilih"
+        if (waktuMulai.value.isBlank()) errors["start_time"] = "Waktu mulai harus diisi"
+        if (waktuSelesai.value.isBlank()) errors["end_time"] = "Waktu selesai harus diisi"
+        if (kuota.value <= 0 || kuota.value > 100_000) errors["capacity"] = "Kuota peserta harus di antara 1 sampai 100000"
+        val priceValue = resolvePriceValue()
+        if (priceValue == null) errors["price"] = "Harga event tidak valid"
         if (eventIsOnline) {
-            if (venueOrPlatform.isBlank()) {
-                _errorMessage.value = "Aplikasi/platform harus diisi untuk event online"
-                return
-            }
-            if (addressOrLink.isBlank()) {
-                _errorMessage.value = "Link event harus diisi untuk event online"
-                return
-            }
+            if (venueOrPlatform.isBlank()) errors["platform"] = "Aplikasi/platform harus diisi"
+            if (addressOrLink.isBlank()) errors["link"] = "Link event harus diisi"
         }
+        if (latStr.isNotBlank() && lngStr.isBlank() || latStr.isBlank() && lngStr.isNotBlank()) {
+            errors["location"] = "Latitude dan longitude harus diisi keduanya"
+        }
+        if (!eventIsOnline && (latStr.isBlank() || lngStr.isBlank())) {
+            errors["location"] = "Pilih lokasi dari peta atau gunakan lokasi saat ini"
+        }
+        if (errors.isNotEmpty()) {
+            _fieldErrors.value = errors
+            _errorMessage.value = errors.values.first()
+            return
+        }
+        _fieldErrors.value = emptyMap()
+        _errorMessage.value = null
 
         val startDt = formatToApiDatetime(waktuMulai.value)
         val endDt = formatEndApiDatetime(waktuMulai.value, waktuSelesai.value)
@@ -286,26 +277,18 @@ class CreateEventViewModel @Inject constructor(
                 val startMillis = sdf.parse(startDt)?.time ?: 0L
                 val endMillis = sdf.parse(endDt)?.time ?: 0L
                 if (endMillis <= startMillis) {
+                    _fieldErrors.value = mapOf("end_time" to "Waktu selesai harus setelah waktu mulai")
                     _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
                     return
                 }
             } catch (_: Exception) {
+                _fieldErrors.value = mapOf("start_time" to "Format tanggal tidak valid")
                 _errorMessage.value = "Format tanggal tidak valid"
                 _isLoading.value = false
                 return
             }
         }
 
-        val latStr = latitude.value.trim()
-        val lngStr = longitude.value.trim()
-        if (latStr.isNotBlank() && lngStr.isBlank() || latStr.isBlank() && lngStr.isNotBlank()) {
-            _errorMessage.value = "Latitude dan longitude harus diisi keduanya atau dikosongkan"
-            return
-        }
-        if (!eventIsOnline && (latStr.isBlank() || lngStr.isBlank())) {
-            _errorMessage.value = "Untuk lokasi offline belum dipilih. Gunakan peta atau tombol 'Gunakan Lokasi Saat Ini'"
-            return
-        }
         val offlineLocationName = if (!eventIsOnline) {
             venueOrPlatform.ifBlank { "Lokasi Event" }
         } else ""
@@ -313,7 +296,8 @@ class CreateEventViewModel @Inject constructor(
             addressOrLink.ifBlank { coordinateFallbackAddress(latStr, lngStr) }
         } else ""
         if (!eventIsOnline && (offlineLocationName.isBlank() || offlineAddress.isBlank())) {
-            _errorMessage.value = "Detail lokasi offline belum lengkap. Pilih lokasi dari peta atau gunakan lokasi saat ini."
+            _fieldErrors.value = mapOf("location" to "Detail lokasi offline belum lengkap")
+            _errorMessage.value = "Detail lokasi offline belum lengkap"
             return
         }
         if (!eventIsOnline) {
@@ -583,7 +567,10 @@ class CreateEventViewModel @Inject constructor(
     }
 
     fun resetPublishSuccess() { _publishSuccess.value = false }
-    fun clearError() { _errorMessage.value = null }
+    fun clearError() {
+        _errorMessage.value = null
+        _fieldErrors.value = emptyMap()
+    }
 
     private fun currentDraft(): EventDraft = EventDraft(
         namaEvent = namaEvent.value,
