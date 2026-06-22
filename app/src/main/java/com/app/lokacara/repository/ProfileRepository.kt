@@ -24,6 +24,8 @@ class ProfileRepository @Inject constructor(
     private val dashboardRepository: DashboardRepository,
     private val imageUrlProvider: ImageUrlProvider
 ) {
+    val dashboard = dashboardRepository.dashboard
+
     suspend fun getProfile(): ApiResult<ProfileResponse> {
         return safeApiCall { apiService.getProfile() }
     }
@@ -31,6 +33,8 @@ class ProfileRepository @Inject constructor(
     suspend fun getDashboard(forceRefresh: Boolean = false): ApiResult<DashboardResponse> {
         return dashboardRepository.getDashboard(forceRefresh)
     }
+
+    fun invalidateDashboard() = dashboardRepository.invalidate()
 
     suspend fun cancelEvent(eventId: Long): ApiResult<MessageResponse> {
         dashboardRepository.invalidate()

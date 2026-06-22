@@ -7,6 +7,7 @@ import com.app.lokacara.data.AnalyticsTracker
 import com.app.lokacara.data.BookmarkSyncHelper
 import com.app.lokacara.data.LatestRequestGate
 import com.app.lokacara.data.mergeEventsById
+import com.app.lokacara.data.eventMatchesCanonicalCity
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.BoundedImagePrefetcher
@@ -177,7 +178,7 @@ class ExploreViewModel @Inject constructor(
 
         val filtered = events.filter { event ->
             val matchName = name.isEmpty() || event.title.contains(name, ignoreCase = true)
-            val matchLoc = loc.isEmpty() || event.location.contains(loc, ignoreCase = true)
+            val matchLoc = eventMatchesCanonicalCity(event, loc)
             val matchCatText = cat.isEmpty() || event.category.contains(cat, ignoreCase = true)
             val matchChip = chip == "Semua" || event.category.equals(chip, ignoreCase = true)
             val matchDate = when (dateFilter) {
@@ -380,7 +381,11 @@ class ExploreViewModel @Inject constructor(
 
             val catId = _categories.value.find { it.name.equals(_selectedCategoryChip.value, ignoreCase = true) }?.id
 
-            when (val result = repository.searchEvents(keyword = query.ifBlank { null }, categoryId = catId)) {
+            when (val result = repository.searchEvents(
+                keyword = query.ifBlank { null },
+                categoryId = catId,
+                location = _eventLocation.value.trim().ifBlank { null }
+            )) {
                 is ApiResult.Success -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
                     val events = result.data.data.map { it.toEvent(imageUrlProvider) }
@@ -416,7 +421,12 @@ class ExploreViewModel @Inject constructor(
 
             val catId = _categories.value.find { it.name.equals(_selectedCategoryChip.value, ignoreCase = true) }?.id
 
-            when (val result = repository.searchEvents(keyword = _eventName.value.ifBlank { null }, categoryId = catId, page = targetPage)) {
+            when (val result = repository.searchEvents(
+                keyword = _eventName.value.ifBlank { null },
+                categoryId = catId,
+                location = _eventLocation.value.trim().ifBlank { null },
+                page = targetPage
+            )) {
                 is ApiResult.Success -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
                     val newEvents = result.data.data.map { it.toEvent(imageUrlProvider) }

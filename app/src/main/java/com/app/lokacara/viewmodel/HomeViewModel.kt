@@ -13,6 +13,7 @@ import com.app.lokacara.data.AnalyticsTracker
 import com.app.lokacara.data.BookmarkSyncHelper
 import com.app.lokacara.data.HomeCache
 import com.app.lokacara.data.mergeEventsById
+import com.app.lokacara.data.normalizeUpcomingEvents
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.BoundedImagePrefetcher
@@ -144,7 +145,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val response = apiService.getDashboard()
-                _myUpcomingEvents.value = response.joined_events.mapNotNull { it.toUpcomingEvent(imageUrlProvider) }
+                _myUpcomingEvents.value = normalizeUpcomingEvents(
+                    response.joined_events.mapNotNull { it.toUpcomingEvent(imageUrlProvider) }
+                )
             } catch (_: Exception) {
                 _myUpcomingEvents.value = emptyList()
             }

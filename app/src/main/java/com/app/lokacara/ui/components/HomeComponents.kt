@@ -351,21 +351,27 @@ fun CategoryEventSection(
 fun UpcomingEventSection(
     upcomingEvents: List<UpcomingEvent>?,
     onEventClick: (Long) -> Unit,
-    onExploreClick: () -> Unit
+    onExploreClick: () -> Unit,
+    onSeeAll: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp, bottom = 16.dp)
     ) {
-        Text(
-            text = "Event Mendatang",
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 22.sp,
-            color = Color.Black,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("Event Mendatang", fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Gray900)
+                Text("Agenda terdekatmu", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)
+            }
+            TextButton(onClick = onSeeAll) {
+                Text("Lihat Semua", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = Primary500)
+            }
+        }
 
         if (upcomingEvents == null) {
             // Loading state for upcoming events if needed
@@ -375,11 +381,12 @@ fun UpcomingEventSection(
         } else if (upcomingEvents.isEmpty()) {
             UpcomingEmptyState(onExploreClick)
         } else {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(upcomingEvents, key = { it.id }, contentType = { "upcoming_event" }) { event ->
+                UpcomingEventHero(upcomingEvents.first(), onClick = { onEventClick(upcomingEvents.first().id) })
+                upcomingEvents.drop(1).take(3).forEach { event ->
                     UpcomingEventCard(event = event, onClick = { onEventClick(event.id) })
                 }
             }
@@ -429,7 +436,7 @@ fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.width(280.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -468,6 +475,51 @@ fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingEventHero(event: UpcomingEvent, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(3.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().height(190.dp)) {
+            AsyncImage(
+                model = event.imageUrl,
+                contentDescription = event.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xE61A2433)))
+                )
+            )
+            Surface(
+                color = SvgOrange,
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.align(Alignment.TopStart).padding(14.dp)
+            ) {
+                Text(
+                    "PALING DEKAT",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
+            }
+            Column(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
+                Text(event.title, fontFamily = NunitoFont, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(4.dp))
+                Text("${event.date}  |  ${event.time}", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Color.White.copy(alpha = .9f))
+                Text(event.location, fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Secondary100, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

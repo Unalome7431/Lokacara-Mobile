@@ -54,6 +54,7 @@ class CreateEventViewModel @Inject constructor(
     val priceAmount = MutableStateFlow("")
     val aplikasiTempat = MutableStateFlow("")
     val alamat = MutableStateFlow("")
+    val city = MutableStateFlow("")
     val deskripsi = MutableStateFlow("")
     val kuota = MutableStateFlow(50)
     val posterUri = MutableStateFlow<Uri?>(null)
@@ -115,6 +116,7 @@ class CreateEventViewModel @Inject constructor(
                             latitude.value = event.latitude?.toString().orEmpty()
                             longitude.value = event.longitude?.toString().orEmpty()
                             alamat.value = event.address.orEmpty()
+                            city.value = event.city.orEmpty()
                             aplikasiTempat.value = event.location_name.orEmpty()
                         } else {
                             isOnline.value = true
@@ -122,6 +124,7 @@ class CreateEventViewModel @Inject constructor(
                             aplikasiTempat.value = event.platform_name.orEmpty()
                             latitude.value = ""
                             longitude.value = ""
+                            city.value = ""
                         }
 
                         val eventPrice = event.price ?: 0
@@ -166,6 +169,7 @@ class CreateEventViewModel @Inject constructor(
             priceAmount.value = draft.priceAmount
             aplikasiTempat.value = draft.aplikasiTempat
             alamat.value = draft.alamat
+            city.value = draft.city
             deskripsi.value = draft.deskripsi
             kuota.value = draft.kuota
             selectedCategoryId.value = draft.selectedCategoryId
@@ -235,6 +239,7 @@ class CreateEventViewModel @Inject constructor(
         val desc = deskripsi.value.trim()
         val venueOrPlatform = aplikasiTempat.value.trim()
         val addressOrLink = alamat.value.trim()
+        val cityName = city.value.trim()
         val latStr = latitude.value.trim()
         val lngStr = longitude.value.trim()
 
@@ -325,6 +330,8 @@ class CreateEventViewModel @Inject constructor(
                 offlineLocationName.toRequestBody("text/plain".toMediaTypeOrNull()) else null
             val addrPart = if (!eventIsOnline)
                 offlineAddress.toRequestBody("text/plain".toMediaTypeOrNull()) else null
+            val cityPart = if (!eventIsOnline)
+                cityName.toRequestBody("text/plain".toMediaTypeOrNull()) else null
             val platPart = if (eventIsOnline)
                 venueOrPlatform.toRequestBody("text/plain".toMediaTypeOrNull()) else null
             val linkPart = if (eventIsOnline)
@@ -384,6 +391,7 @@ class CreateEventViewModel @Inject constructor(
                         type = typePart,
                         locationName = locPart,
                         address = addrPart,
+                        city = cityPart,
                         latitude = latPart,
                         longitude = lngPart,
                         platformName = platPart,
@@ -403,6 +411,7 @@ class CreateEventViewModel @Inject constructor(
                         type = typePart,
                         locationName = locPart,
                         address = addrPart,
+                        city = cityPart,
                         latitude = latPart,
                         longitude = lngPart,
                         platformName = platPart,
@@ -479,6 +488,7 @@ class CreateEventViewModel @Inject constructor(
         val lng = location.longitude.toString()
         aplikasiTempat.value = location.name.trim().ifBlank { "Lokasi Event" }
         alamat.value = location.address.trim().ifBlank { coordinateFallbackAddress(lat, lng) }
+        city.value = location.city.trim().ifBlank { city.value }
         latitude.value = lat
         longitude.value = lng
     }
@@ -488,6 +498,7 @@ class CreateEventViewModel @Inject constructor(
         isOnline.value = online
         aplikasiTempat.value = ""
         alamat.value = ""
+        city.value = ""
         latitude.value = ""
         longitude.value = ""
         _errorMessage.value = null
@@ -562,6 +573,7 @@ class CreateEventViewModel @Inject constructor(
         priceAmount.value = ""
         aplikasiTempat.value = ""
         alamat.value = ""
+        city.value = ""
         deskripsi.value = ""
         kuota.value = 50
         posterUri.value = null
@@ -586,6 +598,7 @@ class CreateEventViewModel @Inject constructor(
         priceAmount = priceAmount.value,
         aplikasiTempat = aplikasiTempat.value,
         alamat = alamat.value,
+        city = city.value,
         deskripsi = deskripsi.value,
         kuota = kuota.value,
         selectedCategoryId = selectedCategoryId.value,
@@ -601,6 +614,7 @@ class CreateEventViewModel @Inject constructor(
             !isOnline.value ||
             aplikasiTempat.value.isNotBlank() ||
             alamat.value.isNotBlank() ||
+            city.value.isNotBlank() ||
             deskripsi.value.isNotBlank() ||
             kuota.value != 50 ||
             !isFreePrice.value ||

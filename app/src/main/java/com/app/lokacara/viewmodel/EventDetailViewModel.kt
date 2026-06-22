@@ -23,7 +23,8 @@ import javax.inject.Inject
 enum class EventDetailAction {
     JOIN,
     LEAVE,
-    REMINDER
+    REMINDER,
+    CANCEL
 }
 
 @HiltViewModel
@@ -62,6 +63,9 @@ class EventDetailViewModel @Inject constructor(
 
     private val _isReminderSending = MutableStateFlow(false)
     val isReminderSending: StateFlow<Boolean> = _isReminderSending.asStateFlow()
+
+    private val _isCancelling = MutableStateFlow(false)
+    val isCancelling: StateFlow<Boolean> = _isCancelling.asStateFlow()
 
     private val _isQrLoading = MutableStateFlow(false)
     val isQrLoading: StateFlow<Boolean> = _isQrLoading.asStateFlow()
@@ -222,6 +226,29 @@ class EventDetailViewModel @Inject constructor(
                 }
             }
             _isReminderSending.value = false
+        }
+    }
+
+    fun cancelEvent() {
+        if (currentEventId == 0L || !_isHost.value || _isCancelling.value) return
+        viewModelScope.launch {
+            _isCancelling.value = true
+            _actionError.value = null
+            _successMessage.value = null
+            _lastAction.value = null
+            when (val result = repository.cancelEvent(currentEventId)) {
+                is ApiResult.Success -> {
+                    _successMessage.value = result.data.message.ifBlank { "Event berhasil dibatalkan" }
+                    _lastAction.value = EventDetailAction.CANCEL
+                    SnackbarManager.show("Event berhasil dibatalkan")
+                    loadEvent(currentEventId)
+                }
+                is ApiResult.Error -> {
+                    _actionError.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+            _isCancelling.value = false
         }
     }
 

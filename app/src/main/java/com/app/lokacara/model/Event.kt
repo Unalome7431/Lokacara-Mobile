@@ -16,6 +16,7 @@ data class Event(
     val isBookmarked: Boolean = false,
     val penyelenggara: String = "",
     val address: String? = null,
+    val city: String? = null,
     val platformName: String? = null,
     val link: String? = null,
     val latitude: Double? = null,

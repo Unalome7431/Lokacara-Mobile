@@ -8,8 +8,8 @@ import com.app.lokacara.data.FileStorageManager
 import com.app.lokacara.data.PushTokenManager
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
+import com.app.lokacara.data.mapDashboardCertificates
 import com.app.lokacara.data.remote.ApiResult
-import com.app.lokacara.data.markCertificateDownloaded
 import com.app.lokacara.data.remote.BoundedImagePrefetcher
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.toEvent
@@ -17,6 +17,7 @@ import com.app.lokacara.model.CertificateData
 import com.app.lokacara.model.Event
 import com.app.lokacara.model.UserProfile
 import com.app.lokacara.repository.ProfileRepository
+import com.app.lokacara.repository.CertificateRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import coil.ImageLoader
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     application: Application,
     private val repository: ProfileRepository,
+    private val certificateRepository: CertificateRepository,
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
     private val imageUrlProvider: ImageUrlProvider,
@@ -69,8 +71,17 @@ class ProfileViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     init {
+        observeDashboard()
         loadUserProfile()
         loadDashboard()
+    }
+
+    private fun observeDashboard() {
+        viewModelScope.launch {
+            repository.dashboard.collect { dashboard ->
+                if (dashboard != null) applyDashboard(dashboard)
+            }
+        }
     }
 
     private fun loadUserProfile() {
@@ -128,6 +139,8 @@ class ProfileViewModel @Inject constructor(
         loadDashboard(forceRefresh = true)
     }
 
+    fun refreshDashboard() = loadDashboard(forceRefresh = true)
+
     fun cancelMyEvent(eventId: Long) {
         if (_cancellingEventId.value != null) return
 
@@ -178,28 +191,7 @@ class ProfileViewModel @Inject constructor(
             _isLoading.value = true
             try {
                 when (val result = repository.getDashboard(forceRefresh)) {
-                    is ApiResult.Success -> {
-                        val dashboard = result.data
-                        val (events, certificates) = withContext(Dispatchers.Default) {
-                            val mappedEvents = dashboard.hosted_events.map { it.toEvent(imageUrlProvider) }
-                            val mappedCertificates = dashboard.certificates.map { cert ->
-                                val eventTitle = cert.event_registration?.event?.title ?: "Sertifikat"
-                                CertificateData(
-                                    id = cert.id.toString(),
-                                    title = eventTitle,
-                                    date = cert.issued_at?.take(10) ?: "",
-                                    time = "",
-                                    location = "",
-                                    category = "",
-                                    imageUrl = imageUrlProvider.certificateUrl(cert.file_url)
-                                )
-                            }
-                            mappedEvents to mappedCertificates
-                        }
-                        _myEvents.value = events
-                        _certificates.value = certificates
-                        prefetchProfileImages(events, certificates)
-                    }
+                    is ApiResult.Success -> Unit
                     is ApiResult.Error -> { }
                 }
             } catch (_: Exception) { }
@@ -331,9 +323,53 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun downloadCertificate(cert: CertificateData) {
+        if (cert.eventId == 0L || cert.isDownloading) return
         viewModelScope.launch {
-            _certificates.value = markCertificateDownloaded(_certificates.value, cert.id, cert.imageUrl)
+            updateCertificate(cert.id) { copy(isDownloading = true, errorMessage = null) }
+            when (val result = certificateRepository.saveParticipantCertificate(
+                cert.eventId,
+                cert.id,
+                cert.title
+            )) {
+                is ApiResult.Success -> {
+                    updateCertificate(cert.id) { copy(isDownloading = false, filePath = result.data) }
+                    SnackbarManager.show("Sertifikat berhasil diunduh")
+                }
+                is ApiResult.Error -> {
+                    updateCertificate(cert.id) { copy(isDownloading = false, errorMessage = result.message) }
+                    SnackbarManager.showError(result.message)
+                }
+            }
         }
+    }
+
+    private suspend fun applyDashboard(dashboard: com.app.lokacara.data.remote.dto.DashboardResponse) {
+        val (events, certificates) = withContext(Dispatchers.Default) {
+            dashboard.hosted_events.map { it.toEvent(imageUrlProvider) } to mapDashboardCertificates(dashboard)
+        }
+        _myEvents.value = events
+        _certificates.value = certificates
+        certificates.forEach(::loadCertificatePreview)
+        prefetchProfileImages(events, certificates)
+    }
+
+    fun loadCertificatePreview(cert: CertificateData, forceRefresh: Boolean = false) {
+        if (cert.eventId == 0L || cert.isPreviewLoading || (!forceRefresh && cert.imageUrl != null)) return
+        viewModelScope.launch {
+            updateCertificate(cert.id) { copy(isPreviewLoading = true, errorMessage = null) }
+            when (val result = certificateRepository.cacheParticipantCertificate(cert.eventId, cert.id, forceRefresh)) {
+                is ApiResult.Success -> updateCertificate(cert.id) {
+                    copy(imageUrl = result.data, isPreviewLoading = false, errorMessage = null)
+                }
+                is ApiResult.Error -> updateCertificate(cert.id) {
+                    copy(isPreviewLoading = false, errorMessage = result.message)
+                }
+            }
+        }
+    }
+
+    private fun updateCertificate(id: String, transform: CertificateData.() -> CertificateData) {
+        _certificates.value = _certificates.value.map { if (it.id == id) it.transform() else it }
     }
 
     fun logout(onComplete: () -> Unit) {

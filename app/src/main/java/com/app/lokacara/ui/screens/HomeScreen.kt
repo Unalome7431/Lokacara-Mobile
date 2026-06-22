@@ -155,6 +155,9 @@ fun HomeScreen(
                             },
                             onExploreClick = {
                                 navController.navigate(Screen.Explore.route)
+                            },
+                            onSeeAll = {
+                                navController.navigate(Screen.Tickets.route)
                             }
                         )
                     }

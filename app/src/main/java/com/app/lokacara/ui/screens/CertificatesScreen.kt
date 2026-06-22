@@ -12,6 +12,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +42,7 @@ fun CertificatesScreen(
 ) {
     val certificates by viewModel.certificates.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshDashboard() }
 
     ProfilePageScaffold(title = "Sertifikat", onBack = { navController.navigateBackOrHome() }) {
         if (isLoading && certificates.isEmpty()) {
@@ -86,7 +89,8 @@ fun CertificatesScreen(
                         ) { cert ->
                             CertificateCard(
                                 cert = cert,
-                                onDownload = { viewModel.downloadCertificate(it) }
+                                onDownload = { viewModel.downloadCertificate(it) },
+                                onRetryPreview = { viewModel.loadCertificatePreview(it, forceRefresh = true) }
                             )
                         }
                     }

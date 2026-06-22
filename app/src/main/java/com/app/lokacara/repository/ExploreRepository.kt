@@ -16,10 +16,11 @@ class ExploreRepository @Inject constructor(
     suspend fun searchEvents(
         keyword: String? = null,
         categoryId: Int? = null,
+        location: String? = null,
         page: Int = 1
     ): ApiResult<PaginatedEventsResponse> {
         return safeApiCall {
-            apiService.searchEvents(keyword = keyword, categoryId = categoryId, page = page)
+            apiService.searchEvents(keyword = keyword, categoryId = categoryId, location = location, page = page)
         }
     }
 

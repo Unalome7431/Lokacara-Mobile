@@ -490,7 +490,8 @@ fun MyEventDetailItem(icon: ImageVector, text: String) {
 @Composable
 fun CertificateCard(
     cert: CertificateData,
-    onDownload: (CertificateData) -> Unit = {}
+    onDownload: (CertificateData) -> Unit = {},
+    onRetryPreview: (CertificateData) -> Unit = {}
 ) {
     val gradientBrush = Brush.linearGradient(
         colors = listOf(Primary300, Secondary400)
@@ -507,7 +508,7 @@ fun CertificateCard(
                     .background(Color.White)
             ) {
                 AsyncImage(
-                    model = rememberEventImageRequest(cert.imageUrl ?: cert.filePath, 900),
+                    model = rememberEventImageRequest(cert.imageUrl, 900),
                     contentDescription = "Full Certificate",
                     modifier = Modifier.fillMaxWidth(),
                     contentScale = ContentScale.FillWidth
@@ -527,15 +528,29 @@ fun CertificateCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AsyncImage(
-                model = rememberEventImageRequest(cert.imageUrl ?: cert.filePath, 700),
-                contentDescription = cert.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box(
+                modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(16.dp)).background(Gray100),
+                contentAlignment = Alignment.Center
+            ) {
+                if (cert.imageUrl != null) {
+                    AsyncImage(
+                        model = rememberEventImageRequest(cert.imageUrl, 700),
+                        contentDescription = cert.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                } else if (cert.isPreviewLoading) {
+                    CircularProgressIndicator(color = Primary500, modifier = Modifier.size(30.dp))
+                } else {
+                    TextButton(onClick = { onRetryPreview(cert) }) {
+                        Text("Muat ulang pratinjau", color = Primary500)
+                    }
+                }
+            }
+            cert.errorMessage?.let {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(it, color = SemanticErrorBase, fontFamily = PlusJakartaSansFont, fontSize = 11.sp)
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -586,14 +601,16 @@ fun CertificateCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = { onDownload(cert) },
+                        enabled = !cert.isDownloading,
                         modifier = Modifier.size(36.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Download,
-                            contentDescription = if (isDownloaded) "Sudah diunduh" else "Unduh sertifikat",
-                            tint = if (isDownloaded) Primary500 else Gray500,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (cert.isDownloading) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(
+                                imageVector = Icons.Outlined.Download,
+                                contentDescription = if (isDownloaded) "Sudah diunduh" else "Unduh sertifikat",
+                                tint = if (isDownloaded) Primary500 else Gray500,
+                                modifier = Modifier.size(20.dp)
+                            )
                     }
                 }
             }

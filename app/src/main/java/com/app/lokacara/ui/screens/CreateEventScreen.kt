@@ -113,6 +113,7 @@ fun CreateEventScreen(
     val priceAmount by viewModel.priceAmount.collectAsStateWithLifecycle()
     val aplikasiTempat by viewModel.aplikasiTempat.collectAsStateWithLifecycle()
     val alamat by viewModel.alamat.collectAsStateWithLifecycle()
+    val city by viewModel.city.collectAsStateWithLifecycle()
     val latitude by viewModel.latitude.collectAsStateWithLifecycle()
     val longitude by viewModel.longitude.collectAsStateWithLifecycle()
     val deskripsi by viewModel.deskripsi.collectAsStateWithLifecycle()

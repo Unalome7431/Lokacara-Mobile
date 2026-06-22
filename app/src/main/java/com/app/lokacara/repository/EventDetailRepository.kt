@@ -3,6 +3,7 @@ package com.app.lokacara.repository
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.EventDetailResponse
+import com.app.lokacara.data.remote.dto.MessageResponse
 import com.app.lokacara.data.remote.safeApiCall
 import javax.inject.Inject
 
@@ -12,5 +13,9 @@ class EventDetailRepository @Inject constructor(
 
     suspend fun getEventDetail(eventId: Long): ApiResult<EventDetailResponse> {
         return safeApiCall { apiService.getEventDetail(eventId) }
+    }
+
+    suspend fun cancelEvent(eventId: Long): ApiResult<MessageResponse> {
+        return safeApiCall { apiService.cancelEvent(eventId) }
     }
 }

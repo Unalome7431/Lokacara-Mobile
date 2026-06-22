@@ -32,6 +32,7 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -83,6 +85,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.data.remote.countdownLabel
+import com.app.lokacara.data.canHostCancelEvent
 import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.ReminderSchedulePanel
@@ -126,6 +129,7 @@ fun EventDetailScreen(
     val isRegistered by viewModel.isRegistered.collectAsStateWithLifecycle()
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isJoining by viewModel.isJoining.collectAsStateWithLifecycle()
+    val isCancelling by viewModel.isCancelling.collectAsStateWithLifecycle()
     val isQrLoading by viewModel.isQrLoading.collectAsStateWithLifecycle()
     val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
@@ -133,6 +137,7 @@ fun EventDetailScreen(
 
     val context = LocalContext.current
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showCancelEventConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(eventId) {
         if (eventId > 0L) viewModel.loadEvent(eventId) else navController.navigateBackOrHome()
@@ -195,9 +200,10 @@ fun EventDetailScreen(
                         if (isHost) {
                             item(key = "host_management", contentType = "host_management") {
                                 HostManagementPanel(
-                                    eventId = event.id,
-                                    startDatetime = event.startDatetime,
+                                    event = event,
                                     navController = navController,
+                                    isCancelling = isCancelling,
+                                    onCancelEvent = { showCancelEventConfirm = true }
                                 )
                             }
                         }
@@ -237,6 +243,39 @@ fun EventDetailScreen(
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) {
                     Text(stringResource(R.string.cancel), color = Gray600)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    if (showCancelEventConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isCancelling) showCancelEventConfirm = false },
+            title = { Text("Batalkan Event", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Event \"${event.title}\" akan dibatalkan dan peserta akan menerima pemberitahuan.",
+                    fontFamily = PlusJakartaSansFont,
+                    color = Gray600
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isCancelling,
+                    onClick = {
+                        showCancelEventConfirm = false
+                        viewModel.cancelEvent()
+                    }
+                ) {
+                    if (isCancelling) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    else Text("Batalkan Event", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !isCancelling, onClick = { showCancelEventConfirm = false }) {
+                    Text("Kembali", color = Gray600)
                 }
             },
             containerColor = Color.White,
@@ -669,9 +708,10 @@ private fun FlatEventDescription(text: String) {
 
 @Composable
 private fun HostManagementPanel(
-    eventId: Long,
-    startDatetime: String,
+    event: Event,
     navController: NavController,
+    isCancelling: Boolean,
+    onCancelEvent: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -692,14 +732,14 @@ private fun HostManagementPanel(
                 title = stringResource(R.string.event_detail_view_attendees),
                 subtitle = "Pantau peserta",
                 modifier = Modifier.weight(1f),
-                onClick = { navController.navigate(Screen.Attendees.createRoute(eventId)) }
+                onClick = { navController.navigate(Screen.Attendees.createRoute(event.id)) }
             )
             HostActionCard(
                 icon = Icons.Outlined.QrCode2,
                 title = stringResource(R.string.event_detail_scan_qr),
                 subtitle = "Check-in cepat",
                 modifier = Modifier.weight(1f),
-                onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) }
+                onClick = { navController.navigate(Screen.QrScan.createRoute(event.id)) }
             )
         }
         HostActionCard(
@@ -707,9 +747,27 @@ private fun HostManagementPanel(
             title = "Edit Detail Acara",
             subtitle = "Ubah informasi event",
             modifier = Modifier.fillMaxWidth(),
-            onClick = { navController.navigate("edit_event/$eventId") }
+            onClick = { navController.navigate("edit_event/${event.id}") }
         )
-        ReminderSchedulePanel(startDatetime = startDatetime)
+        HostActionCard(
+            icon = Icons.Outlined.WorkspacePremium,
+            title = "Kelola Sertifikat",
+            subtitle = "Atur dan kirim sertifikat",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(Screen.CertificateManagement.createRoute(event.id)) }
+        )
+        if (canHostCancelEvent(event)) {
+            HostActionCard(
+                icon = Icons.Outlined.Cancel,
+                title = if (isCancelling) "Membatalkan Event..." else "Batalkan Event",
+                subtitle = "Beri tahu seluruh peserta",
+                modifier = Modifier.fillMaxWidth(),
+                tint = SemanticErrorBase,
+                enabled = !isCancelling,
+                onClick = onCancelEvent
+            )
+        }
+        ReminderSchedulePanel(startDatetime = event.startDatetime)
     }
 }
 
@@ -719,16 +777,18 @@ private fun HostActionCard(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    tint: Color = Secondary500,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(enabled = enabled, onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, contentDescription = null, tint = Secondary500, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
             Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Gray900)
             Text(subtitle, fontFamily = PlusJakartaSansFont, fontSize = 11.sp, color = Gray500, lineHeight = 15.sp)
         }

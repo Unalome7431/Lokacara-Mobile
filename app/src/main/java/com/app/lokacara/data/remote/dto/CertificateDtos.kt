@@ -5,6 +5,29 @@ data class CertificateTemplateUploadResponse(
     val template_path: String
 )
 
+data class OrganizerCertificateStateResponse(
+    val event: OrganizerCertificateEventDto,
+    val is_eligible: Boolean,
+    val has_template: Boolean,
+    val issued_count: Int,
+    val last_issued_at: String? = null,
+    val status: String,
+    val layout: OrganizerCertificateLayoutDto
+)
+
+data class OrganizerCertificateEventDto(val id: Long, val title: String, val end_datetime: String)
+data class OrganizerCertificateLayoutDto(
+    val font_family: String? = null,
+    val font_color: String? = null,
+    val font_size: String? = null,
+    val x_pos: Float? = null,
+    val is_x_center: Boolean? = null,
+    val y_pos: Float? = null,
+    val is_y_center: Boolean? = null,
+    val max_width: Float? = null,
+    val max_height: Float? = null
+)
+
 data class DistributeCertificatesRequest(
     val template_path: String,
     val font_family: String,
