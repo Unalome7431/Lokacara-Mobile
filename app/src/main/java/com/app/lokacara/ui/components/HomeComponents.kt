@@ -351,24 +351,29 @@ fun CategoryEventSection(
 fun UpcomingEventSection(
     upcomingEvents: List<UpcomingEvent>?,
     onEventClick: (Long) -> Unit,
-    onExploreClick: () -> Unit
+    onExploreClick: () -> Unit,
+    onSeeAll: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp, bottom = 16.dp)
     ) {
-        Text(
-            text = "Event Mendatang",
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 22.sp,
-            color = Color.Black,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("Event Mendatang", fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Gray900)
+                Text("Agenda terdekatmu", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Gray500)
+            }
+            TextButton(onClick = onSeeAll) {
+                Text("Lihat Semua", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = Primary500)
+            }
+        }
 
         if (upcomingEvents == null) {
-            // Loading state for upcoming events if needed
             Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = SvgPrimaryBlue, modifier = Modifier.size(24.dp))
             }
@@ -376,10 +381,11 @@ fun UpcomingEventSection(
             UpcomingEmptyState(onExploreClick)
         } else {
             LazyRow(
+                modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(upcomingEvents, key = { it.id }, contentType = { "upcoming_event" }) { event ->
+                items(upcomingEvents, key = { it.id }, contentType = { "upcoming_compact" }) { event ->
                     UpcomingEventCard(event = event, onClick = { onEventClick(event.id) })
                 }
             }
@@ -424,49 +430,56 @@ fun UpcomingEmptyState(onExploreClick: () -> Unit) {
 
 @Composable
 fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
+    Surface(
+        modifier = Modifier
+            .width(160.dp)
+            .height(220.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.width(280.dp)
+        color = Color.White,
+        shadowElevation = 4.dp
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column {
             AsyncImage(
                 model = event.imageUrl,
-                contentDescription = null,
+                contentDescription = event.title,
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Text(
                     text = event.title,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    maxLines = 1,
+                    fontSize = 12.sp,
+                    color = Color.Black,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Secondary500, modifier = Modifier.size(11.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = event.location,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 10.sp,
+                        color = Gray600,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${event.date} • ${event.time}",
+                    text = "${event.date}  •  ${event.time}",
                     fontFamily = PlusJakartaSansFont,
-                    fontSize = 12.sp,
-                    color = Gray500
-                )
-                Text(
-                    text = event.location,
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 12.sp,
-                    color = SvgPrimaryBlue,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    fontSize = 9.sp,
+                    color = SvgOrange,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
             }
         }
@@ -606,6 +619,8 @@ fun LocationPickerDialog(
             TextButton(onClick = onDismiss) {
                 Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray500)
             }
-        }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
     )
 }

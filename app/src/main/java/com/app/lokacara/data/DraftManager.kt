@@ -20,6 +20,7 @@ data class EventDraft(
     val isOnline: Boolean = true,
     val aplikasiTempat: String = "",
     val alamat: String = "",
+    val city: String = "",
     val deskripsi: String = "",
     val kuota: Int = 50,
     val isFreePrice: Boolean = true,
@@ -39,6 +40,7 @@ class DraftManager(private val context: Context) {
         val IS_ONLINE = booleanPreferencesKey("draft_is_online")
         val APLIKASI_TEMPAT = stringPreferencesKey("draft_aplikasi_tempat")
         val ALAMAT = stringPreferencesKey("draft_alamat")
+        val CITY = stringPreferencesKey("draft_city")
         val DESKRIPSI = stringPreferencesKey("draft_deskripsi")
         val KUOTA = intPreferencesKey("draft_kuota")
         val IS_FREE_PRICE = booleanPreferencesKey("draft_is_free_price")
@@ -64,6 +66,7 @@ class DraftManager(private val context: Context) {
             prefs[IS_ONLINE] = draft.isOnline
             prefs[APLIKASI_TEMPAT] = draft.aplikasiTempat
             prefs[ALAMAT] = draft.alamat
+            prefs[CITY] = draft.city
             prefs[DESKRIPSI] = draft.deskripsi
             prefs[KUOTA] = draft.kuota
             prefs[IS_FREE_PRICE] = draft.isFreePrice
@@ -87,6 +90,7 @@ class DraftManager(private val context: Context) {
             isOnline = prefs[IS_ONLINE] ?: true,
             aplikasiTempat = prefs[APLIKASI_TEMPAT] ?: "",
             alamat = prefs[ALAMAT] ?: "",
+            city = prefs[CITY] ?: "",
             deskripsi = prefs[DESKRIPSI] ?: "",
             kuota = prefs[KUOTA] ?: 50,
             isFreePrice = prefs[IS_FREE_PRICE] ?: true,

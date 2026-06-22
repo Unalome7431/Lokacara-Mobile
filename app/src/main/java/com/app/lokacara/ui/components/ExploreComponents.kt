@@ -227,7 +227,7 @@ fun ExpandedSearchSection(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        SearchAutocompleteField(
+        SearchableLocationDropdown(
             value = eventLocation,
             onValueChange = onEventLocationChange,
             onClear = onClearEventLocation,
@@ -249,8 +249,9 @@ fun ExpandedSearchSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchAutocompleteField(
+private fun SearchableLocationDropdown(
     value: String,
     onValueChange: (String) -> Unit,
     onClear: () -> Unit,
@@ -261,11 +262,16 @@ private fun SearchAutocompleteField(
     focusManager: androidx.compose.ui.focus.FocusManager
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val filtered = remember(value) {
+    val filtered = remember(value, suggestions) {
         if (value.isBlank()) suggestions else suggestions.filter { it.contains(value, true) }
     }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    ExposedDropdownMenuBox(
+        expanded = expanded && filtered.isNotEmpty(),
+        onExpandedChange = {
+            if (suggestions.isNotEmpty()) expanded = it
+        }
+    ) {
         OutlinedTextField(
             value = value,
             onValueChange = { newVal ->
@@ -275,30 +281,25 @@ private fun SearchAutocompleteField(
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
-                Row {
-                    if (value.isNotEmpty()) {
-                        IconButton(onClick = onClear) {
-                            Icon(Icons.Filled.Close, null, tint = Gray400, modifier = Modifier.size(18.dp))
-                        }
+                if (value.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(Icons.Filled.Close, null, tint = Gray400, modifier = Modifier.size(18.dp))
                     }
-                    Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp))
                 }
             },
+            leadingIcon = { Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusChanged { f ->
-                    if (f.isFocused && suggestions.isNotEmpty()) expanded = true
-                },
+                .menuAnchor(),
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
-        DropdownMenu(
+        ExposedDropdownMenu(
             expanded = expanded && filtered.isNotEmpty(),
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
+            onDismissRequest = { expanded = false }
         ) {
             filtered.forEach { option ->
                 DropdownMenuItem(

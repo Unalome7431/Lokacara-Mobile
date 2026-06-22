@@ -278,7 +278,9 @@ fun LoginScreen(
                 }) {
                     Text("Batal", color = Gray500)
                 }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }

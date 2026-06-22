@@ -90,8 +90,8 @@ fun TicketsScreen(
     val todayEvents by viewModel.todayEvents.collectAsStateWithLifecycle()
     val historyEvents by viewModel.historyEvents.collectAsStateWithLifecycle()
     val tabs = listOf(
-        "${stringResource(R.string.tab_tickets_upcoming)} (${upcomingEvents.size})",
-        "${stringResource(R.string.tab_tickets_history)} (${historyEvents.size})"
+        stringResource(R.string.tab_tickets_upcoming),
+        stringResource(R.string.tab_tickets_history)
     )
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -119,37 +119,21 @@ fun TicketsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Tiket Saya",
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 24.sp,
-                        color = Gray900
-                    )
-                    Text(
-                        text = "Daftar event yang kamu ikuti",
-                        fontFamily = PlusJakartaSansFont,
-                        fontSize = 13.sp,
-                        color = Gray500
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        onClick = { navController.navigate(com.app.lokacara.ui.navigation.Screen.Notification.route) },
-                        shape = CircleShape,
-                        color = Color.White,
-                        shadowElevation = 2.dp,
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.Notifications, null, tint = Gray900, modifier = Modifier.size(22.dp))
-                        }
-                    }
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo_lokacara),
+                    contentDescription = "Logo",
+                    modifier = Modifier.height(34.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Tiket Saya",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    color = Color.Black
+                )
             }
         }
 
@@ -242,7 +226,9 @@ fun MendatangContent(
             }
         } else {
             items(upcomingEvents, key = { it.id }, contentType = { "upcoming_ticket" }) { event ->
-                SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
+                Box(modifier = Modifier.animateItem()) {
+                    SmallUpcomingEventCard(event, onClick = { selectedEvent = event })
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -293,7 +279,9 @@ fun RiwayatContent(
             }
         } else {
             items(historyEvents, key = { it.id }, contentType = { "history_ticket" }) { event ->
-                HistoryItemCard(event, onClick = { selectedEvent = event })
+                Box(modifier = Modifier.animateItem()) {
+                    HistoryItemCard(event, onClick = { selectedEvent = event })
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }

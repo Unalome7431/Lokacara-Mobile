@@ -9,6 +9,7 @@ data class EventDto(
     val is_free: Boolean? = null,
     val location_name: String? = null,
     val address: String? = null,
+    val city: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
     val platform_name: String? = null,

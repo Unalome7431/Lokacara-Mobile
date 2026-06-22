@@ -77,13 +77,6 @@ fun NotificationScreen(
                 color = Gray900
             )
         }
-        Text(
-            text = "Aktivitas dan informasi dari event yang kamu ikuti.",
-            fontFamily = PlusJakartaSansFont,
-            fontSize = 13.sp,
-            color = Gray500,
-            modifier = Modifier.padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 16.dp)
-        )
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             tabs.forEachIndexed { index, title ->
                 Column(

@@ -30,7 +30,7 @@
     <string name="settings_help_center">Pusat Bantuan</string>
     <string name="settings_terms_conditions">Syarat &amp; Ketentuan</string>
     <string name="settings_privacy_policy">Kebijakan Privasi</string>
-    <string name="settings_delete_account">Keluar dari Akun</string>
+    <string name="settings_delete_account">Hapus Akun</string>
 
     <!-- Profile Menu Items -->
     <string name="profile_my_events">Event Saya</string>

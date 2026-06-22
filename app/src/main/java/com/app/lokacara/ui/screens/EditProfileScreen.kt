@@ -60,6 +60,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.components.MapLocation
+import com.app.lokacara.ui.components.MapSearchPicker
 import com.app.lokacara.ui.components.ProfileAvatarImage
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.navigation.navigateBackOrHome
@@ -87,6 +89,7 @@ fun EditProfileScreen(
     var editField by remember { mutableStateOf<UserSessionManager.Field?>(null) }
     var editFieldValue by remember { mutableStateOf("") }
     var editKeyboardType by remember { mutableStateOf(KeyboardType.Text) }
+    var showLocationPicker by remember { mutableStateOf(false) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var previousProfileUrl by remember { mutableStateOf<String?>(null) }
 
@@ -120,6 +123,17 @@ fun EditProfileScreen(
             onSave = { newValue ->
                 editField?.let { field -> viewModel.updateProfileField(field, newValue) }
                 showDialog = false
+            }
+        )
+    }
+
+    if (showLocationPicker) {
+        LocationPickerDialog(
+            selectedLocationName = userProfile.location,
+            onDismiss = { showLocationPicker = false },
+            onSelected = { location ->
+                viewModel.updateProfileField(UserSessionManager.Field.LOCATION, location)
+                showLocationPicker = false
             }
         )
     }
@@ -205,7 +219,7 @@ fun EditProfileScreen(
                 )
                 HorizontalDivider(color = Gray100, thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
                 ProfileDetailRow(
-                    label = "Nomor",
+                    label = "Nomor Telepon",
                     value = userProfile.phone,
                     onClick = {
                         editField = UserSessionManager.Field.PHONE
@@ -218,12 +232,7 @@ fun EditProfileScreen(
                 ProfileDetailRow(
                     label = "Lokasi",
                     value = userProfile.location,
-                    onClick = {
-                        editField = UserSessionManager.Field.LOCATION
-                        editFieldValue = userProfile.location
-                        editKeyboardType = KeyboardType.Text
-                        showDialog = true
-                    }
+                    onClick = { showLocationPicker = true }
                 )
             }
 
@@ -325,6 +334,44 @@ fun EditFieldDialog(
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Medium
                 )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+private fun LocationPickerDialog(
+    selectedLocationName: String,
+    onDismiss: () -> Unit,
+    onSelected: (String) -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Pilih Lokasi",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Gray900
+            )
+        },
+        text = {
+            MapSearchPicker(
+                selectedLocationName = selectedLocationName,
+                onLocationSelected = { location ->
+                    val displayName = location.city.ifBlank { location.name }
+                    onSelected(displayName)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup", fontFamily = NunitoFont, fontWeight = FontWeight.Bold, color = Primary500)
             }
         },
         containerColor = Color.White,

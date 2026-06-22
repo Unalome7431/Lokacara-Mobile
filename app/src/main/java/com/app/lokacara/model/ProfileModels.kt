@@ -14,13 +14,17 @@ data class MyEventData(
 @Immutable
 data class CertificateData(
     val id: String,
+    val eventId: Long = 0L,
     val title: String,
     val date: String,
     val time: String,
     val location: String,
     val category: String,
     val imageUrl: String? = null,
-    val filePath: String? = null
+    val filePath: String? = null,
+    val isPreviewLoading: Boolean = false,
+    val isDownloading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 @Immutable

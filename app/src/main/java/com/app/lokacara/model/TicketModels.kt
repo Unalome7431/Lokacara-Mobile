@@ -11,7 +11,9 @@ data class UpcomingEvent(
     val location: String,
     val type: String,
     val imageUrl: String? = null,
-    val qrToken: String? = null
+    val qrToken: String? = null,
+    val startEpoch: Long = 0L,
+    val status: String = "active"
 )
 
 @Immutable

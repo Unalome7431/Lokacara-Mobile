@@ -79,6 +79,7 @@ import com.app.lokacara.ui.theme.Gray200
 import com.app.lokacara.ui.theme.Gray400
 import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray600
+import com.app.lokacara.ui.theme.Gray700
 import com.app.lokacara.ui.theme.Gray900
 import com.app.lokacara.ui.theme.NunitoFont
 import com.app.lokacara.ui.theme.PlusJakartaSansFont
@@ -147,6 +148,11 @@ fun CertificateManagementScreen(
         title = "Kelola Sertifikat",
         onBack = { navController.navigateBackOrHome() }
     ) {
+        if (state.selectedUri != null || state.restoredTemplatePath != null) {
+            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                CertificatePreview(state)
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp),
@@ -160,9 +166,7 @@ fun CertificateManagementScreen(
                     onUpload = viewModel::uploadTemplate
                 )
             }
-            if (state.selectedUri != null) {
-                item { CertificatePreview(state) }
-            }
+            if (state.distributionStatus != null) item { DistributionSummary(state) }
             item {
                 LayoutControls(
                     state = state,
@@ -293,7 +297,7 @@ private fun TemplateSection(
             enabled = state.canUpload,
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Primary100)
         ) {
             if (state.isUploading) {
                 CircularProgressIndicator(Modifier.size(19.dp), color = Color.White, strokeWidth = 2.dp)
@@ -302,7 +306,7 @@ private fun TemplateSection(
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                if (state.templatePath == null) "Unggah Template" else "Unggah Ulang Template",
+                if (state.templatePath == null && state.restoredTemplatePath == null) "Unggah Template" else "Unggah Ulang Template",
                 fontFamily = PlusJakartaSansFont,
                 fontWeight = FontWeight.Bold
             )
@@ -313,9 +317,10 @@ private fun TemplateSection(
 @Composable
 private fun CertificatePreview(state: CertificateManagementUiState) {
     val context = LocalContext.current
-    val previewRequest = remember(context, state.selectedUri) {
+    val previewSource = state.selectedUri ?: state.restoredTemplatePath
+    val previewRequest = remember(context, previewSource) {
         ImageRequest.Builder(context)
-            .data(state.selectedUri)
+            .data(previewSource)
             .size(1400)
             .precision(Precision.INEXACT)
             .crossfade(false)
@@ -362,6 +367,32 @@ private fun CertificatePreview(state: CertificateManagementUiState) {
             fontSize = 11.sp,
             color = Gray500
         )
+    }
+}
+
+@Composable
+private fun DistributionSummary(state: CertificateManagementUiState) {
+    SectionSurface {
+        SectionTitle("Status Pengiriman", Icons.Outlined.CheckCircle)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            when (state.distributionStatus) {
+                "processing" -> "Sertifikat sedang dibuat dan didistribusikan."
+                "distributed" -> "Sertifikat sebelumnya sudah didistribusikan."
+                else -> "Konfigurasi sertifikat sebelumnya tersedia."
+            },
+            fontFamily = PlusJakartaSansFont,
+            color = Gray700
+        )
+        if (state.isLocalFallback) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Data dipulihkan dari perangkat ini.",
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 11.sp,
+                color = Gray500
+            )
+        }
     }
 }
 
@@ -476,7 +507,8 @@ private fun StatusMessage(message: String, isError: Boolean, onDismiss: () -> Un
 @Composable
 private fun SendSection(state: CertificateManagementUiState, onSend: () -> Unit) {
     val explanation = when {
-        state.templatePath.isNullOrBlank() -> "Unggah template untuk melanjutkan."
+        state.templatePath.isNullOrBlank() && state.restoredTemplatePath.isNullOrBlank() -> "Unggah template untuk melanjutkan."
+        state.templatePath.isNullOrBlank() && state.restoredTemplatePath != null -> "Template lokal sudah dipulihkan, unggah ulang untuk mengirim sertifikat."
         !state.isEventFinished -> "Pengiriman tersedia setelah event selesai."
         state.presentAttendeeCount <= 0 -> "Belum ada peserta hadir yang dapat menerima sertifikat."
         else -> "Sertifikat akan dikirim kepada ${state.presentAttendeeCount} peserta hadir."
@@ -495,7 +527,7 @@ private fun SendSection(state: CertificateManagementUiState, onSend: () -> Unit)
             enabled = state.canDistribute,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Gray200)
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Primary100)
         ) {
             if (state.isDistributing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
             else Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null, modifier = Modifier.size(20.dp))

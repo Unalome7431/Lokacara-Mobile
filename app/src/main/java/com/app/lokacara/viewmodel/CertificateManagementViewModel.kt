@@ -5,6 +5,9 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.CertificateDraft
+import com.app.lokacara.data.CertificateDraftManager
+import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.dto.CertificateLayoutConfig
 import com.app.lokacara.repository.CertificateRepository
@@ -17,6 +20,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 data class CertificateManagementUiState(
@@ -26,6 +32,7 @@ data class CertificateManagementUiState(
     val selectedMimeType: String = "",
     val selectedFileSize: Long = 0L,
     val templatePath: String? = null,
+    val restoredTemplatePath: String? = null,
     val fontFamily: String = "Roboto",
     val fontSize: String = "Medium",
     val fontColor: String = "#000000",
@@ -39,7 +46,10 @@ data class CertificateManagementUiState(
     val isUploading: Boolean = false,
     val isDistributing: Boolean = false,
     val successMessage: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val distributionStatus: String? = null,
+    val lastDistributedAt: Long? = null,
+    val isLocalFallback: Boolean = false
 ) {
     val canUpload: Boolean
         get() = selectedUri != null && !isUploading && !isDistributing
@@ -52,18 +62,66 @@ data class CertificateManagementUiState(
 @HiltViewModel
 class CertificateManagementViewModel @Inject constructor(
     application: Application,
-    private val repository: CertificateRepository
+    private val repository: CertificateRepository,
+    private val draftManager: CertificateDraftManager,
+    private val userSessionManager: UserSessionManager
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(CertificateManagementUiState())
     val uiState: StateFlow<CertificateManagementUiState> = _uiState.asStateFlow()
 
     private var currentEventId: Long = 0L
+    private var currentUserId: Long = 0L
+    private var persistJob: Job? = null
 
     fun initialize(eventId: Long) {
         if (eventId <= 0L || currentEventId == eventId) return
         currentEventId = eventId
-        loadEligibility()
+        viewModelScope.launch {
+            currentUserId = userSessionManager.userSession.first().userId
+            restoreState()
+            loadEligibility()
+        }
+    }
+
+    private suspend fun restoreState() {
+        draftManager.load(currentUserId, currentEventId)?.let(::applyLocalDraft)
+        when (val remote = repository.getOrganizerState(currentEventId)) {
+            is ApiResult.Error -> Unit
+            is ApiResult.Success -> {
+                val layout = remote.data.layout
+                _uiState.value = _uiState.value.copy(
+                    eventTitle = remote.data.event.title,
+                    isEventFinished = remote.data.is_eligible,
+                    fontFamily = layout.font_family ?: "Roboto",
+                    fontSize = layout.font_size ?: "Medium",
+                    fontColor = layout.font_color ?: "#000000",
+                    xPosition = layout.x_pos ?: 50f,
+                    isXCentered = layout.is_x_center ?: true,
+                    yPosition = layout.y_pos ?: 50f,
+                    isYCentered = layout.is_y_center ?: true,
+                    distributionStatus = remote.data.status,
+                    isLocalFallback = false
+                )
+                persistNow()
+            }
+        }
+    }
+
+    private fun applyLocalDraft(draft: CertificateDraft) {
+        _uiState.value = _uiState.value.copy(
+            restoredTemplatePath = draft.templateFilePath?.takeIf { java.io.File(it).exists() },
+            fontFamily = draft.fontFamily,
+            fontSize = draft.fontSize,
+            fontColor = draft.fontColor,
+            xPosition = draft.xPosition,
+            isXCentered = draft.isXCentered,
+            yPosition = draft.yPosition,
+            isYCentered = draft.isYCentered,
+            distributionStatus = draft.distributionStatus,
+            lastDistributedAt = draft.lastDistributedAt,
+            isLocalFallback = true
+        )
     }
 
     private fun loadEligibility() {
@@ -150,6 +208,11 @@ class CertificateManagementViewModel @Inject constructor(
             } else {
                 _uiState.value.copy(errorMessage = error, successMessage = null)
             }
+            if (error == null && currentUserId > 0L) {
+                val path = draftManager.copyTemplate(currentUserId, currentEventId, uri)
+                _uiState.value = _uiState.value.copy(restoredTemplatePath = path)
+                persistNow()
+            }
         }
     }
 
@@ -198,10 +261,15 @@ class CertificateManagementViewModel @Inject constructor(
                 isYCentered = state.isYCentered
             ).toDistributeRequest(templatePath)
             when (val result = repository.distribute(currentEventId, request)) {
-                is ApiResult.Success -> _uiState.value = _uiState.value.copy(
-                    isDistributing = false,
-                    successMessage = "Pembuatan dan pengiriman sertifikat telah dimulai."
-                )
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isDistributing = false,
+                        successMessage = "Pembuatan dan pengiriman sertifikat telah dimulai.",
+                        distributionStatus = "processing",
+                        lastDistributedAt = System.currentTimeMillis()
+                    )
+                    persistNow()
+                }
                 is ApiResult.Error -> _uiState.value = _uiState.value.copy(
                     isDistributing = false,
                     errorMessage = result.message
@@ -210,23 +278,53 @@ class CertificateManagementViewModel @Inject constructor(
         }
     }
 
-    fun setFontFamily(value: String) = updateState { copy(fontFamily = value) }
-    fun setFontSize(value: String) = updateState { copy(fontSize = value) }
+    fun setFontFamily(value: String) = updateAndPersist { copy(fontFamily = value) }
+    fun setFontSize(value: String) = updateAndPersist { copy(fontSize = value) }
     fun setFontColor(value: String) {
         val normalized = value.trim().uppercase(Locale.US)
-        if (HEX_COLOR.matches(normalized)) updateState { copy(fontColor = normalized, errorMessage = null) }
+        if (HEX_COLOR.matches(normalized)) updateAndPersist { copy(fontColor = normalized, errorMessage = null) }
         else showError("Gunakan kode warna heksadesimal, misalnya #000000.")
     }
-    fun setXCentered(value: Boolean) = updateState { copy(isXCentered = value) }
-    fun setYCentered(value: Boolean) = updateState { copy(isYCentered = value) }
-    fun setXPosition(value: Float) = updateState { copy(xPosition = value.coerceIn(0f, 100f)) }
-    fun setYPosition(value: Float) = updateState { copy(yPosition = value.coerceIn(0f, 100f)) }
+    fun setXCentered(value: Boolean) = updateAndPersist { copy(isXCentered = value) }
+    fun setYCentered(value: Boolean) = updateAndPersist { copy(isYCentered = value) }
+    fun setXPosition(value: Float) = updateAndPersist { copy(xPosition = value.coerceIn(0f, 100f)) }
+    fun setYPosition(value: Float) = updateAndPersist { copy(yPosition = value.coerceIn(0f, 100f)) }
     fun clearMessage() = updateState { copy(errorMessage = null, successMessage = null) }
 
     private fun showError(message: String) = updateState { copy(errorMessage = message, successMessage = null) }
 
     private fun updateState(block: CertificateManagementUiState.() -> CertificateManagementUiState) {
         _uiState.value = _uiState.value.block()
+    }
+
+    private fun updateAndPersist(block: CertificateManagementUiState.() -> CertificateManagementUiState) {
+        updateState(block)
+        persistJob?.cancel()
+        persistJob = viewModelScope.launch {
+            delay(200)
+            persistNow()
+        }
+    }
+
+    private suspend fun persistNow() {
+        if (currentUserId <= 0L || currentEventId <= 0L) return
+        val state = _uiState.value
+        draftManager.save(
+            currentUserId,
+            currentEventId,
+            CertificateDraft(
+                templateFilePath = state.restoredTemplatePath,
+                fontFamily = state.fontFamily,
+                fontSize = state.fontSize,
+                fontColor = state.fontColor,
+                xPosition = state.xPosition,
+                isXCentered = state.isXCentered,
+                yPosition = state.yPosition,
+                isYCentered = state.isYCentered,
+                distributionStatus = state.distributionStatus,
+                lastDistributedAt = state.lastDistributedAt
+            )
+        )
     }
 
     private fun hasEventFinished(endDatetime: String): Boolean {

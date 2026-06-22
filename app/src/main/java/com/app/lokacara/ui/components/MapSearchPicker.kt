@@ -90,6 +90,7 @@ import kotlin.coroutines.resume
 data class MapLocation(
     val name: String,
     val address: String,
+    val city: String,
     val latitude: Double,
     val longitude: Double
 )
@@ -495,6 +496,10 @@ private suspend fun resolveMapLocation(
             ?.firstOrNull()
 
         val addressLine = address?.getAddressLine(0)?.trim().orEmpty()
+        val city = address?.locality?.trim().orEmpty()
+            .ifBlank { address?.subAdminArea?.trim().orEmpty() }
+            .ifBlank { address?.adminArea?.trim().orEmpty() }
+            .ifBlank { fallbackName }
         val name = listOf(
             address?.featureName?.trim().orEmpty(),
             address?.thoroughfare?.trim().orEmpty(),
@@ -505,6 +510,7 @@ private suspend fun resolveMapLocation(
         MapLocation(
             name = name,
             address = addressLine.ifBlank { fallbackAddress },
+            city = city,
             latitude = latLng.latitude,
             longitude = latLng.longitude
         )
@@ -512,6 +518,7 @@ private suspend fun resolveMapLocation(
         MapLocation(
             name = fallbackName,
             address = fallbackAddress,
+            city = fallbackName,
             latitude = latLng.latitude,
             longitude = latLng.longitude
         )
@@ -564,6 +571,7 @@ private suspend fun fetchPlace(
                 continuation.resume(MapLocation(
                     name = place.name?.trim().orEmpty().ifBlank { primaryText },
                     address = place.address?.trim().orEmpty().ifBlank { secondaryText.ifBlank { primaryText } },
+                    city = secondaryText.ifBlank { primaryText },
                     latitude = latLng.latitude,
                     longitude = latLng.longitude
                 ))

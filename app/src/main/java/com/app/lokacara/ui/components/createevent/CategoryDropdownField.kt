@@ -88,7 +88,9 @@ fun CategoryDropdownField(
                 TextButton(onClick = { showDialog = false }) {
                     Text("Tutup", fontWeight = FontWeight.Bold)
                 }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }

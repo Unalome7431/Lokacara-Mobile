@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -75,12 +76,9 @@ fun BigTicketCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TicketInfoItem("Tanggal", date, Color.White)
                     TicketInfoItem("Jam", time, Color.White)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TicketInfoItem("Tempat", location, Color.White)
                     TicketInfoItem("Kode Unik", uniqueCode, Color.White)
                 }
@@ -133,15 +131,15 @@ fun BigTicketCard(
 
 @Composable
 fun TicketInfoItem(label: String, value: String, color: Color) {
-    Column(modifier = Modifier.widthIn(max = 130.dp)) {
-        Text(label, fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
+    Row(modifier = Modifier.widthIn(max = 140.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("$label: ", fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
         Text(
             value,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             color = color,
             fontWeight = FontWeight.Bold,
             fontFamily = PlusJakartaSansFont,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -278,11 +276,20 @@ fun HistoryItemCard(event: HistoryEvent, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = bgColor)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            TicketPosterThumb(
-                imageUrl = event.imageUrl,
-                title = event.title,
-                modifier = Modifier.size(56.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.WorkspacePremium,
+                    contentDescription = "Sertifikat",
+                    tint = Primary500,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -335,12 +342,21 @@ fun HistoryDetailDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(20.dp)) {
-                AsyncImage(
-                    model = rememberEventImageRequest(event.imageUrl, 320),
-                    contentDescription = event.title,
-                    modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Primary100),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.WorkspacePremium,
+                        contentDescription = "Sertifikat",
+                        tint = Primary500,
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(

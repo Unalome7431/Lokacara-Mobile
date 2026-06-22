@@ -6,6 +6,9 @@ import com.app.lokacara.data.remote.dto.DashboardResponse
 import com.app.lokacara.data.remote.safeApiCall
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,6 +19,8 @@ class DashboardRepository @Inject constructor(
     private val requestMutex = Mutex()
     @Volatile private var cachedResponse: DashboardResponse? = null
     @Volatile private var cachedAtMillis = 0L
+    private val _dashboard = MutableStateFlow<DashboardResponse?>(null)
+    val dashboard: StateFlow<DashboardResponse?> = _dashboard.asStateFlow()
 
     suspend fun getDashboard(forceRefresh: Boolean = false): ApiResult<DashboardResponse> {
         cachedValue(forceRefresh)?.let { return ApiResult.Success(it) }
@@ -25,6 +30,7 @@ class DashboardRepository @Inject constructor(
                 if (result is ApiResult.Success) {
                     cachedResponse = result.data
                     cachedAtMillis = System.currentTimeMillis()
+                    _dashboard.value = result.data
                 }
             }
         }

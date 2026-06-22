@@ -1,5 +1,7 @@
 package com.app.lokacara.ui.screens
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -68,6 +70,7 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasProfileIdentity = userProfile.name.isNotBlank() || userProfile.email.isNotBlank()
     var showLogoutConfirm by remember { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshDashboard() }
 
     if (showLogoutConfirm) {
         AlertDialog(
@@ -86,7 +89,9 @@ fun ProfileScreen(
                 TextButton(onClick = { showLogoutConfirm = false }) {
                     Text("Batal", color = Gray600)
                 }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
@@ -112,19 +117,22 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item(key = "identity", contentType = "identity") {
-                FlatProfileIdentity(
-                    name = userProfile.name.ifBlank { "Pengguna" },
-                    email = userProfile.email,
-                    location = userProfile.location,
-                    imageUrl = userProfile.profileImageUrl,
-                    myEventCount = myEvents.size,
-                    certificateCount = certificates.size,
-                    onEditClick = { navController.navigate(Screen.EditProfile.route) }
-                )
+                Box(modifier = Modifier.animateItem()) {
+                    FlatProfileIdentity(
+                        name = userProfile.name.ifBlank { "Pengguna" },
+                        email = userProfile.email,
+                        location = userProfile.location,
+                        imageUrl = userProfile.profileImageUrl,
+                        myEventCount = myEvents.size,
+                        certificateCount = certificates.size,
+                        onEditClick = { navController.navigate(Screen.EditProfile.route) }
+                    )
+                }
             }
 
             item(key = "activity", contentType = "shortcuts") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.animateItem()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Aktivitas Saya",
                         fontFamily = NunitoFont,
@@ -160,10 +168,12 @@ fun ProfileScreen(
                         onClick = { navController.navigate(Screen.Certificates.route) }
                     )
                 }
+                }
             }
 
             item(key = "settings", contentType = "settings") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.animateItem()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Informasi & Pengaturan",
                         fontFamily = NunitoFont,
@@ -197,6 +207,7 @@ fun ProfileScreen(
                             )
                         }
                     }
+                }
                 }
             }
 

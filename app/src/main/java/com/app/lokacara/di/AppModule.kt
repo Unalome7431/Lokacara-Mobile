@@ -61,4 +61,10 @@ object AppModule {
     fun provideFileStorageManager(@ApplicationContext context: Context): FileStorageManager {
         return FileStorageManager(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideCertificateDraftManager(@ApplicationContext context: Context): CertificateDraftManager {
+        return CertificateDraftManager(context)
+    }
 }

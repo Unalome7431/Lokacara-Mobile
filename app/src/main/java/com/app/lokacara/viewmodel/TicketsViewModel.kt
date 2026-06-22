@@ -18,6 +18,7 @@ import com.app.lokacara.model.HistoryEvent
 import com.app.lokacara.model.UpcomingEvent
 import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.repository.TicketsRepository
+import com.app.lokacara.repository.CertificateRepository
 import coil.ImageLoader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,7 @@ import javax.inject.Inject
 class TicketsViewModel @Inject constructor(
     application: Application,
     private val repository: TicketsRepository,
+    private val certificateRepository: CertificateRepository,
     private val apiService: ApiService,
     private val imageUrlProvider: ImageUrlProvider,
     private val userSessionManager: UserSessionManager,
@@ -196,24 +198,13 @@ class TicketsViewModel @Inject constructor(
         if (event.id == 0L) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val res = safeApiCall { apiService.downloadCertificate(event.id) }
+                val res = certificateRepository.saveParticipantCertificate(
+                    event.id,
+                    event.id.toString(),
+                    event.title
+                )
                 when (res) {
                     is ApiResult.Success -> {
-                        val body = res.data
-                        val fileName = "certificate_${event.title.take(20).replace(Regex("[^a-zA-Z0-9]"), "_")}.jpg"
-                        val file = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            val downloadsDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                            downloadsDir?.let { File(it, fileName) }
-                        } else {
-                            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                            downloadsDir.mkdirs()
-                            File(downloadsDir, fileName)
-                        } ?: return@launch
-                        FileOutputStream(file).use { outputStream ->
-                            body.byteStream().use { inputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        }
                         _downloadedCertIds.value = _downloadedCertIds.value + event.id
                         SnackbarManager.show("Sertifikat berhasil diunduh")
                     }

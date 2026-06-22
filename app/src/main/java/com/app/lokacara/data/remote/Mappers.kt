@@ -92,6 +92,7 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         isBookmarked = false,
         penyelenggara = penyelenggara,
         address = address,
+        city = city,
         platformName = platform_name,
         link = link,
         latitude = latitude,
@@ -117,7 +118,9 @@ fun RegistrationDto.toUpcomingEvent(imageUrlProvider: ImageUrlProvider): Upcomin
         location = location,
         type = e.type,
         imageUrl = e.poster_url ?: imageUrlProvider.posterUrl(e.poster),
-        qrToken = qr_token
+        qrToken = qr_token,
+        startEpoch = parseDateEpoch(e.start_datetime),
+        status = e.status ?: "active"
     )
 }
 

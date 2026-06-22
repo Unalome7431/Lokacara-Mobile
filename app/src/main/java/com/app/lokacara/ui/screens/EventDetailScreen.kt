@@ -3,10 +3,12 @@ package com.app.lokacara.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Groups
@@ -40,6 +44,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -57,11 +62,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -83,6 +90,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.app.lokacara.R
 import com.app.lokacara.data.remote.countdownLabel
+import com.app.lokacara.data.canHostCancelEvent
 import com.app.lokacara.data.remote.formatViewCount
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.ReminderSchedulePanel
@@ -126,6 +134,7 @@ fun EventDetailScreen(
     val isRegistered by viewModel.isRegistered.collectAsStateWithLifecycle()
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isJoining by viewModel.isJoining.collectAsStateWithLifecycle()
+    val isCancelling by viewModel.isCancelling.collectAsStateWithLifecycle()
     val isQrLoading by viewModel.isQrLoading.collectAsStateWithLifecycle()
     val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
@@ -133,6 +142,11 @@ fun EventDetailScreen(
 
     val context = LocalContext.current
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showCancelEventConfirm by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val showCollapsedHeader: Boolean by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100 }
+    }
 
     LaunchedEffect(eventId) {
         if (eventId > 0L) viewModel.loadEvent(eventId) else navController.navigateBackOrHome()
@@ -148,8 +162,8 @@ fun EventDetailScreen(
                     onJoin = { viewModel.joinEvent() },
                     onLeave = { showLeaveConfirm = true },
                     onOpenTickets = { navController.navigateToMainTab(Screen.Tickets.route) },
-                    onViewAttendees = { navController.navigate(Screen.Attendees.createRoute(event.id)) },
-                    onScanQr = { navController.navigate(Screen.QrScan.createRoute(event.id)) }
+                    onCancelEvent = { showCancelEventConfirm = true },
+                    onEditEvent = { navController.navigate("edit_event/${event.id}") }
                 )
             }
         },
@@ -168,38 +182,56 @@ fun EventDetailScreen(
                     onRetry = { viewModel.loadEvent(eventId) }
                 )
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        item(key = "hero", contentType = "hero") {
-                            EventHero(
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item(key = "hero", contentType = "hero") {
+                                EventHero(
+                                    event = event,
+                                    onBack = { navController.navigateBackOrHome() },
+                                    onShare = { shareEvent(context, event) },
+                                    onBookmark = { viewModel.toggleBookmark() }
+                                )
+                            }
+
+                            item(key = "content", contentType = "content") {
+                                EventDetailContent(
+                                    event = event,
+                                    isRegistered = isRegistered,
+                                    isHost = isHost,
+                                    isQrLoading = isQrLoading,
+                                    qrToken = qrToken,
+                                    onOpenMap = { openEventMap(context, event) },
+                                    onOpenLink = { openEventLink(context, event) }
+                                )
+                            }
+
+                            if (isHost) {
+                                item(key = "host_management", contentType = "host_management") {
+                                    HostManagementPanel(
+                                        event = event,
+                                        navController = navController,
+                                        isCancelling = isCancelling,
+                                        onCancelEvent = { showCancelEventConfirm = true }
+                                    )
+                                }
+                            }
+                        }
+
+                        AnimatedVisibility(
+                            visible = showCollapsedHeader,
+                            enter = fadeIn(tween(200)) + slideInVertically(tween(200)),
+                            exit = fadeOut(tween(200)) + slideOutVertically(tween(200)),
+                            modifier = Modifier.align(Alignment.TopCenter)
+                        ) {
+                            CollapsedEventHeader(
                                 event = event,
                                 onBack = { navController.navigateBackOrHome() },
                                 onShare = { shareEvent(context, event) },
                                 onBookmark = { viewModel.toggleBookmark() }
                             )
-                        }
-
-                        item(key = "content", contentType = "content") {
-                            EventDetailContent(
-                                event = event,
-                                isRegistered = isRegistered,
-                                isHost = isHost,
-                                isQrLoading = isQrLoading,
-                                qrToken = qrToken,
-                                onOpenMap = { openEventMap(context, event) },
-                                onOpenLink = { openEventLink(context, event) }
-                            )
-                        }
-
-                        if (isHost) {
-                            item(key = "host_management", contentType = "host_management") {
-                                HostManagementPanel(
-                                    eventId = event.id,
-                                    startDatetime = event.startDatetime,
-                                    navController = navController,
-                                )
-                            }
                         }
                     }
                 }
@@ -237,6 +269,39 @@ fun EventDetailScreen(
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) {
                     Text(stringResource(R.string.cancel), color = Gray600)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    if (showCancelEventConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isCancelling) showCancelEventConfirm = false },
+            title = { Text("Batalkan Event", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Event \"${event.title}\" akan dibatalkan dan peserta akan menerima pemberitahuan.",
+                    fontFamily = PlusJakartaSansFont,
+                    color = Gray600
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isCancelling,
+                    onClick = {
+                        showCancelEventConfirm = false
+                        viewModel.cancelEvent()
+                    }
+                ) {
+                    if (isCancelling) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    else Text("Batalkan Event", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(enabled = !isCancelling, onClick = { showCancelEventConfirm = false }) {
+                    Text("Kembali", color = Gray600)
                 }
             },
             containerColor = Color.White,
@@ -375,6 +440,50 @@ private fun EventHero(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+    }
+}
+
+@Composable
+private fun CollapsedEventHeader(
+    event: Event,
+    onBack: () -> Unit,
+    onShare: () -> Unit,
+    onBookmark: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White.copy(alpha = 0.96f),
+        shadowElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HeroIconButton(Icons.Rounded.ArrowBackIosNew, stringResource(R.string.back), onClick = onBack)
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = event.title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Gray900,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HeroIconButton(Icons.Outlined.Share, stringResource(R.string.event_detail_share_title), onClick = onShare)
+                HeroIconButton(
+                    icon = if (event.isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Bookmark",
+                    tint = if (event.isBookmarked) Secondary500 else Gray600,
+                    onClick = onBookmark
+                )
+            }
         }
     }
 }
@@ -669,9 +778,10 @@ private fun FlatEventDescription(text: String) {
 
 @Composable
 private fun HostManagementPanel(
-    eventId: Long,
-    startDatetime: String,
+    event: Event,
     navController: NavController,
+    isCancelling: Boolean,
+    onCancelEvent: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -692,24 +802,35 @@ private fun HostManagementPanel(
                 title = stringResource(R.string.event_detail_view_attendees),
                 subtitle = "Pantau peserta",
                 modifier = Modifier.weight(1f),
-                onClick = { navController.navigate(Screen.Attendees.createRoute(eventId)) }
+                onClick = { navController.navigate(Screen.Attendees.createRoute(event.id)) }
             )
             HostActionCard(
                 icon = Icons.Outlined.QrCode2,
                 title = stringResource(R.string.event_detail_scan_qr),
                 subtitle = "Check-in cepat",
                 modifier = Modifier.weight(1f),
-                onClick = { navController.navigate(Screen.QrScan.createRoute(eventId)) }
+                onClick = { navController.navigate(Screen.QrScan.createRoute(event.id)) }
             )
         }
         HostActionCard(
-            icon = Icons.Outlined.Edit,
-            title = "Edit Detail Acara",
-            subtitle = "Ubah informasi event",
+            icon = Icons.Outlined.WorkspacePremium,
+            title = "Kelola Sertifikat",
+            subtitle = "Atur dan kirim sertifikat",
             modifier = Modifier.fillMaxWidth(),
-            onClick = { navController.navigate("edit_event/$eventId") }
+            onClick = { navController.navigate(Screen.CertificateManagement.createRoute(event.id)) }
         )
-        ReminderSchedulePanel(startDatetime = startDatetime)
+        if (canHostCancelEvent(event)) {
+            HostActionCard(
+                icon = Icons.Outlined.Cancel,
+                title = if (isCancelling) "Membatalkan Event..." else "Batalkan Event",
+                subtitle = "Beri tahu seluruh peserta",
+                modifier = Modifier.fillMaxWidth(),
+                tint = SemanticErrorBase,
+                enabled = !isCancelling,
+                onClick = onCancelEvent
+            )
+        }
+        ReminderSchedulePanel(startDatetime = event.startDatetime)
     }
 }
 
@@ -719,16 +840,18 @@ private fun HostActionCard(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    tint: Color = Secondary500,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(enabled = enabled, onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, contentDescription = null, tint = Secondary500, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
             Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Gray900)
             Text(subtitle, fontFamily = PlusJakartaSansFont, fontSize = 11.sp, color = Gray500, lineHeight = 15.sp)
         }
@@ -743,8 +866,8 @@ private fun EventBottomActionBar(
     onJoin: () -> Unit,
     onLeave: () -> Unit,
     onOpenTickets: () -> Unit,
-    onViewAttendees: () -> Unit,
-    onScanQr: () -> Unit,
+    onCancelEvent: () -> Unit,
+    onEditEvent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -761,20 +884,20 @@ private fun EventBottomActionBar(
         ) {
             if (isHost) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = onCancelEvent,
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Batal", fontWeight = FontWeight.Bold, color = SemanticErrorBase)
+                    }
                     Button(
-                        onClick = onViewAttendees,
+                        onClick = onEditEvent,
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary500)
                     ) {
-                        Text(stringResource(R.string.event_detail_view_attendees), fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                        onClick = onScanQr,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(stringResource(R.string.event_detail_scan_qr), fontWeight = FontWeight.Bold, color = Primary500)
+                        Text("Edit Detail", fontWeight = FontWeight.Bold)
                     }
                 }
             } else if (isRegistered) {
@@ -915,14 +1038,14 @@ private fun HeroIconButton(
 }
 
 @Composable
-private fun EventPill(text: String, color: Color, contentColor: Color) {
+private fun EventPill(text: String, color: Color, contentColor: Color, fontSize: TextUnit = 11.sp) {
     Surface(color = color, shape = RoundedCornerShape(999.dp)) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             fontFamily = PlusJakartaSansFont,
             fontWeight = FontWeight.Bold,
-            fontSize = 11.sp,
+            fontSize = fontSize,
             color = contentColor,
             maxLines = 1
         )

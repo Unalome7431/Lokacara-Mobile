@@ -138,33 +138,42 @@ fun HomeScreen(
 
                     // ── Popular Events ──
                     item(key = "popular_section", contentType = "popular") {
-                        if (popularEvents.isNotEmpty()) {
-                            PopularEventSection(
-                                popularEvents = popularEvents,
-                                onEventClick = { onEventClick(it) }
-                            )
+                        Box(modifier = Modifier.animateItem()) {
+                            if (popularEvents.isNotEmpty()) {
+                                PopularEventSection(
+                                    popularEvents = popularEvents,
+                                    onEventClick = { onEventClick(it) }
+                                )
+                            }
                         }
                     }
 
                     // ── Upcoming Events ──
                     item(key = "upcoming_section", contentType = "upcoming") {
-                        UpcomingEventSection(
-                            upcomingEvents = upcomingEvents,
-                            onEventClick = { eventId ->
-                                navController.navigate(Screen.EventDetail.createRoute(eventId))
-                            },
-                            onExploreClick = {
-                                navController.navigate(Screen.Explore.route)
-                            }
-                        )
+                        Box(modifier = Modifier.animateItem()) {
+                            UpcomingEventSection(
+                                upcomingEvents = upcomingEvents,
+                                onEventClick = { eventId ->
+                                    navController.navigate(Screen.EventDetail.createRoute(eventId))
+                                },
+                                onExploreClick = {
+                                    navController.navigate(Screen.Explore.route)
+                                },
+                                onSeeAll = {
+                                    navController.navigate(Screen.Tickets.route)
+                                }
+                            )
+                        }
                     }
 
                     // ── Nearby Events ──
                     item(key = "nearby_header", contentType = "nearby_header") {
-                        NearbyEventsHeader(
-                            currentLocation = currentLocation,
-                            onLocationClick = { viewModel.showLocationPicker() }
-                        )
+                        Box(modifier = Modifier.animateItem()) {
+                            NearbyEventsHeader(
+                                currentLocation = currentLocation,
+                                onLocationClick = { viewModel.showLocationPicker() }
+                            )
+                        }
                     }
 
                     if (nearbyEvents.isNotEmpty()) {
@@ -174,13 +183,15 @@ fun HomeScreen(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(nearbyEvents, key = { it.id }, contentType = { "nearby_event" }) { event ->
-                                    EventCardCompact(
-                                        event = event,
-                                        onClick = { onEventClick(event) },
-                                        onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                    )
-                                }
+                                    items(nearbyEvents, key = { it.id }, contentType = { "nearby_event" }) { event ->
+                                        Box(modifier = Modifier.animateItem()) {
+                                            EventCardCompact(
+                                                event = event,
+                                                onClick = { onEventClick(event) },
+                                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                            )
+                                        }
+                                    }
                             }
                         }
                     } else {

@@ -118,7 +118,7 @@ fun AboutScreen(navController: NavController) {
                         Button(
                             onClick = {
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:support@lokacara.my.id")
+                                    data = Uri.parse("mailto:lokacara.team@gmail.com")
                                 }
                                 runCatching { context.startActivity(intent) }
                                     .onFailure { SnackbarManager.showError("Aplikasi email tidak tersedia") }

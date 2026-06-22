@@ -42,6 +42,7 @@ interface ApiService {
     suspend fun searchEvents(
         @Query("keyword") keyword: String? = null,
         @Query("category_id") categoryId: Int? = null,
+        @Query("location") location: String? = null,
         @Query("page") page: Int = 1
     ): PaginatedEventsResponse
 
@@ -135,6 +136,7 @@ interface ApiService {
         @Part("type") type: RequestBody,
         @Part("location_name") locationName: RequestBody?,
         @Part("address") address: RequestBody?,
+        @Part("city") city: RequestBody?,
         @Part("latitude") latitude: RequestBody?,
         @Part("longitude") longitude: RequestBody?,
         @Part("platform_name") platformName: RequestBody?,
@@ -157,6 +159,7 @@ interface ApiService {
         @Part("type") type: RequestBody,
         @Part("location_name") locationName: RequestBody?,
         @Part("address") address: RequestBody?,
+        @Part("city") city: RequestBody?,
         @Part("latitude") latitude: RequestBody?,
         @Part("longitude") longitude: RequestBody?,
         @Part("platform_name") platformName: RequestBody?,
@@ -197,6 +200,11 @@ interface ApiService {
     suspend fun sendReminders(@Path("event") eventId: Long): MessageResponse
 
     // ── Certificates (Organizer) ──
+    @GET("api/organizer/events/{event}/certificates")
+    suspend fun getOrganizerCertificateState(
+        @Path("event") eventId: Long
+    ): com.app.lokacara.data.remote.dto.OrganizerCertificateStateResponse
+
     @Multipart
     @POST("api/organizer/events/{event}/certificates/template")
     suspend fun uploadCertificateTemplate(
