@@ -89,7 +89,9 @@ fun ProfileScreen(
                 TextButton(onClick = { showLogoutConfirm = false }) {
                     Text("Batal", color = Gray600)
                 }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
@@ -115,19 +117,22 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item(key = "identity", contentType = "identity") {
-                FlatProfileIdentity(
-                    name = userProfile.name.ifBlank { "Pengguna" },
-                    email = userProfile.email,
-                    location = userProfile.location,
-                    imageUrl = userProfile.profileImageUrl,
-                    myEventCount = myEvents.size,
-                    certificateCount = certificates.size,
-                    onEditClick = { navController.navigate(Screen.EditProfile.route) }
-                )
+                Box(modifier = Modifier.animateItem()) {
+                    FlatProfileIdentity(
+                        name = userProfile.name.ifBlank { "Pengguna" },
+                        email = userProfile.email,
+                        location = userProfile.location,
+                        imageUrl = userProfile.profileImageUrl,
+                        myEventCount = myEvents.size,
+                        certificateCount = certificates.size,
+                        onEditClick = { navController.navigate(Screen.EditProfile.route) }
+                    )
+                }
             }
 
             item(key = "activity", contentType = "shortcuts") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.animateItem()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Aktivitas Saya",
                         fontFamily = NunitoFont,
@@ -163,10 +168,12 @@ fun ProfileScreen(
                         onClick = { navController.navigate(Screen.Certificates.route) }
                     )
                 }
+                }
             }
 
             item(key = "settings", contentType = "settings") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.animateItem()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "Informasi & Pengaturan",
                         fontFamily = NunitoFont,
@@ -200,6 +207,7 @@ fun ProfileScreen(
                             )
                         }
                     }
+                }
                 }
             }
 

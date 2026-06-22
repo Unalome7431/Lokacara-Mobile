@@ -23,6 +23,7 @@ class LokacaraMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val payload = AppNotificationPayloadParser.parse(message.data) ?: return
+        if (payload.category in suppressedCategories) return
         val notificationsEnabled = runCatching {
             runBlocking { settingsManager.notificationsEnabled.first() }
         }.getOrDefault(true)
@@ -30,6 +31,18 @@ class LokacaraMessagingService : FirebaseMessagingService() {
         if (notificationsEnabled) {
             AppNotificationNotifier.show(this, payload)
         }
+    }
+
+    companion object {
+        private val suppressedCategories = setOf(
+            "event_reminder",
+            "event_updated",
+            "event_cancelled",
+            "host_new_registration",
+            "host_registration_cancelled",
+            "event_capacity_warning",
+            "bookmarked_event_reminder"
+        )
     }
 
     override fun onNewToken(token: String) {

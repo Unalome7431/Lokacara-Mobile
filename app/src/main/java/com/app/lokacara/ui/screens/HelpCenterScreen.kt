@@ -133,7 +133,7 @@ fun HelpCenterScreen(navController: NavController) {
                         Button(
                             onClick = {
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-                                    data = android.net.Uri.parse("mailto:support@lokacara.my.id")
+                                    data = android.net.Uri.parse("mailto:lokacara.team@gmail.com")
                                 }
                                 runCatching { context.startActivity(intent) }
                                     .onFailure { SnackbarManager.showError("Aplikasi email tidak tersedia") }

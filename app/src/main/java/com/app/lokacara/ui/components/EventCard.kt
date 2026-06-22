@@ -94,7 +94,7 @@ fun EventCard(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(event.title, color = Primary500, style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(event.title, color = Color.Black, style = TextStyle(fontFamily = NunitoFont, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(event.description, color = Gray500, style = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(vertical = 4.dp))
 
                 DetailItem(Icons.Outlined.CalendarToday, event.date)
@@ -150,6 +150,7 @@ fun EventCardCompact(
     Surface(
         modifier = Modifier
             .width(160.dp)
+            .height(220.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale)
             .clickable(interactionSource = interactionSource, indication = ripple(bounded = true, radius = 160.dp)) { onClick() },
         shape = RoundedCornerShape(16.dp),
@@ -206,7 +207,7 @@ fun EventCardCompact(
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = Gray900,
+                    color = Color.Black,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )

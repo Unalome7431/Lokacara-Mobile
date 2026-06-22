@@ -148,6 +148,11 @@ fun CertificateManagementScreen(
         title = "Kelola Sertifikat",
         onBack = { navController.navigateBackOrHome() }
     ) {
+        if (state.selectedUri != null || state.restoredTemplatePath != null) {
+            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                CertificatePreview(state)
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp),
@@ -160,9 +165,6 @@ fun CertificateManagementScreen(
                     onPick = { picker.launch("image/*") },
                     onUpload = viewModel::uploadTemplate
                 )
-            }
-            if (state.selectedUri != null || state.restoredTemplatePath != null) {
-                item { CertificatePreview(state) }
             }
             if (state.distributionStatus != null) item { DistributionSummary(state) }
             item {
@@ -295,7 +297,7 @@ private fun TemplateSection(
             enabled = state.canUpload,
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Primary100)
         ) {
             if (state.isUploading) {
                 CircularProgressIndicator(Modifier.size(19.dp), color = Color.White, strokeWidth = 2.dp)
@@ -525,7 +527,7 @@ private fun SendSection(state: CertificateManagementUiState, onSend: () -> Unit)
             enabled = state.canDistribute,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Gray200)
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500, disabledContainerColor = Primary100)
         ) {
             if (state.isDistributing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
             else Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null, modifier = Modifier.size(20.dp))

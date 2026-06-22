@@ -32,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -239,7 +240,9 @@ fun CreateEventScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showStartTimePicker = false; tempStartDateMillis = 0L }) { Text("Batal") }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
@@ -258,7 +261,8 @@ fun CreateEventScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showEndDatePicker = false }) { Text("Batal") }
-            }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Color.White)
         ) {
             DatePicker(state = datePickerState)
         }
@@ -289,7 +293,9 @@ fun CreateEventScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showEndTimePicker = false; tempEndDateMillis = 0L }) { Text("Batal") }
-            }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 

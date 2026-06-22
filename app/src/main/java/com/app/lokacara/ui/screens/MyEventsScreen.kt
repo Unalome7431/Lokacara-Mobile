@@ -35,9 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -109,7 +111,9 @@ fun MyEventsScreen(
                     TextButton(onClick = { eventToCancel = null }) {
                         Text("Kembali", color = Gray500)
                     }
-                }
+                },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(22.dp)
             )
         }
 
@@ -265,23 +269,20 @@ private fun EventStatusBadge(status: String) {
         "banned" -> "Diblokir"
         else -> status.replaceFirstChar { it.uppercase() }
     }
-    val color = if (status.equals("banned", ignoreCase = true)) SemanticErrorBase else Secondary500
-    val background = if (status.equals("banned", ignoreCase = true)) SemanticErrorLight else Secondary100
+    val color = if (status.equals("banned", ignoreCase = true)) SemanticErrorBase else SemanticErrorBase
+    val background = if (status.equals("banned", ignoreCase = true)) SemanticErrorLight else SemanticErrorLight
 
-    Box(
+    Text(
+        text = label,
+        fontFamily = PlusJakartaSansFont,
+        fontWeight = FontWeight.Bold,
+        fontSize = 9.sp,
+        color = color,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            fontFamily = PlusJakartaSansFont,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-    }
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    )
 }
 
 private fun String.isNotActiveStatus(): Boolean {

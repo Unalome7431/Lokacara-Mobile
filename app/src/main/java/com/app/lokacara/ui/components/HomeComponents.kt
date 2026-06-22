@@ -374,19 +374,18 @@ fun UpcomingEventSection(
         }
 
         if (upcomingEvents == null) {
-            // Loading state for upcoming events if needed
             Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = SvgPrimaryBlue, modifier = Modifier.size(24.dp))
             }
         } else if (upcomingEvents.isEmpty()) {
             UpcomingEmptyState(onExploreClick)
         } else {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UpcomingEventHero(upcomingEvents.first(), onClick = { onEventClick(upcomingEvents.first().id) })
-                upcomingEvents.drop(1).take(3).forEach { event ->
+                items(upcomingEvents, key = { it.id }, contentType = { "upcoming_compact" }) { event ->
                     UpcomingEventCard(event = event, onClick = { onEventClick(event.id) })
                 }
             }
@@ -431,95 +430,57 @@ fun UpcomingEmptyState(onExploreClick: () -> Unit) {
 
 @Composable
 fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
+    Surface(
+        modifier = Modifier
+            .width(160.dp)
+            .height(220.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        color = Color.White,
+        shadowElevation = 4.dp
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column {
             AsyncImage(
                 model = event.imageUrl,
-                contentDescription = null,
+                contentDescription = event.title,
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Text(
                     text = event.title,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    maxLines = 1,
+                    fontSize = 12.sp,
+                    color = Color.Black,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Secondary500, modifier = Modifier.size(11.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = event.location,
+                        fontFamily = PlusJakartaSansFont,
+                        fontSize = 10.sp,
+                        color = Gray600,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${event.date} • ${event.time}",
+                    text = "${event.date}  •  ${event.time}",
                     fontFamily = PlusJakartaSansFont,
-                    fontSize = 12.sp,
-                    color = Gray500
+                    fontSize = 9.sp,
+                    color = SvgOrange,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
-                Text(
-                    text = event.location,
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 12.sp,
-                    color = SvgPrimaryBlue,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UpcomingEventHero(event: UpcomingEvent, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(3.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().height(190.dp)) {
-            AsyncImage(
-                model = event.imageUrl,
-                contentDescription = event.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xE61A2433)))
-                )
-            )
-            Surface(
-                color = SvgOrange,
-                shape = RoundedCornerShape(50),
-                modifier = Modifier.align(Alignment.TopStart).padding(14.dp)
-            ) {
-                Text(
-                    "PALING DEKAT",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    fontFamily = PlusJakartaSansFont,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
-            }
-            Column(modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)) {
-                Text(event.title, fontFamily = NunitoFont, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-                Text("${event.date}  |  ${event.time}", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, color = Color.White.copy(alpha = .9f))
-                Text(event.location, fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Secondary100, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -658,6 +619,8 @@ fun LocationPickerDialog(
             TextButton(onClick = onDismiss) {
                 Text("Batal", fontFamily = PlusJakartaSansFont, color = Gray500)
             }
-        }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
     )
 }
