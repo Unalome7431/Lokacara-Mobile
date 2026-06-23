@@ -469,7 +469,7 @@ private fun CollapsedEventHeader(
                     text = event.title,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     color = Gray900,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -889,7 +889,7 @@ private fun EventBottomActionBar(
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Batal", fontWeight = FontWeight.Bold, color = SemanticErrorBase)
+                        Text("Batalkan Event", fontWeight = FontWeight.Bold, color = SemanticErrorBase)
                     }
                     Button(
                         onClick = onEditEvent,

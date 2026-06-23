@@ -240,7 +240,7 @@ class ExploreViewModel @Inject constructor(
                     }
                 }
                 is ApiResult.Error -> {
-                    SnackbarManager.show("Gagal memuat kategori")
+                    SnackbarManager.showError("Gagal memuat kategori")
                 }
             }
         }
@@ -250,7 +250,7 @@ class ExploreViewModel @Inject constructor(
                     _locationSuggestions.value = result.data.data.map { it.name }
                 }
                 is ApiResult.Error -> {
-                    SnackbarManager.show("Gagal memuat lokasi")
+                    SnackbarManager.showError("Gagal memuat lokasi")
                 }
             }
         }
@@ -401,6 +401,7 @@ class ExploreViewModel @Inject constructor(
                     if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                     _errorType.value = if (result.message.contains("jaringan") || result.message.contains("koneksi")) ErrorType.NETWORK else ErrorType.SERVER
+                    SnackbarManager.showError(result.message)
                     if (_allEvents.value.isEmpty()) {
                         _allEvents.value = emptyList()
                         _totalEvents.value = 0
@@ -441,6 +442,7 @@ class ExploreViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             if (requestGate.isLatest(requestToken)) _isLoadingMore.value = false

@@ -39,12 +39,14 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = Color.White,
     secondaryContainer = Secondary800,
     onSecondaryContainer = Secondary100,
-    background = Gray900,
-    onBackground = Gray100,
-    surface = Gray800,
-    onSurface = Gray100,
+    background = Gray100,
+    onBackground = Gray900,
+    surface = Color.White,
+    onSurface = Gray900,
     error = SemanticErrorBase,
-    onError = Color.White
+    onError = Color.White,
+    errorContainer = SemanticErrorLight,
+    onErrorContainer = SemanticErrorBase
 )
 
 @Composable

@@ -11,6 +11,7 @@ import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.dto.CertificateLayoutConfig
 import com.app.lokacara.repository.CertificateRepository
+import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -129,6 +130,7 @@ class CertificateManagementViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoadingEligibility = true, errorMessage = null)
             when (val firstResult = repository.getAttendees(currentEventId)) {
                 is ApiResult.Error -> {
+                    SnackbarManager.showError(firstResult.message)
                     _uiState.value = _uiState.value.copy(
                         isLoadingEligibility = false,
                         errorMessage = firstResult.message
@@ -145,6 +147,7 @@ class CertificateManagementViewModel @Inject constructor(
                             }
                             is ApiResult.Error -> {
                                 loadError = pageResult.message
+                                SnackbarManager.showError(pageResult.message)
                                 break
                             }
                         }
@@ -206,6 +209,7 @@ class CertificateManagementViewModel @Inject constructor(
                     errorMessage = null
                 )
             } else {
+                SnackbarManager.showError(error)
                 _uiState.value.copy(errorMessage = error, successMessage = null)
             }
             if (error == null && currentUserId > 0L) {
@@ -233,10 +237,13 @@ class CertificateManagementViewModel @Inject constructor(
                     templatePath = result.data.template_path,
                     successMessage = "Template berhasil diunggah."
                 )
-                is ApiResult.Error -> _uiState.value = _uiState.value.copy(
-                    isUploading = false,
-                    errorMessage = result.message
-                )
+                is ApiResult.Error -> {
+                    SnackbarManager.showError(result.message)
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = false,
+                        errorMessage = result.message
+                    )
+                }
             }
         }
     }
@@ -270,10 +277,13 @@ class CertificateManagementViewModel @Inject constructor(
                     )
                     persistNow()
                 }
-                is ApiResult.Error -> _uiState.value = _uiState.value.copy(
-                    isDistributing = false,
-                    errorMessage = result.message
-                )
+                is ApiResult.Error -> {
+                    SnackbarManager.showError(result.message)
+                    _uiState.value = _uiState.value.copy(
+                        isDistributing = false,
+                        errorMessage = result.message
+                    )
+                }
             }
         }
     }
@@ -291,7 +301,10 @@ class CertificateManagementViewModel @Inject constructor(
     fun setYPosition(value: Float) = updateAndPersist { copy(yPosition = value.coerceIn(0f, 100f)) }
     fun clearMessage() = updateState { copy(errorMessage = null, successMessage = null) }
 
-    private fun showError(message: String) = updateState { copy(errorMessage = message, successMessage = null) }
+    private fun showError(message: String) {
+        SnackbarManager.showError(message)
+        updateState { copy(errorMessage = message, successMessage = null) }
+    }
 
     private fun updateState(block: CertificateManagementUiState.() -> CertificateManagementUiState) {
         _uiState.value = _uiState.value.block()

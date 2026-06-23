@@ -621,7 +621,7 @@ fun LocationPickerDialog(
                             result.onSuccess { (cityName, lat, lng) ->
                                 onLocationSelected(cityName, lat, lng)
                             }.onFailure {
-                                SnackbarManager.show("Lokasi tidak ditemukan")
+                                SnackbarManager.showError("Lokasi tidak ditemukan")
                             }
                         }
                     }

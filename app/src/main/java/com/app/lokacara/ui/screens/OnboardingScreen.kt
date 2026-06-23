@@ -1,7 +1,12 @@
 package com.app.lokacara.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +22,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -42,6 +51,7 @@ import com.app.lokacara.ui.theme.NunitoFont
 import com.app.lokacara.ui.theme.PlusJakartaSansFont
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.ui.theme.SvgPrimaryBlue
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,6 +62,12 @@ fun OnboardingScreen(
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
+    var showLogoPopup by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(1400)
+        showLogoPopup = false
+    }
 
     fun finish(next: () -> Unit) {
         scope.launch {
@@ -116,6 +132,46 @@ fun OnboardingScreen(
                     text = "Lewati, saya sudah punya akun",
                     fontFamily = PlusJakartaSansFont,
                     fontWeight = FontWeight.Bold,
+                    color = SvgPrimaryBlue
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showLogoPopup,
+            enter = fadeIn(tween(180)) + scaleIn(initialScale = 0.72f, animationSpec = tween(260)),
+            exit = fadeOut(tween(220)) + scaleOut(targetScale = 0.92f, animationSpec = tween(220))
+        ) {
+            LogoPopup()
+        }
+    }
+}
+
+@Composable
+private fun LogoPopup() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SvgBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(30.dp),
+            color = Color.White,
+            shadowElevation = 10.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 34.dp, vertical = 30.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                PulsingLogo(logoRes = R.drawable.logo_lokacara, size = 126)
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Lokacara",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 34.sp,
                     color = SvgPrimaryBlue
                 )
             }

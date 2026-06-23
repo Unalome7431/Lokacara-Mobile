@@ -52,8 +52,10 @@ class AuthViewModel @Inject constructor(
         if (_isLoading.value) return
         val errors = validateLogin()
         if (errors.isNotEmpty()) {
+            val message = errors.values.first()
             _loginFieldErrors.value = errors
-            _errorMessage.value = errors.values.first()
+            _errorMessage.value = message
+            SnackbarManager.showError(message)
             return
         }
         viewModelScope.launch {
@@ -81,8 +83,10 @@ class AuthViewModel @Inject constructor(
         if (_isLoading.value) return
         val errors = validateRegister()
         if (errors.isNotEmpty()) {
+            val message = errors.values.first()
             _registerFieldErrors.value = errors
-            _errorMessage.value = errors.values.first()
+            _errorMessage.value = message
+            SnackbarManager.showError(message)
             return
         }
         viewModelScope.launch {
@@ -96,6 +100,7 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -118,9 +123,9 @@ class AuthViewModel @Inject constructor(
     val newPassword = MutableStateFlow("")
 
     fun changePassword() {
-        if (oldPassword.value.isBlank()) { _errorMessage.value = "Kata sandi lama harus diisi"; return }
-        if (newPassword.value.length < 6) { _errorMessage.value = "Kata sandi baru minimal 6 karakter"; return }
-        if (newPassword.value != confirmPassword.value) { _errorMessage.value = "Password baru dan konfirmasi tidak sama"; return }
+        if (oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
+        if (newPassword.value.length < 6) { showError("Kata sandi baru minimal 6 karakter"); return }
+        if (newPassword.value != confirmPassword.value) { showError("Password baru dan konfirmasi tidak sama"); return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
@@ -131,6 +136,7 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -142,11 +148,13 @@ class AuthViewModel @Inject constructor(
     fun forgotPassword(email: String) {
         if (email.isBlank()) {
             _forgotPasswordError.value = "Email harus diisi"
+            SnackbarManager.showError("Email harus diisi")
             return
         }
         val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
         if (!emailRegex.matches(email.trim())) {
             _forgotPasswordError.value = "Format email tidak valid"
+            SnackbarManager.showError("Format email tidak valid")
             return
         }
         viewModelScope.launch {
@@ -159,6 +167,7 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _forgotPasswordError.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _forgotPasswordLoading.value = false
@@ -271,6 +280,11 @@ class AuthViewModel @Inject constructor(
 
     private fun String.isValidEmail(): Boolean {
         return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(trim())
+    }
+
+    private fun showError(message: String) {
+        _errorMessage.value = message
+        SnackbarManager.showError(message)
     }
 
     fun resetForm() {

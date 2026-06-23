@@ -368,6 +368,7 @@ class ProfileViewModel @Inject constructor(
                     copy(imageUrl = result.data, isPreviewLoading = false, errorMessage = null)
                 }
                 is ApiResult.Error -> updateCertificate(cert.id) {
+                    SnackbarManager.showError(result.message)
                     copy(isPreviewLoading = false, errorMessage = result.message)
                 }
             }

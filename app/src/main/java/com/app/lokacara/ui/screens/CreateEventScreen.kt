@@ -55,7 +55,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +94,6 @@ import com.app.lokacara.viewmodel.CreateEventViewModel
 import com.app.lokacara.data.completedEventRequirements
 import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,39 +145,7 @@ fun CreateEventScreen(
     )
     val totalRequirements = 7
     val formProgress = completedRequirements / totalRequirements.toFloat()
-    val incompleteRequirements = remember(
-        namaEvent,
-        selectedCategoryName,
-        scheduleReady,
-        locationReady,
-        deskripsi,
-        priceReady,
-        kuota
-    ) {
-        buildList {
-            if (namaEvent.isBlank()) add("Nama Event")
-            if (selectedCategoryName.isBlank()) add("Kategori")
-            if (!scheduleReady) add("Waktu dan Tanggal")
-            if (!locationReady) add(if (isOnline) "Platform dan Link" else "Lokasi Event")
-            if (deskripsi.isBlank()) add("Deskripsi Event")
-            if (!priceReady) add("Harga Event")
-            if (kuota !in 1..100_000) add("Kuota Peserta")
-        }
-    }
-    val requirementTargets = remember(isOnline) {
-        mapOf(
-            "Nama Event" to 1,
-            "Kategori" to 1,
-            "Waktu dan Tanggal" to 2,
-            "Platform dan Link" to 4,
-            "Lokasi Event" to 4,
-            "Deskripsi Event" to 4,
-            "Harga Event" to 3,
-            "Kuota Peserta" to 5
-        )
-    }
     val formListState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     var draftStatus by remember(hasDraft, isEditMode) {
         mutableStateOf(
             when {
@@ -455,13 +421,7 @@ fun CreateEventScreen(
         EventReadinessCard(
             completed = completedRequirements,
             total = totalRequirements,
-            progress = formProgress,
-            incompleteItems = incompleteRequirements,
-            onIncompleteClick = { item ->
-                requirementTargets[item]?.let { targetIndex ->
-                    scope.launch { formListState.animateScrollToItem(targetIndex) }
-                }
-            }
+            progress = formProgress
         )
 
         LazyColumn(

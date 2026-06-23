@@ -157,7 +157,7 @@ fun EventCardCompact(
         color = Color.White,
         shadowElevation = 4.dp
     ) {
-        Column {
+        Column(modifier = Modifier.fillMaxSize()) {
             Box {
                 AsyncImage(
                     model = rememberEventImageRequest(event.imageUrl, 160, crossfade = imageCrossfade),
@@ -201,7 +201,11 @@ fun EventCardCompact(
                     )
                 }
             }
-            Column(modifier = Modifier.padding(10.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp)
+            ) {
                 Text(
                     text = event.title,
                     fontFamily = NunitoFont,
@@ -211,7 +215,7 @@ fun EventCardCompact(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.weight(1f))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = Gray400, modifier = Modifier.size(12.dp))
                     Spacer(modifier = Modifier.width(2.dp))
@@ -224,7 +228,7 @@ fun EventCardCompact(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

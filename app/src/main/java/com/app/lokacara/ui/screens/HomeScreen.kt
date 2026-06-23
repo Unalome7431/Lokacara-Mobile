@@ -118,7 +118,7 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
                         Button(
-                            onClick = { navController.navigate(Screen.Explore.route) },
+                            onClick = { navController.navigate(Screen.Explore.createRoute()) },
                             colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
@@ -159,7 +159,7 @@ fun HomeScreen(
                                     navController.navigate(Screen.EventDetail.createRoute(eventId))
                                 },
                                 onExploreClick = {
-                                    navController.navigate(Screen.Explore.route)
+                                    navController.navigate(Screen.Explore.createRoute())
                                 },
                                 onSeeAll = {
                                     navController.navigate(Screen.Tickets.route)
@@ -244,7 +244,7 @@ fun HomeScreen(
                                     color = SvgOrange,
                                     modifier = Modifier
                                         .heightIn(min = 48.dp)
-                                        .clickable { navController.navigate(Screen.Explore.route) }
+                                        .clickable { navController.navigate(Screen.Explore.createRoute()) }
                                         .padding(top = 14.dp)
                                 )
                             }

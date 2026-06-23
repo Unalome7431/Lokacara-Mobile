@@ -76,10 +76,13 @@ fun BigTicketCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                     TicketInfoItem("Tanggal", date, Color.White)
                     TicketInfoItem("Jam", time, Color.White)
-                    TicketInfoItem("Tempat", location, Color.White)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                    TicketInfoItem("Tempat", location, Color.White, maxLines = 2)
                     TicketInfoItem("Kode Unik", uniqueCode, Color.White)
                 }
             }
@@ -130,16 +133,16 @@ fun BigTicketCard(
 }
 
 @Composable
-fun TicketInfoItem(label: String, value: String, color: Color) {
-    Row(modifier = Modifier.widthIn(max = 140.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("$label: ", fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
+fun TicketInfoItem(label: String, value: String, color: Color, maxLines: Int = 1) {
+    Column(modifier = Modifier.widthIn(max = 140.dp)) {
+        Text("$label", fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
         Text(
             value,
             fontSize = 12.sp,
             color = color,
             fontWeight = FontWeight.Bold,
             fontFamily = PlusJakartaSansFont,
-            maxLines = 1,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis
         )
     }

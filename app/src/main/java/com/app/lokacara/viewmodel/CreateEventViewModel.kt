@@ -101,7 +101,7 @@ class CreateEventViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val event = result.data.event
                     if (event == null) {
-                        _errorMessage.value = "Event tidak ditemukan"
+                        showError("Event tidak ditemukan")
                     } else {
                         namaEvent.value = event.title
                         deskripsi.value = event.description
@@ -265,8 +265,9 @@ class CreateEventViewModel @Inject constructor(
             errors["location"] = "Pilih lokasi dari peta atau gunakan lokasi saat ini"
         }
         if (errors.isNotEmpty()) {
+            val message = errors.values.first()
             _fieldErrors.value = errors
-            _errorMessage.value = errors.values.first()
+            showError(message)
             return
         }
         _fieldErrors.value = emptyMap()
@@ -284,12 +285,12 @@ class CreateEventViewModel @Inject constructor(
                 val endMillis = sdf.parse(waktuSelesai.value)?.time ?: 0L
                 if (endMillis <= startMillis) {
                     _fieldErrors.value = mapOf("end_time" to "Waktu selesai harus setelah waktu mulai")
-                    _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
+                    showError("Waktu selesai harus setelah waktu mulai")
                     return
                 }
             } catch (_: Exception) {
                 _fieldErrors.value = mapOf("start_time" to "Format tanggal tidak valid")
-                _errorMessage.value = "Format tanggal tidak valid"
+                showError("Format tanggal tidak valid")
                 _isLoading.value = false
                 return
             }
@@ -303,7 +304,7 @@ class CreateEventViewModel @Inject constructor(
         } else ""
         if (!eventIsOnline && (offlineLocationName.isBlank() || offlineAddress.isBlank())) {
             _fieldErrors.value = mapOf("location" to "Detail lokasi offline belum lengkap")
-            _errorMessage.value = "Detail lokasi offline belum lengkap"
+            showError("Detail lokasi offline belum lengkap")
             return
         }
         if (!eventIsOnline) {
@@ -375,7 +376,7 @@ class CreateEventViewModel @Inject constructor(
                     }
                 }
             } catch (e: IllegalArgumentException) {
-                _errorMessage.value = e.message ?: "Poster tidak valid"
+                showError(e.message ?: "Poster tidak valid")
                 _isLoading.value = false
                 return@launch
             }
@@ -586,6 +587,11 @@ class CreateEventViewModel @Inject constructor(
     fun clearError() {
         _errorMessage.value = null
         _fieldErrors.value = emptyMap()
+    }
+
+    private fun showError(message: String) {
+        _errorMessage.value = message
+        SnackbarManager.showError(message)
     }
 
     private fun currentDraft(): EventDraft = EventDraft(

@@ -219,7 +219,7 @@ fun RegisterScreen(
             Image(
                 painter = painterResource(id = R.drawable.logo_lokacara),
                 contentDescription = "Logo Bawah",
-                modifier = Modifier.height(40.dp)
+                modifier = Modifier.height(72.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))

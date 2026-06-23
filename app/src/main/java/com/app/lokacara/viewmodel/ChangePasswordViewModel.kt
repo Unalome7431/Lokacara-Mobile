@@ -37,19 +37,19 @@ class ChangePasswordViewModel @Inject constructor(
     fun changePassword() {
         when {
             oldPassword.value.isBlank() -> {
-                _errorMessage.value = "Kata sandi lama harus diisi"
+                showError("Kata sandi lama harus diisi")
                 return
             }
             newPassword.value.isBlank() -> {
-                _errorMessage.value = "Kata sandi baru harus diisi"
+                showError("Kata sandi baru harus diisi")
                 return
             }
             newPassword.value.length < 6 -> {
-                _errorMessage.value = "Kata sandi baru minimal 6 karakter"
+                showError("Kata sandi baru minimal 6 karakter")
                 return
             }
             newPassword.value != confirmPassword.value -> {
-                _errorMessage.value = "Konfirmasi kata sandi tidak cocok"
+                showError("Konfirmasi kata sandi tidak cocok")
                 return
             }
         }
@@ -67,6 +67,7 @@ class ChangePasswordViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -75,4 +76,9 @@ class ChangePasswordViewModel @Inject constructor(
 
     fun resetChangeSuccess() { _changeSuccess.value = false }
     fun clearError() { _errorMessage.value = null }
+
+    private fun showError(message: String) {
+        _errorMessage.value = message
+        SnackbarManager.showError(message)
+    }
 }

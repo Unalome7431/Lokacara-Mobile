@@ -274,8 +274,9 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (_allEvents.value.isEmpty()) {
                         _feedError.value = result.message
+                        SnackbarManager.showError(result.message)
                     } else {
-                        SnackbarManager.show("Gagal memperbarui data")
+                        SnackbarManager.showError("Gagal memperbarui data")
                     }
                 }
             }
@@ -304,6 +305,7 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (_categories.value.isEmpty()) {
                         _categoryError.value = result.message
+                        SnackbarManager.showError(result.message)
                     }
                 }
             }
@@ -328,7 +330,7 @@ class HomeViewModel @Inject constructor(
                     bookmarkSyncHelper.syncBookmarks(viewModelScope, _popularEvents, _allEvents)
                 }
                 is ApiResult.Error -> {
-                    SnackbarManager.show("Gagal memuat lebih banyak event")
+                    SnackbarManager.showError("Gagal memuat lebih banyak event")
                 }
             }
             _isLoadingMore.value = false

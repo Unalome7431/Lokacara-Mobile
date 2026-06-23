@@ -348,7 +348,6 @@ fun ActiveDiscoverySummary(
     val chips = buildList {
         if (eventName.isNotBlank()) add("Nama: $eventName" to onClearName)
         if (eventLocation.isNotBlank()) add("Lokasi: $eventLocation" to onClearLocation)
-        if (selectedCategory != "Semua") add("Kategori: $selectedCategory" to onClearCategory)
         if (priceFilter != PriceFilter.SEMUA) add("Harga: ${priceFilter.label}" to onClearPrice)
         if (sortOption != SortOption.TERBARU) add("Urut: ${sortOption.label}" to onEditSearch)
     }
@@ -822,6 +821,9 @@ fun ErrorStateView(
     onRetry: (() -> Unit)? = null,
     errorType: ErrorType? = null
 ) {
+    LaunchedEffect(message) {
+        if (message.isNotBlank()) SnackbarManager.showError(message)
+    }
     val title = when (errorType) {
         ErrorType.NETWORK -> "Gangguan Jaringan"
         ErrorType.SERVER -> "Gangguan Server"
