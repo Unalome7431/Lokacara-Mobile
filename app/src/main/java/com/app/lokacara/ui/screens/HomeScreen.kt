@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -196,16 +198,54 @@ fun HomeScreen(
                         }
                     } else {
                         item(key = "nearby_empty", contentType = "nearby_empty") {
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp, vertical = 16.dp)
+                                    .background(Gray100, RoundedCornerShape(18.dp))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    "Tidak ada event di sekitar Anda saat ini",
+                                    "Belum ada event di sekitar lokasi ini",
                                     fontFamily = PlusJakartaSansFont,
-                                    fontSize = 13.sp,
-                                    color = Gray400
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Gray900
+                                )
+                                Text(
+                                    "Coba ganti kota, gunakan GPS, atau jelajahi semua event.",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 12.sp,
+                                    color = Gray500
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = { viewModel.showLocationPicker() },
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Pilih Kota", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Primary500)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.useCurrentGps() },
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Pakai GPS", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                                Text(
+                                    text = "Buka Explore",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SvgOrange,
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .clickable { navController.navigate(Screen.Explore.route) }
+                                        .padding(top = 14.dp)
                                 )
                             }
                         }

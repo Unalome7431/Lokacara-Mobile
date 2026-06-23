@@ -251,7 +251,8 @@ private fun FlatProfileIdentity(
             }
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(48.dp)
+                    .padding(8.dp)
                     .background(Primary500, CircleShape)
                     .border(2.dp, Color.White, CircleShape)
                     .clip(CircleShape)

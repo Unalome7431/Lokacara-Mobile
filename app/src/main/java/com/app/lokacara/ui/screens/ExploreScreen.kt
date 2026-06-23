@@ -64,6 +64,8 @@ fun ExploreScreen(
     val categorySuggestions by viewModel.categorySuggestions.collectAsStateWithLifecycle()
     val showDatePicker by viewModel.showDatePicker.collectAsStateWithLifecycle()
     val activeFilterCount by viewModel.activeFilterCount.collectAsStateWithLifecycle()
+    val eventName by viewModel.eventName.collectAsStateWithLifecycle()
+    val eventLocation by viewModel.eventLocation.collectAsStateWithLifecycle()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -207,6 +209,20 @@ fun ExploreScreen(
                                 SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
                             }
                         }
+                        ActiveDiscoverySummary(
+                            eventName = eventName,
+                            eventLocation = eventLocation,
+                            selectedCategory = selectedCategoryChip,
+                            priceFilter = priceFilter,
+                            sortOption = sortOption,
+                            activeFilterCount = activeFilterCount,
+                            onEditSearch = { viewModel.expandSearch() },
+                            onClearName = { viewModel.clearEventName() },
+                            onClearLocation = { viewModel.clearEventLocation() },
+                            onClearCategory = { viewModel.selectCategoryChip("Semua") },
+                            onClearPrice = { viewModel.selectPriceFilter(PriceFilter.SEMUA) },
+                            onReset = { viewModel.resetFilters() }
+                        )
                         if (error != null && events.isNotEmpty()) {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
@@ -259,7 +275,14 @@ fun ExploreScreen(
                                 state = listState
                             ) {
                                 if (events.isEmpty() && !isLoading) {
-                                    item { EmptyStateView(hasActiveFilter = hasActiveFilter, onResetFilters = { viewModel.resetFilters() }) }
+                                    item {
+                                        EmptyStateView(
+                                            title = if (hasActiveFilter) "Tidak ada event yang cocok" else "Belum ada event tersedia",
+                                            subtitle = if (hasActiveFilter) "Ubah kata kunci, lokasi, atau filter untuk melihat hasil lain" else "Coba muat ulang atau jelajahi kategori lain nanti",
+                                            hasActiveFilter = hasActiveFilter,
+                                            onResetFilters = { viewModel.resetFilters() }
+                                        )
+                                    }
                                 } else {
                                     items(items = events, key = { event -> event.id }, contentType = { "event_list" }) { event ->
                                         Box(modifier = Modifier.animateItem()) {

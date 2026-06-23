@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -53,6 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,6 +95,7 @@ import com.app.lokacara.viewmodel.CreateEventViewModel
 import com.app.lokacara.data.completedEventRequirements
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,6 +147,48 @@ fun CreateEventScreen(
     )
     val totalRequirements = 7
     val formProgress = completedRequirements / totalRequirements.toFloat()
+    val incompleteRequirements = remember(
+        namaEvent,
+        selectedCategoryName,
+        scheduleReady,
+        locationReady,
+        deskripsi,
+        priceReady,
+        kuota
+    ) {
+        buildList {
+            if (namaEvent.isBlank()) add("Nama Event")
+            if (selectedCategoryName.isBlank()) add("Kategori")
+            if (!scheduleReady) add("Waktu dan Tanggal")
+            if (!locationReady) add(if (isOnline) "Platform dan Link" else "Lokasi Event")
+            if (deskripsi.isBlank()) add("Deskripsi Event")
+            if (!priceReady) add("Harga Event")
+            if (kuota !in 1..100_000) add("Kuota Peserta")
+        }
+    }
+    val requirementTargets = remember(isOnline) {
+        mapOf(
+            "Nama Event" to 1,
+            "Kategori" to 1,
+            "Waktu dan Tanggal" to 2,
+            "Platform dan Link" to 4,
+            "Lokasi Event" to 4,
+            "Deskripsi Event" to 4,
+            "Harga Event" to 3,
+            "Kuota Peserta" to 5
+        )
+    }
+    val formListState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var draftStatus by remember(hasDraft, isEditMode) {
+        mutableStateOf(
+            when {
+                isEditMode -> ""
+                hasDraft -> "Draf tersimpan. Simpan lagi jika ada perubahan baru."
+                else -> "Belum ada draf tersimpan."
+            }
+        )
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -333,14 +379,30 @@ fun CreateEventScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             if (!isEditMode) {
-                Text(
-                    text = "Simpan Draf",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SvgOrange,
-                    modifier = Modifier.clickable { viewModel.saveDraft() }
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Simpan Draf",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SvgOrange,
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .clickable {
+                                viewModel.saveDraft()
+                                draftStatus = "Draf tersimpan sekarang."
+                            }
+                            .padding(top = 14.dp)
+                    )
+                    if (draftStatus.isNotBlank()) {
+                        Text(
+                            text = draftStatus,
+                            fontFamily = NunitoFont,
+                            fontSize = 10.sp,
+                            color = Gray500
+                        )
+                    }
+                }
             }
         }
 
@@ -369,7 +431,10 @@ fun CreateEventScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = SvgPrimaryBlue,
-                            modifier = Modifier.clickable { viewModel.loadDraft() }
+                            modifier = Modifier.clickable {
+                                viewModel.loadDraft()
+                                draftStatus = "Draf dimuat. Simpan lagi setelah mengubah detail."
+                            }
                         )
                         Text(
                             text = "Hapus",
@@ -377,7 +442,10 @@ fun CreateEventScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = SemanticErrorBase,
-                            modifier = Modifier.clickable { viewModel.deleteDraft() }
+                            modifier = Modifier.clickable {
+                                viewModel.deleteDraft()
+                                draftStatus = "Draf dihapus."
+                            }
                         )
                     }
                 }
@@ -387,12 +455,19 @@ fun CreateEventScreen(
         EventReadinessCard(
             completed = completedRequirements,
             total = totalRequirements,
-            progress = formProgress
+            progress = formProgress,
+            incompleteItems = incompleteRequirements,
+            onIncompleteClick = { item ->
+                requirementTargets[item]?.let { targetIndex ->
+                    scope.launch { formListState.animateScrollToItem(targetIndex) }
+                }
+            }
         )
 
         LazyColumn(
             modifier = Modifier
                 .weight(1f),
+            state = formListState,
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {

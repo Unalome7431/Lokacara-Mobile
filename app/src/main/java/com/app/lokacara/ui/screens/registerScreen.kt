@@ -17,10 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,11 +36,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
+    onNavigateToTerms: () -> Unit = {},
+    onNavigateToPrivacy: () -> Unit = {},
     onLoginSuccess: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val fieldErrors by viewModel.registerFieldErrors.collectAsStateWithLifecycle()
     val registerSuccess by viewModel.registerSuccess.collectAsStateWithLifecycle()
     val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
 
@@ -124,6 +125,16 @@ fun RegisterScreen(
                 enabled = !isLoading && googleWebClientId.isNotBlank(),
                 onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
             )
+            if (googleWebClientId.isBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Daftar dengan Google belum dikonfigurasi di perangkat ini.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Gray500,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -140,7 +151,12 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            RegisterCredentialFields(viewModel)
+            RegisterCredentialFields(
+                viewModel = viewModel,
+                fieldErrors = fieldErrors,
+                onNavigateToTerms = onNavigateToTerms,
+                onNavigateToPrivacy = onNavigateToPrivacy
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -213,48 +229,121 @@ fun RegisterScreen(
 
 @Composable
 private fun RegisterCredentialFields(viewModel: AuthViewModel) {
+    RegisterCredentialFields(
+        viewModel = viewModel,
+        fieldErrors = emptyMap(),
+        onNavigateToTerms = {},
+        onNavigateToPrivacy = {}
+    )
+}
+
+@Composable
+private fun RegisterCredentialFields(
+    viewModel: AuthViewModel,
+    fieldErrors: Map<String, String>,
+    onNavigateToTerms: () -> Unit,
+    onNavigateToPrivacy: () -> Unit
+) {
     val name by viewModel.name.collectAsStateWithLifecycle()
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
     val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
     val isChecked by viewModel.isChecked.collectAsStateWithLifecycle()
 
-    LokacaraTextField(value = name, onValueChange = { viewModel.name.value = it }, placeholder = "Nama Lengkap")
+    LokacaraTextField(
+        value = name,
+        onValueChange = {
+            viewModel.name.value = it
+            viewModel.clearRegisterFieldError("name")
+        },
+        placeholder = "Nama Lengkap"
+    )
+    FieldErrorText(fieldErrors["name"])
     Spacer(modifier = Modifier.height(16.dp))
-    LokacaraTextField(value = email, onValueChange = { viewModel.email.value = it }, placeholder = "Email / Nomor Telepon")
+    LokacaraTextField(
+        value = email,
+        onValueChange = {
+            viewModel.email.value = it
+            viewModel.clearRegisterFieldError("email")
+        },
+        placeholder = "Email",
+        keyboardType = KeyboardType.Email
+    )
+    FieldErrorText(fieldErrors["email"])
     Spacer(modifier = Modifier.height(16.dp))
     LokacaraTextField(
         value = password,
-        onValueChange = { viewModel.password.value = it },
+        onValueChange = {
+            viewModel.password.value = it
+            viewModel.clearRegisterFieldError("password")
+            viewModel.clearRegisterFieldError("confirmPassword")
+        },
         placeholder = "Kata Sandi",
         isPassword = true
     )
+    FieldErrorText(fieldErrors["password"])
     Spacer(modifier = Modifier.height(16.dp))
     LokacaraTextField(
         value = confirmPassword,
-        onValueChange = { viewModel.confirmPassword.value = it },
+        onValueChange = {
+            viewModel.confirmPassword.value = it
+            viewModel.clearRegisterFieldError("confirmPassword")
+        },
         placeholder = "Konfirmasi Kata Sandi",
         isPassword = true
     )
+    FieldErrorText(fieldErrors["confirmPassword"])
     Spacer(modifier = Modifier.height(16.dp))
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Checkbox(
             checked = isChecked,
-            onCheckedChange = { viewModel.isChecked.value = it },
+            onCheckedChange = {
+                viewModel.isChecked.value = it
+                viewModel.clearRegisterFieldError("agreement")
+            },
             colors = CheckboxDefaults.colors(checkedColor = Primary500, uncheckedColor = Gray300),
             modifier = Modifier.padding(end = 4.dp)
         )
-        Text(
-            text = buildAnnotatedString {
-                append("Saya setuju dengan ")
-                withStyle(style = SpanStyle(color = Primary500)) { append("persyaratan layanan") }
-                append(" dan ")
-                withStyle(style = SpanStyle(color = Primary500)) { append("kebijakan privasi") }
-            },
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-            color = Gray500
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Saya setuju dengan", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = Gray500)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "persyaratan layanan",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = Primary500,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onNavigateToTerms)
+                        .padding(top = 16.dp)
+                )
+                Text(" dan ", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = Gray500)
+                Text(
+                    text = "kebijakan privasi",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = Primary500,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onNavigateToPrivacy)
+                        .padding(top = 16.dp)
+                )
+            }
+        }
     }
+    FieldErrorText(fieldErrors["agreement"])
+}
+
+@Composable
+private fun FieldErrorText(message: String?) {
+    if (message == null) return
+    Spacer(modifier = Modifier.height(6.dp))
+    Text(
+        text = message,
+        style = MaterialTheme.typography.labelSmall,
+        color = SemanticErrorBase,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_7")

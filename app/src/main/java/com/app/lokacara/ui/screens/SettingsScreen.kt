@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Article
-import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Delete
@@ -125,9 +125,11 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = stringResource(R.string.delete_account_password_hint),
+                        text = "Akun Lokacara Anda akan dihapus permanen. Data profil, tiket, event, dan sertifikat yang terkait dengan akun ini dapat ikut terdampak. Masukkan kata sandi untuk melanjutkan.",
                         fontFamily = NunitoFont,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = Gray600,
+                        lineHeight = 20.sp
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     LokacaraTextField(
@@ -213,6 +215,7 @@ fun SettingsScreen(
                 SettingsToggleRow(
                     icon = Icons.Rounded.Notifications,
                     title = stringResource(R.string.settings_notifications),
+                    subtitle = "Atur notifikasi aktivitas, tiket, dan pengingat event",
                     isChecked = notificationsEnabled,
                     onCheckedChange = { viewModel.setNotificationsEnabled(it) }
                 )
@@ -239,12 +242,14 @@ fun SettingsScreen(
                 SettingsActionRow(
                     icon = Icons.Rounded.Lock,
                     title = stringResource(R.string.settings_change_password),
+                    subtitle = "Perbarui kata sandi masuk akun",
                     onClick = { navController.navigate(Screen.ChangePassword.route) }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
                     title = stringResource(R.string.settings_privacy_policy),
+                    subtitle = "Baca cara Lokacara mengelola data Anda",
                     onClick = { navController.navigate(Screen.PrivacyPolicy.route) } // Assuming PrivacyPolicy is the right route based on the original code
                 )
             }
@@ -270,12 +275,14 @@ fun SettingsScreen(
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.HelpOutline,
                     title = stringResource(R.string.settings_help_center),
+                    subtitle = "Cari jawaban dan hubungi dukungan",
                     onClick = { navController.navigate(Screen.HelpCenter.route) }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 SettingsActionRow(
                     icon = Icons.AutoMirrored.Rounded.Article,
                     title = stringResource(R.string.settings_terms_conditions),
+                    subtitle = "Ketentuan penggunaan layanan Lokacara",
                     onClick = { navController.navigate(Screen.TermsConditions.route) }
                 )
             }
@@ -289,46 +296,12 @@ fun SettingsScreen(
                     .border(1.dp, Gray100, RoundedCornerShape(22.dp))
                     .padding(vertical = 8.dp)
             ) {
-                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            scope.launch {
-                                viewModel.logout()
-                                (rootNavController ?: navController).navigateToLoginAndClearMain()
-                            }
-                        }
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Primary100.copy(alpha = 0.5f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ExitToApp,
-                            contentDescription = "Keluar",
-                            tint = Primary500,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(
-                        text = stringResource(R.string.profile_logout),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = Gray900
-                    )
-                }
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showDeleteDialog = true }
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -345,13 +318,21 @@ fun SettingsScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text(
-                        text = stringResource(R.string.settings_delete_account),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = SemanticErrorBase
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.settings_delete_account),
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = SemanticErrorBase
+                        )
+                        Text(
+                            text = "Hapus permanen akun dan data terkait",
+                            fontFamily = NunitoFont,
+                            fontSize = 12.sp,
+                            color = Gray500
+                        )
+                    }
                 }
             }
 
@@ -364,6 +345,7 @@ fun SettingsScreen(
 private fun SettingsToggleRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
+    subtitle: String,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -374,7 +356,7 @@ private fun SettingsToggleRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier.size(36.dp).background(Primary100.copy(alpha = 0.5f), CircleShape),
                 contentAlignment = Alignment.Center
@@ -382,7 +364,10 @@ private fun SettingsToggleRow(
                 Icon(icon, contentDescription = null, tint = Primary500, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
+                Text(subtitle, fontFamily = NunitoFont, fontSize = 12.sp, color = Gray500)
+            }
         }
         Switch(
             checked = isChecked,
@@ -402,17 +387,19 @@ private fun SettingsToggleRow(
 private fun SettingsActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
+    subtitle: String,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier.size(36.dp).background(Gray100, CircleShape),
                 contentAlignment = Alignment.Center
@@ -420,7 +407,10 @@ private fun SettingsActionRow(
                 Icon(icon, contentDescription = null, tint = Gray600, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontFamily = NunitoFont, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Gray900)
+                Text(subtitle, fontFamily = NunitoFont, fontSize = 12.sp, color = Gray500)
+            }
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = Gray400, modifier = Modifier.size(20.dp))
     }

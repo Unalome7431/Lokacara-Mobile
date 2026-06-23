@@ -36,6 +36,12 @@ class AuthViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _loginFieldErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val loginFieldErrors: StateFlow<Map<String, String>> = _loginFieldErrors.asStateFlow()
+
+    private val _registerFieldErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val registerFieldErrors: StateFlow<Map<String, String>> = _registerFieldErrors.asStateFlow()
+
     private val _loginSuccess = MutableStateFlow(false)
     val loginSuccess: StateFlow<Boolean> = _loginSuccess.asStateFlow()
 
@@ -43,15 +49,16 @@ class AuthViewModel @Inject constructor(
     val registerSuccess: StateFlow<Boolean> = _registerSuccess.asStateFlow()
 
     fun login() {
-        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
-        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
-        if (!emailRegex.matches(email.value.trim())) {
-            _errorMessage.value = "Format email tidak valid"
+        if (_isLoading.value) return
+        val errors = validateLogin()
+        if (errors.isNotEmpty()) {
+            _loginFieldErrors.value = errors
+            _errorMessage.value = errors.values.first()
             return
         }
-        if (password.value.isBlank()) { _errorMessage.value = "Kata sandi harus diisi"; return }
         viewModelScope.launch {
             _errorMessage.value = null
+            _loginFieldErrors.value = emptyMap()
             _isLoading.value = true
             when (val result = repository.login(email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
@@ -71,18 +78,16 @@ class AuthViewModel @Inject constructor(
     }
 
     fun register() {
-        if (name.value.isBlank()) { _errorMessage.value = "Nama harus diisi"; return }
-        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
-        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
-        if (!emailRegex.matches(email.value.trim())) {
-            _errorMessage.value = "Format email tidak valid"
+        if (_isLoading.value) return
+        val errors = validateRegister()
+        if (errors.isNotEmpty()) {
+            _registerFieldErrors.value = errors
+            _errorMessage.value = errors.values.first()
             return
         }
-        if (password.value.length < 6) { _errorMessage.value = "Kata sandi minimal 6 karakter"; return }
-        if (password.value != confirmPassword.value) { _errorMessage.value = "Password dan konfirmasi password tidak sama"; return }
-        if (!isChecked.value) { _errorMessage.value = "Anda harus menyetujui syarat & ketentuan"; return }
         viewModelScope.launch {
             _errorMessage.value = null
+            _registerFieldErrors.value = emptyMap()
             _isLoading.value = true
             when (val result = repository.register(name.value.trim(), email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
@@ -184,7 +189,53 @@ class AuthViewModel @Inject constructor(
     fun resetForgotPasswordSuccess() { _forgotPasswordSuccess.value = false }
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }
-    fun clearError() { _errorMessage.value = null }
+    fun clearError() {
+        _errorMessage.value = null
+        _loginFieldErrors.value = emptyMap()
+        _registerFieldErrors.value = emptyMap()
+    }
+
+    fun clearLoginFieldError(field: String) {
+        _errorMessage.value = null
+        _loginFieldErrors.value = _loginFieldErrors.value - field
+    }
+
+    fun clearRegisterFieldError(field: String) {
+        _errorMessage.value = null
+        _registerFieldErrors.value = _registerFieldErrors.value - field
+    }
+
+    private fun validateLogin(): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+        val trimmedEmail = email.value.trim()
+        if (trimmedEmail.isBlank()) {
+            errors["email"] = "Email harus diisi"
+        } else if (!trimmedEmail.isValidEmail()) {
+            errors["email"] = "Format email tidak valid"
+        }
+        if (password.value.isBlank()) errors["password"] = "Kata sandi harus diisi"
+        return errors
+    }
+
+    private fun validateRegister(): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+        val trimmedName = name.value.trim()
+        val trimmedEmail = email.value.trim()
+        if (trimmedName.isBlank()) errors["name"] = "Nama lengkap harus diisi"
+        if (trimmedEmail.isBlank()) {
+            errors["email"] = "Email harus diisi"
+        } else if (!trimmedEmail.isValidEmail()) {
+            errors["email"] = "Format email tidak valid"
+        }
+        if (password.value.length < 6) errors["password"] = "Kata sandi minimal 6 karakter"
+        if (confirmPassword.value.isBlank()) {
+            errors["confirmPassword"] = "Konfirmasi kata sandi harus diisi"
+        } else if (password.value != confirmPassword.value) {
+            errors["confirmPassword"] = "Konfirmasi kata sandi tidak sama"
+        }
+        if (!isChecked.value) errors["agreement"] = "Setujui syarat dan kebijakan privasi untuk daftar"
+        return errors
+    }
 
     private suspend fun saveAuthenticatedSession(auth: AuthResponse, fallbackEmail: String? = null): Boolean {
         val token = auth.token?.takeIf { it.isNotBlank() }
@@ -228,5 +279,6 @@ class AuthViewModel @Inject constructor(
         password.value = ""
         confirmPassword.value = ""
         isChecked.value = false
+        clearError()
     }
 }

@@ -331,6 +331,86 @@ fun ExploreCategories(
 }
 
 @Composable
+fun ActiveDiscoverySummary(
+    eventName: String,
+    eventLocation: String,
+    selectedCategory: String,
+    priceFilter: PriceFilter,
+    sortOption: SortOption,
+    activeFilterCount: Int,
+    onEditSearch: () -> Unit,
+    onClearName: () -> Unit,
+    onClearLocation: () -> Unit,
+    onClearCategory: () -> Unit,
+    onClearPrice: () -> Unit,
+    onReset: () -> Unit
+) {
+    val chips = buildList {
+        if (eventName.isNotBlank()) add("Nama: $eventName" to onClearName)
+        if (eventLocation.isNotBlank()) add("Lokasi: $eventLocation" to onClearLocation)
+        if (selectedCategory != "Semua") add("Kategori: $selectedCategory" to onClearCategory)
+        if (priceFilter != PriceFilter.SEMUA) add("Harga: ${priceFilter.label}" to onClearPrice)
+        if (sortOption != SortOption.TERBARU) add("Urut: ${sortOption.label}" to onEditSearch)
+    }
+    if (chips.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "$activeFilterCount filter aktif",
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Gray700
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onEditSearch, modifier = Modifier.height(36.dp)) {
+                    Text("Edit", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = Primary500, fontSize = 12.sp)
+                }
+                TextButton(onClick = onReset, modifier = Modifier.height(36.dp)) {
+                    Text("Reset", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = SemanticErrorBase, fontSize = 12.sp)
+                }
+            }
+        }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(chips, key = { it.first }) { (label, onClear) ->
+                Surface(
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    color = Primary100.copy(alpha = 0.55f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 12.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = label,
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Gray800,
+                            maxLines = 1
+                        )
+                        IconButton(onClick = onClear, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = "Hapus $label", tint = Gray600, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         color = if (isSelected) Primary500 else Gray100,

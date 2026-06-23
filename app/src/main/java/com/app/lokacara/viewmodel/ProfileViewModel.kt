@@ -211,6 +211,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun updateProfileField(field: UserSessionManager.Field, newValue: String) {
+        if (_isLoading.value) return
         val current = _userProfile.value
         val trimmedValue = newValue.trim()
         if (field == UserSessionManager.Field.NAME && trimmedValue.isBlank()) {
@@ -231,7 +232,9 @@ class ProfileViewModel @Inject constructor(
             UserSessionManager.Field.LOCATION -> current.copy(location = trimmedValue)
         }
         viewModelScope.launch {
+            _isLoading.value = true
             updateProfile(updatedProfile, field)
+            _isLoading.value = false
         }
     }
 
@@ -295,7 +298,9 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun saveProfilePhoto(uri: Uri) {
+        if (_isLoading.value) return
         viewModelScope.launch {
+            _isLoading.value = true
             _errorMessage.value = null
             val context = getApplication<Application>()
             when (val result = repository.uploadAvatar(context, uri)) {
@@ -319,6 +324,7 @@ class ProfileViewModel @Inject constructor(
                     SnackbarManager.showError(result.message)
                 }
             }
+            _isLoading.value = false
         }
     }
 

@@ -1,15 +1,7 @@
 package com.app.lokacara.ui.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,14 +9,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -33,92 +31,95 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.lokacara.R
 import com.app.lokacara.data.SettingsManager
-import com.app.lokacara.ui.theme.Gray400
+import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.NunitoFont
+import com.app.lokacara.ui.theme.PlusJakartaSansFont
 import com.app.lokacara.ui.theme.SvgBackground
 import com.app.lokacara.ui.theme.SvgPrimaryBlue
+import kotlinx.coroutines.launch
 
 @Composable
-fun OnboardingScreen(onFinish: () -> Unit) {
+fun OnboardingScreen(
+    onContinue: () -> Unit,
+    onSkip: () -> Unit
+) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context.applicationContext) }
-    var splashPhase by remember { mutableIntStateOf(1) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = true) {
-        kotlinx.coroutines.delay(1000)
-        splashPhase = 2
-        kotlinx.coroutines.delay(1000)
-        splashPhase = 3
-        kotlinx.coroutines.delay(2000)
-        settingsManager.setOnboardingCompleted()
-        onFinish()
+    fun finish(next: () -> Unit) {
+        scope.launch {
+            settingsManager.setOnboardingCompleted()
+            next()
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SvgBackground),
+            .background(SvgBackground)
+            .padding(horizontal = 28.dp),
         contentAlignment = Alignment.Center
     ) {
-        SplashContent(splashPhase = splashPhase)
-    }
-}
-
-@Composable
-private fun SplashContent(splashPhase: Int) {
-    val isGrayPhase = splashPhase == 2
-
-    AnimatedContent(
-        targetState = splashPhase,
-        transitionSpec = {
-            when {
-                targetState > initialState -> {
-                    (fadeIn(tween(500)) + scaleIn(initialScale = 0.92f, animationSpec = tween(500)))
-                        .togetherWith(fadeOut(tween(400)) + scaleOut(targetScale = 0.92f, animationSpec = tween(400)))
-                }
-                else -> {
-                    (fadeIn(tween(300)) + scaleIn(initialScale = 0.92f, animationSpec = tween(300)))
-                        .togetherWith(fadeOut(tween(200)) + scaleOut(targetScale = 0.92f, animationSpec = tween(200)))
-                }
-            }
-        },
-        label = "SplashPhase"
-    ) { phase ->
         Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            when (phase) {
-                1 -> PulsingLogo(logoRes = R.drawable.logo_lokacara, size = 120)
-                2 -> PhaseContent(logoRes = R.drawable.logo_lokacara_gray, textColor = Gray400, showText = true)
-                3 -> PhaseContent(logoRes = R.drawable.logo_lokacara, textColor = SvgPrimaryBlue, showText = true)
+            PulsingLogo(logoRes = R.drawable.logo_lokacara, size = 118)
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Lokacara",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 42.sp,
+                color = SvgPrimaryBlue
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Temukan event terdekat, simpan tiket, dan kelola acara dalam satu aplikasi.",
+                fontFamily = PlusJakartaSansFont,
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
+                color = Gray500,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 6.dp)
+            )
+            Spacer(modifier = Modifier.height(34.dp))
+            Button(
+                onClick = { finish(onContinue) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue)
+            ) {
+                Text(
+                    text = "Mulai",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                onClick = { finish(onSkip) },
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(
+                    text = "Lewati, saya sudah punya akun",
+                    fontFamily = PlusJakartaSansFont,
+                    fontWeight = FontWeight.Bold,
+                    color = SvgPrimaryBlue
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun PhaseContent(logoRes: Int, textColor: Color, showText: Boolean) {
-    Image(
-        painter = painterResource(id = logoRes),
-        contentDescription = "Logo",
-        modifier = Modifier.size(120.dp),
-        contentScale = ContentScale.Fit
-    )
-    if (showText) {
-        Spacer(modifier = Modifier.height(16.dp))
-        androidx.compose.material3.Text(
-            text = "Lokacara",
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 42.sp,
-            color = textColor
-        )
     }
 }
 
@@ -133,7 +134,7 @@ private fun PulsingLogo(logoRes: Int, size: Int) {
 
     Image(
         painter = painterResource(id = logoRes),
-        contentDescription = "Logo",
+        contentDescription = "Logo Lokacara",
         modifier = Modifier
             .size(size.dp)
             .scale(scale.value),
@@ -144,5 +145,5 @@ private fun PulsingLogo(logoRes: Int, size: Int) {
 @Preview(showBackground = true)
 @Composable
 fun OnboardingScreenPreview() {
-    OnboardingScreen(onFinish = {})
+    OnboardingScreen(onContinue = {}, onSkip = {})
 }

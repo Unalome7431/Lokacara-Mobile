@@ -139,11 +139,11 @@ private fun RowScope.NavItem(
         label = "navIconScale"
     )
     val pillColor by animateColorAsState(
-        targetValue = if (isSelected) SvgOrange.copy(alpha = 0.14f) else Color.Transparent,
+        targetValue = if (isSelected) item.activeColor.copy(alpha = 0.14f) else Color.Transparent,
         label = "navPillColor"
     )
     val iconTint by animateColorAsState(
-        targetValue = if (isSelected) SvgOrange else Gray500,
+        targetValue = if (isSelected) item.activeColor else Gray500,
         label = "navIconTint"
     )
     val labelColor = if (isSelected) Gray900 else Gray500

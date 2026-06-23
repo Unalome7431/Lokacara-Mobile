@@ -118,7 +118,7 @@ fun TicketsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(

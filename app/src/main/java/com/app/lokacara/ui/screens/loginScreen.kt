@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +42,7 @@ fun LoginScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val fieldErrors by viewModel.loginFieldErrors.collectAsStateWithLifecycle()
     val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
     val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsStateWithLifecycle()
     val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsStateWithLifecycle()
@@ -128,6 +130,16 @@ fun LoginScreen(
                 enabled = !isLoading && googleWebClientId.isNotBlank(),
                 onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
             )
+            if (googleWebClientId.isBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Login Google belum dikonfigurasi di perangkat ini.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Gray500,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -144,7 +156,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            LoginCredentialFields(viewModel)
+            LoginCredentialFields(viewModel, fieldErrors)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -154,8 +166,9 @@ fun LoginScreen(
                 color = Gray500,
                 modifier = Modifier
                     .align(Alignment.End)
+                    .heightIn(min = 48.dp)
                     .clickable { showForgotPasswordDialog = true }
-                    .padding(vertical = 4.dp)
+                    .padding(top = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -287,20 +300,49 @@ fun LoginScreen(
 
 @Composable
 private fun LoginCredentialFields(viewModel: AuthViewModel) {
+    LoginCredentialFields(viewModel = viewModel, fieldErrors = emptyMap())
+}
+
+@Composable
+private fun LoginCredentialFields(
+    viewModel: AuthViewModel,
+    fieldErrors: Map<String, String>
+) {
     val email by viewModel.email.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
 
     LokacaraTextField(
         value = email,
-        onValueChange = { viewModel.email.value = it },
-        placeholder = stringResource(R.string.auth_email_placeholder)
+        onValueChange = {
+            viewModel.email.value = it
+            viewModel.clearLoginFieldError("email")
+        },
+        placeholder = "Email",
+        keyboardType = KeyboardType.Email
     )
+    FieldErrorText(fieldErrors["email"])
     Spacer(modifier = Modifier.height(16.dp))
     LokacaraTextField(
         value = password,
-        onValueChange = { viewModel.password.value = it },
+        onValueChange = {
+            viewModel.password.value = it
+            viewModel.clearLoginFieldError("password")
+        },
         placeholder = stringResource(R.string.auth_password_placeholder),
         isPassword = true
+    )
+    FieldErrorText(fieldErrors["password"])
+}
+
+@Composable
+private fun FieldErrorText(message: String?) {
+    if (message == null) return
+    Spacer(modifier = Modifier.height(6.dp))
+    Text(
+        text = message,
+        style = MaterialTheme.typography.labelSmall,
+        color = SemanticErrorBase,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 

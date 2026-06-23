@@ -71,15 +71,20 @@ fun NavGraph(
             popEnterTransition = { fadeIn(tween(300)) },
             popExitTransition = { fadeOut(tween(200)) }
         ) {
-            OnboardingScreen(onFinish = {
-                val nextRoute = when {
-                    isLoggedIn -> "main_container"
-                    else -> Screen.Register.route
+            OnboardingScreen(
+                onContinue = {
+                    val nextRoute = if (isLoggedIn) "main_container" else Screen.Register.route
+                    rootNavController.navigate(nextRoute) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                },
+                onSkip = {
+                    val nextRoute = if (isLoggedIn) "main_container" else Screen.Login.route
+                    rootNavController.navigate(nextRoute) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
                 }
-                rootNavController.navigate(nextRoute) {
-                    popUpTo(Screen.Onboarding.route) { inclusive = true }
-                }
-            })
+            )
         }
         composable(
             Screen.Register.route,
@@ -91,6 +96,16 @@ fun NavGraph(
             RegisterScreen(
                 onNavigateToLogin = {
                     rootNavController.navigate(Screen.Login.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToTerms = {
+                    rootNavController.navigate(Screen.TermsConditions.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToPrivacy = {
+                    rootNavController.navigate(Screen.PrivacyPolicy.route) {
                         launchSingleTop = true
                     }
                 },
@@ -120,6 +135,24 @@ fun NavGraph(
                     }
                 }
             )
+        }
+        composable(
+            Screen.TermsConditions.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
+            TermsConditionsScreen(navController = rootNavController)
+        }
+        composable(
+            Screen.PrivacyPolicy.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
+            PrivacyPolicyScreen(navController = rootNavController)
         }
 
         composable(
