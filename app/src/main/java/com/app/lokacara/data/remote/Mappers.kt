@@ -91,6 +91,7 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         category = categoryName,
         isBookmarked = false,
         penyelenggara = penyelenggara,
+        kontak = contact ?: contact_phone ?: "",
         address = address,
         city = city,
         platformName = platform_name,

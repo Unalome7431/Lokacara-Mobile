@@ -35,6 +35,7 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
@@ -120,6 +121,7 @@ import com.app.lokacara.ui.theme.SemanticErrorLight
 import com.app.lokacara.ui.theme.SemanticSuccessBase
 import com.app.lokacara.ui.theme.SemanticSuccessLight
 import com.app.lokacara.ui.theme.SvgBackground
+import com.app.lokacara.ui.theme.SvgOrange
 import com.app.lokacara.viewmodel.EventDetailAction
 import com.app.lokacara.viewmodel.EventDetailViewModel
 
@@ -606,6 +608,53 @@ private fun FlatEventStatus(
                             fontSize = 14.sp,
                             color = Gray900,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        if (event.kontak.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(SvgOrange.copy(alpha = 0.12f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Call,
+                            contentDescription = null,
+                            tint = SvgOrange,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Kontak",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = Gray500
+                        )
+                        Text(
+                            text = event.kontak,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Gray900,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
