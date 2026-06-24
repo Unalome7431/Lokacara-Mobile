@@ -512,27 +512,40 @@ private fun EventDetailContent(
     onOpenLink: () -> Unit
     ) {
         val phoneRegex = Regex("(?:0|\\+62|62)\\s*\\d{2,}[\\-\\s]?\\d{3,}[\\-\\s]?\\d{3,}")
-        val kontakLineRegex = Regex("^[-\\s]*\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*")
-        val isKontakOrPhoneLine: (String) -> Boolean = { line ->
-            val t = line.trim()
-            t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
-        }
+        val kontakLabelRegex = Regex("^[-\\s]*\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*")
+        
         val descriptionText = remember(event.description) {
             event.description
                 .lines()
-                .filterNot { isKontakOrPhoneLine(it) }
+                .filterNot { line ->
+                    val t = line.trim()
+                    t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
+                }
                 .joinToString("\n")
                 .trim()
         }
-        val displayKontak = event.kontak.ifBlank {
-            event.description.lines()
-                .firstOrNull { isKontakOrPhoneLine(it) }
-                ?.let { line ->
-                    val cleaned = line.trim().replace(kontakLineRegex, "").replace(Regex("^[-\\s]+"), "")
-                    phoneRegex.find(cleaned)?.value ?: cleaned
-                }
-                ?: phoneRegex.find(event.description)?.value
-                ?: ""
+        
+        fun extractPhone(text: String): String {
+            return phoneRegex.find(text)?.value ?: text.replace(Regex("[*_\\-]"), "").trim()
+        }
+        
+        fun cleanKontak(raw: String): String {
+            return raw
+                .replace(kontakLabelRegex, "")
+                .replace(Regex("^[-\\s]+"), "")
+                .let { extractPhone(it) }
+        }
+        
+        val apiKontak = cleanKontak(event.kontak)
+        val descKontak = event.description.lines()
+            .firstOrNull { line -> 
+                val t = line.trim()
+                t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
+            }
+            ?.let { cleanKontak(it) } ?: ""
+        
+        val displayKontak = apiKontak.ifBlank { descKontak }.ifBlank {
+            phoneRegex.find(event.description)?.value ?: ""
         }
     Column(
         modifier = Modifier
