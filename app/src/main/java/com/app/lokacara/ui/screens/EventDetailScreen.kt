@@ -511,24 +511,28 @@ private fun EventDetailContent(
     onOpenMap: () -> Unit,
     onOpenLink: () -> Unit
     ) {
+        val phoneRegex = Regex("(?:0|\\+62|62)\\s*\\d{2,}[\\-\\s]?\\d{3,}[\\-\\s]?\\d{3,}")
+        val kontakLineRegex = Regex("^[-\\s]*\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*")
+        val isKontakOrPhoneLine: (String) -> Boolean = { line ->
+            val t = line.trim()
+            t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
+        }
         val descriptionText = remember(event.description) {
             event.description
                 .lines()
-                .filterNot { line ->
-                    line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
-                }
+                .filterNot { isKontakOrPhoneLine(it) }
                 .joinToString("\n")
                 .trim()
         }
         val displayKontak = event.kontak.ifBlank {
-            val lines = event.description.lines()
-            val kontakIdx = lines.indexOfFirst { line ->
-                line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
-            }
-            if (kontakIdx < 0) return@ifBlank ""
-            val firstLine = lines[kontakIdx].replace(Regex("\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*"), "").trim()
-            if (firstLine.isNotBlank()) firstLine
-            else lines.getOrNull(kontakIdx + 1)?.trim() ?: ""
+            event.description.lines()
+                .firstOrNull { isKontakOrPhoneLine(it) }
+                ?.let { line ->
+                    val cleaned = line.trim().replace(kontakLineRegex, "").replace(Regex("^[-\\s]+"), "")
+                    phoneRegex.find(cleaned)?.value ?: cleaned
+                }
+                ?: phoneRegex.find(event.description)?.value
+                ?: ""
         }
     Column(
         modifier = Modifier
