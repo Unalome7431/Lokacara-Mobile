@@ -259,8 +259,6 @@ class CreateEventViewModel @Inject constructor(
         val errors = mutableMapOf<String, String>()
         if (title.isBlank()) errors["title"] = "Nama event harus diisi"
         if (title.length > 255) errors["title"] = "Nama event maksimal 255 karakter"
-        if (organizerName.isBlank()) errors["organizer_name"] = "Penyelenggara harus diisi"
-        if (contactText.isBlank()) errors["contact"] = "Kontak harus diisi"
         if (desc.isBlank()) errors["description"] = "Deskripsi event harus diisi"
         if (desc.length > 5000) errors["description"] = "Deskripsi event maksimal 5000 karakter"
         if (selectedCategoryId.value == null) errors["category"] = "Kategori event harus dipilih"
@@ -336,11 +334,10 @@ class CreateEventViewModel @Inject constructor(
 
             val type = if (eventIsOnline) "online" else "offline"
 
+            val descWithKontak = if (contactText.isNotBlank()) "$desc\nKontak: $contactText" else desc
             val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
-            val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
+            val descPart = descWithKontak.toRequestBody("text/plain".toMediaTypeOrNull())
             val typePart = type.toRequestBody("text/plain".toMediaTypeOrNull())
-            val organizerPart = organizerName.toRequestBody("text/plain".toMediaTypeOrNull())
-            val contactPart = contactText.toRequestBody("text/plain".toMediaTypeOrNull())
             val startDatePart = startDateStr.toRequestBody("text/plain".toMediaTypeOrNull())
             val startTimePart = startTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
             val endTimePart = endTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -398,8 +395,6 @@ class CreateEventViewModel @Inject constructor(
                         categoryId = catPart,
                         description = descPart,
                         type = typePart,
-                        organizerName = organizerPart,
-                        contact = contactPart,
                         locationName = locPart,
                         address = addrPart,
                         city = cityPart,
@@ -420,8 +415,6 @@ class CreateEventViewModel @Inject constructor(
                         categoryId = catPart,
                         description = descPart,
                         type = typePart,
-                        organizerName = organizerPart,
-                        contact = contactPart,
                         locationName = locPart,
                         address = addrPart,
                         city = cityPart,
