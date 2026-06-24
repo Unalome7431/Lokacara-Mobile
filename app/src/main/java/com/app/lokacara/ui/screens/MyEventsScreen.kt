@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.WorkspacePremium
@@ -44,7 +46,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.model.Event
-import com.app.lokacara.ui.components.EmptyEventState
 import com.app.lokacara.ui.components.EventCard
 import com.app.lokacara.ui.components.ProfilePageScaffold
 import com.app.lokacara.ui.components.ProfileSubpageSummaryCard
@@ -148,7 +149,7 @@ fun MyEventsScreen(
                     if (myEvents.isEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(20.dp))
-                            EmptyEventState(
+                            MyEventsEmptyState(
                                 text = "Kamu belum memiliki event yang aktif. Mulai buat event pertamamu sekarang!",
                                 onClick = { navController.navigateToCreateEvent() }
                             )
@@ -294,5 +295,35 @@ private fun String.isNotActiveStatus(): Boolean {
 fun MyEventsScreenPreview() {
     LokacaraMobileTheme {
         MyEventsScreen(navController = rememberNavController())
+    }
+}
+
+@Composable
+private fun MyEventsEmptyState(
+    text: String,
+    onClick: () -> Unit
+) {
+    androidx.compose.foundation.layout.Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = text,
+            fontFamily = PlusJakartaSansFont,
+            fontSize = 14.sp,
+            color = Gray500,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 20.sp
+        )
+        androidx.compose.material3.Button(
+            onClick = onClick,
+            shape = RoundedCornerShape(50),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Primary500),
+            modifier = Modifier.height(48.dp).padding(horizontal = 16.dp)
+        ) {
+            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Buat Event Sekarang", fontWeight = FontWeight.Bold)
+        }
     }
 }
