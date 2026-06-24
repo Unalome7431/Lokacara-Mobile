@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Download
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -353,12 +355,24 @@ fun HistoryDetailDialog(
                         .background(Primary100),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.WorkspacePremium,
-                        contentDescription = "Sertifikat",
-                        tint = Primary500,
-                        modifier = Modifier.size(72.dp)
-                    )
+                    if (event.imageUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(event.imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Sertifikat",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.WorkspacePremium,
+                            contentDescription = "Sertifikat",
+                            tint = Primary500,
+                            modifier = Modifier.size(72.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
