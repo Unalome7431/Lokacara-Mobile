@@ -346,8 +346,6 @@ fun ActiveDiscoverySummary(
     onReset: () -> Unit
 ) {
     val chips = buildList {
-        if (eventName.isNotBlank()) add("Nama: $eventName" to onClearName)
-        if (eventLocation.isNotBlank()) add("Lokasi: $eventLocation" to onClearLocation)
         if (priceFilter != PriceFilter.SEMUA) add("Harga: ${priceFilter.label}" to onClearPrice)
         if (sortOption != SortOption.TERBARU) add("Urut: ${sortOption.label}" to onEditSearch)
     }

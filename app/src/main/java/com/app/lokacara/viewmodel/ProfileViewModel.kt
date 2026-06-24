@@ -56,6 +56,8 @@ class ProfileViewModel @Inject constructor(
     private val _userProfile = MutableStateFlow(UserProfile(name = "", email = "", phone = "", location = ""))
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
+    private var profileVersion = 0L
+
     private val _myEvents = MutableStateFlow<List<Event>>(emptyList())
     val myEvents: StateFlow<List<Event>> = _myEvents.asStateFlow()
 
@@ -139,6 +141,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun refresh() {
+        profileVersion = System.currentTimeMillis()
         loadUserProfile()
         loadDashboard(forceRefresh = true)
     }
@@ -181,7 +184,10 @@ class ProfileViewModel @Inject constructor(
             ?.takeIf { it.isNotBlank() }
             ?.let { imageUrlProvider.avatarUrl(it) }
             ?.withAvatarCacheBuster(updatedAt)
-        return remote ?: local
+            ?.withAvatarCacheBuster(profileVersion.toString())
+        return remote ?: local?.let {
+            if (it.startsWith("http")) "$it?r=$profileVersion" else it
+        }
     }
 
     private fun String.withAvatarCacheBuster(version: String?): String {
@@ -292,6 +298,7 @@ class ProfileViewModel @Inject constructor(
             val context = getApplication<Application>()
             when (val result = repository.uploadAvatar(context, uri)) {
                 is ApiResult.Success -> {
+                    profileVersion = System.currentTimeMillis()
                     val localPath = fileStorageManager.saveProfilePhoto(uri)
                     localPath?.let { path ->
                         userSessionManager.updateProfileImagePath(path)
