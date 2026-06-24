@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
@@ -626,6 +627,12 @@ private fun FlatEventStatus(
         }
 
         if (event.kontak.isNotBlank()) {
+            val context = LocalContext.current
+            val phone = remember(event.kontak) { event.kontak.replace(Regex("[^+0-9]"), "") }
+            val onKontakClick = remember(phone) {{
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone"))
+                try { context.startActivity(intent) } catch (_: Exception) {}
+            }}
             Spacer(modifier = Modifier.height(8.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -634,23 +641,26 @@ private fun FlatEventStatus(
                 shadowElevation = 1.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onKontakClick)
+                        .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .background(SvgOrange.copy(alpha = 0.12f), CircleShape),
+                            .size(40.dp)
+                            .background(SvgOrange.copy(alpha = 0.15f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Outlined.Call,
+                            imageVector = Icons.Outlined.Call,
                             contentDescription = null,
                             tint = SvgOrange,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Kontak",
@@ -668,6 +678,13 @@ private fun FlatEventStatus(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                        contentDescription = "Hubungi",
+                        tint = SvgOrange,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
