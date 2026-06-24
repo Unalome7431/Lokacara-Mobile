@@ -530,7 +530,13 @@ private fun EventDetailContent(
 
         val descriptionText = remember(event.description, event.kontak) {
             if (event.kontak.isBlank()) event.description
-            else event.description.replace(Regex("\\*{0,2}[Kk]ontak\\s*:?\\s*.*?(\\n|$)"), "").trim()
+            else event.description
+                .lines()
+                .filterNot { line ->
+                    line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
+                }
+                .joinToString("\n")
+                .trim()
         }
         FlatEventDescription(text = descriptionText)
     }
