@@ -54,7 +54,6 @@ fun ExploreScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
     val hasMorePages by viewModel.hasMorePages.collectAsStateWithLifecycle()
-    val totalEvents by viewModel.totalEvents.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorType by viewModel.errorType.collectAsStateWithLifecycle()
     val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
@@ -195,19 +194,16 @@ fun ExploreScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(resultCountLabel(events.size, totalEvents, hasActiveFilter), fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
+                            IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
                                     Icon(
                                         imageVector = if (isGridView) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
                                         contentDescription = "Toggle view", tint = Gray500, modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
-                            }
                         }
                         ActiveDiscoverySummary(
                             eventName = eventName,
@@ -382,14 +378,6 @@ private fun ExploreExpandedSearch(
         onSearchSubmit = onSearchSubmit,
         onCancel = onCancel
     )
-}
-
-private fun resultCountLabel(visibleCount: Int, totalEvents: Int, hasActiveFilter: Boolean): String {
-    return if (!hasActiveFilter && totalEvents > visibleCount) {
-        "$visibleCount dari $totalEvents event"
-    } else {
-        "$visibleCount event ditemukan"
-    }
 }
 
 @Composable
