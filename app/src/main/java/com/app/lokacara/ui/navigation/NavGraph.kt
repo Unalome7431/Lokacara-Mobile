@@ -71,20 +71,15 @@ fun NavGraph(
             popEnterTransition = { fadeIn(tween(300)) },
             popExitTransition = { fadeOut(tween(200)) }
         ) {
-            OnboardingScreen(
-                onContinue = {
-                    val nextRoute = if (isLoggedIn) "main_container" else Screen.Register.route
-                    rootNavController.navigate(nextRoute) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                },
-                onSkip = {
-                    val nextRoute = if (isLoggedIn) "main_container" else Screen.Login.route
-                    rootNavController.navigate(nextRoute) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
+            OnboardingScreen(onFinish = {
+                val nextRoute = when {
+                    isLoggedIn -> "main_container"
+                    else -> Screen.Register.route
                 }
-            )
+                rootNavController.navigate(nextRoute) {
+                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                }
+            })
         }
         composable(
             Screen.Register.route,
