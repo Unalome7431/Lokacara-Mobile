@@ -1,7 +1,5 @@
 package com.app.lokacara.ui.screens
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.lifecycle.Lifecycle
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -50,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileAvatarImage
@@ -70,7 +69,13 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasProfileIdentity = userProfile.name.isNotBlank() || userProfile.email.isNotBlank()
     var showLogoutConfirm by remember { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screen.Profile.route) {
+            viewModel.refresh()
+        }
+    }
 
     if (showLogoutConfirm) {
         AlertDialog(
