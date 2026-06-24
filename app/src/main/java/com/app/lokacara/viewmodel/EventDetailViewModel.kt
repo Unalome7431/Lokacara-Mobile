@@ -44,7 +44,7 @@ class EventDetailViewModel @Inject constructor(
             id = 0L, title = "Memuat...", description = "",
             date = "", location = "", price = "",
             imageUrl = null, category = "", isBookmarked = false,
-            penyelenggara = ""
+            penyelenggara = "", kontak = ""
         )
     )
     val event: StateFlow<Event> = _event.asStateFlow()
