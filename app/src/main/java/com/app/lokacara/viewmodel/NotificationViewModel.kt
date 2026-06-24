@@ -3,6 +3,7 @@ package com.app.lokacara.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.LatestRequestGate
+import com.app.lokacara.data.NotificationDateFormatter
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.model.NotificationType
@@ -56,14 +57,12 @@ class NotificationViewModel @Inject constructor(
                             else -> NotificationType.SYSTEM
                         }
                         val rawDate = dto.created_at ?: ""
-                        val dateDisplay = rawDate.take(10)
-                        val timeDisplay = rawDate.substringAfter("T").take(8)
                         NotificationItem(
                             id = dto.id.toString(),
                             senderName = dto.sender_name ?: "Lokacara",
                             message = dto.message,
-                            time = timeDisplay.ifEmpty { dateDisplay },
-                            dateGroup = dateDisplay.ifEmpty { "Hari ini" },
+                            time = NotificationDateFormatter.formatTime(rawDate),
+                            dateGroup = NotificationDateFormatter.formatDateGroup(rawDate),
                             type = type,
                             isRead = dto.is_read,
                             category = dto.category,

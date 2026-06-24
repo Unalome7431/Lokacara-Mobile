@@ -127,11 +127,28 @@ fun SettingsScreen(
                 Column {
                     if (isGoogleAuth) {
                         Text(
-                            text = "Akun Anda terhubung dengan Google. Penghapusan akun memerlukan autentikasi ulang melalui Google Sign-In. Silakan hubungi dukungan Lokacara untuk bantuan lebih lanjut.",
+                            text = "Akun Anda terhubung dengan Google. Akun Google tidak memiliki kata sandi Lokacara sehingga tidak dapat dihapus langsung dari aplikasi.\n\nUntuk menghapus akun, silakan kunjungi Pusat Bantuan Lokacara dan ajukan permintaan penghapusan akun. Tim dukungan akan membantu memproses permintaan Anda.",
                             fontFamily = NunitoFont,
                             fontSize = 14.sp,
                             color = Gray600,
                             lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Buka Pusat Bantuan →",
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Primary500,
+                            modifier = Modifier
+                                .clickable {
+                                    showDeleteDialog = false
+                                    viewModel.clearDeleteError()
+                                    navController.navigate(Screen.HelpCenter.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                                .padding(vertical = 4.dp)
                         )
                     } else {
                         Text(
