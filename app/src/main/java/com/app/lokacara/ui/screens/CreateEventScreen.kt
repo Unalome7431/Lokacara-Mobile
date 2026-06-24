@@ -605,7 +605,7 @@ fun CreateEventScreen(
         SectionContainer(
             title = "Harga Event",
             subtitle = "Gratis atau berbayar",
-            backgroundColor = darkerBlueBg
+            backgroundColor = lightBlueBg
         ) {
             PriceSection(
                 isFree = isFreePrice,
