@@ -521,9 +521,14 @@ private fun EventDetailContent(
                 .trim()
         }
         val displayKontak = event.kontak.ifBlank {
-            event.description.lines().firstOrNull { line ->
+            val lines = event.description.lines()
+            val kontakIdx = lines.indexOfFirst { line ->
                 line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
-            }?.replace(Regex("\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*"), "")?.ifBlank { null } ?: ""
+            }
+            if (kontakIdx < 0) return@ifBlank ""
+            val firstLine = lines[kontakIdx].replace(Regex("\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*"), "").trim()
+            if (firstLine.isNotBlank()) firstLine
+            else lines.getOrNull(kontakIdx + 1)?.trim() ?: ""
         }
     Column(
         modifier = Modifier
@@ -682,8 +687,13 @@ private fun FlatEventStatus(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Text(
+                            text = "Hubungi via WhatsApp",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = SvgOrange
+                        )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
                         contentDescription = "Hubungi",
