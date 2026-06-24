@@ -256,27 +256,38 @@ fun ProfileAvatarImage(
                 .trim()
                 .takeIf { it.isNotEmpty() }
                 ?.let { value ->
-                    if (value.startsWith("/") && File(value).exists()) File(value) else value
+                    val localPath = value.substringBefore("?")
+                    if (localPath.startsWith("/") && File(localPath).exists()) File(localPath) else value
                 }
             else -> imageModel
         }
     }
-    val imageRequest = remember(resolvedModel) {
+    val cacheSignature = remember(imageModel, resolvedModel) {
+        when (imageModel) {
+            is String -> imageModel.trim()
+            is File -> "${imageModel.absolutePath}?v=${imageModel.lastModified()}"
+            null -> "profile-avatar-empty"
+            else -> imageModel.hashCode().toString()
+        }
+    }
+    val imageRequest = remember(resolvedModel, cacheSignature) {
         ImageRequest.Builder(context)
             .data(resolvedModel)
             .size(400)
             .precision(Precision.INEXACT)
             .crossfade(false)
+            .memoryCacheKey(cacheSignature)
+            .diskCacheKey(cacheSignature)
             .memoryCachePolicy(CachePolicy.DISABLED)
             .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     }
-    var hasError by remember(resolvedModel) { mutableStateOf(false) }
+    var hasError by remember(cacheSignature) { mutableStateOf(false) }
 
     if (resolvedModel == null || hasError) {
         ProfileAvatarPlaceholder(modifier = modifier)
     } else {
-        key(resolvedModel) {
+        key(cacheSignature) {
             AsyncImage(
                 model = imageRequest,
                 contentDescription = contentDescription,

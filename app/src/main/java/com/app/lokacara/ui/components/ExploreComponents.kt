@@ -290,7 +290,7 @@ private fun SearchableLocationDropdown(
             leadingIcon = { Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,

@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -136,7 +137,9 @@ class ProfileViewModel @Inject constructor(
             email = session.email.toDisplayEmail(),
             phone = session.phone,
             location = session.location,
-            profileImageUrl = localProfileImage.ifBlank { null }
+            profileImageUrl = localProfileImage
+                .takeIf { it.isNotBlank() }
+                ?.let(::withLocalAvatarVersion)
         )
     }
 
@@ -185,9 +188,13 @@ class ProfileViewModel @Inject constructor(
             ?.let { imageUrlProvider.avatarUrl(it) }
             ?.withAvatarCacheBuster(updatedAt)
             ?.withAvatarCacheBuster(profileVersion.toString())
-        return remote ?: local?.let {
-            if (it.startsWith("http")) "$it?r=$profileVersion" else it
-        }
+        return remote ?: local?.let(::withLocalAvatarVersion)
+    }
+
+    private fun withLocalAvatarVersion(path: String): String {
+        val file = File(path)
+        val version = file.lastModified().takeIf { it > 0L } ?: profileVersion
+        return "$path?v=$version"
     }
 
     private fun String.withAvatarCacheBuster(version: String?): String {
@@ -304,7 +311,7 @@ class ProfileViewModel @Inject constructor(
                         userSessionManager.updateProfileImagePath(path)
                     }
                     val user = result.data.user
-                    val displayImage = localPath ?: resolveProfileImageUrl(
+                    val displayImage = localPath?.let(::withLocalAvatarVersion) ?: resolveProfileImageUrl(
                         remoteAvatar = user?.avatar_url,
                         updatedAt = user?.updated_at ?: System.currentTimeMillis().toString()
                     )

@@ -47,8 +47,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.ProfileAvatarImage
@@ -69,12 +70,9 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasProfileIdentity = userProfile.name.isNotBlank() || userProfile.email.isNotBlank()
     var showLogoutConfirm by remember { mutableStateOf(false) }
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
-    LaunchedEffect(currentRoute) {
-        if (currentRoute == Screen.Profile.route) {
-            viewModel.refresh()
-        }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refresh()
     }
 
     if (showLogoutConfirm) {

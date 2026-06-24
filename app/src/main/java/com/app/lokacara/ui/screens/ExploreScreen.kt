@@ -123,7 +123,6 @@ fun ExploreScreen(
                 "loading" -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item { ExploreHeader() }
-                        item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }, onFilterClick = {}, activeFilterCount = activeFilterCount) }
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
                             ExploreCategories(

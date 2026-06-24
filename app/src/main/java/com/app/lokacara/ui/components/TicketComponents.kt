@@ -342,7 +342,8 @@ fun HistoryDetailDialog(
     event: HistoryEvent,
     onDismiss: () -> Unit,
     onDownload: () -> Unit = {},
-    isDownloaded: Boolean = false
+    isDownloaded: Boolean = false,
+    certificatePreview: String? = null
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
@@ -355,10 +356,10 @@ fun HistoryDetailDialog(
                         .background(Primary100),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (event.imageUrl != null) {
+                    if (certificatePreview != null) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(event.imageUrl)
+                                .data(certificatePreview)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Sertifikat",
