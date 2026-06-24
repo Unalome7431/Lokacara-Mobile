@@ -15,7 +15,11 @@ import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -125,17 +129,33 @@ class AuthViewModel @Inject constructor(
     val oldPassword = MutableStateFlow("")
     val newPassword = MutableStateFlow("")
 
+    val isGoogleAuth: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.authProvider == "google" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun changePassword() {
-        if (oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
+        val isGoogleUser = isGoogleAuth.value
+        if (!isGoogleUser && oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
         if (newPassword.value.length < 6) { showError("Kata sandi baru minimal 6 karakter"); return }
         if (newPassword.value != confirmPassword.value) { showError("Password baru dan konfirmasi tidak sama"); return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
-            when (val result = repository.changePassword(oldPassword.value, newPassword.value, confirmPassword.value)) {
+            val oldPass = if (isGoogleUser) "" else oldPassword.value
+            when (val result = repository.changePassword(oldPass, newPassword.value, confirmPassword.value)) {
                 is ApiResult.Success -> {
+                    if (isGoogleUser) {
+                        userSessionManager.saveAuth(
+                            token = userSessionManager.userSession.first().accessToken,
+                            userId = userSessionManager.userSession.first().userId,
+                            name = userSessionManager.userSession.first().name,
+                            email = userSessionManager.userSession.first().email,
+                            role = userSessionManager.userSession.first().userRole,
+                            provider = "email"
+                        )
+                    }
                     _changePasswordSuccess.value = true
-                    SnackbarManager.show("Kata sandi berhasil diubah")
+                    SnackbarManager.show(if (isGoogleUser) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah")
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message

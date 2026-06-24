@@ -94,7 +94,6 @@ fun SettingsScreen(
     val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
     val deleteError by viewModel.deleteError.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
-    val isGoogleAuth by viewModel.isGoogleAuth.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
@@ -125,49 +124,22 @@ fun SettingsScreen(
             },
             text = {
                 Column {
-                    if (isGoogleAuth) {
-                        Text(
-                            text = "Akun Anda terhubung dengan Google. Akun Google tidak memiliki kata sandi Lokacara sehingga tidak dapat dihapus langsung dari aplikasi.\n\nUntuk menghapus akun, silakan kunjungi Pusat Bantuan Lokacara dan ajukan permintaan penghapusan akun. Tim dukungan akan membantu memproses permintaan Anda.",
-                            fontFamily = NunitoFont,
-                            fontSize = 14.sp,
-                            color = Gray600,
-                            lineHeight = 20.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Buka Pusat Bantuan →",
-                            fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = Primary500,
-                            modifier = Modifier
-                                .clickable {
-                                    showDeleteDialog = false
-                                    viewModel.clearDeleteError()
-                                    navController.navigate(Screen.HelpCenter.route) {
-                                        launchSingleTop = true
-                                    }
-                                }
-                                .padding(vertical = 4.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "Akun Lokacara Anda akan dihapus permanen. Data profil, tiket, event, dan sertifikat yang terkait dengan akun ini dapat ikut terdampak. Masukkan kata sandi untuk melanjutkan.",
-                            fontFamily = NunitoFont,
-                            fontSize = 14.sp,
-                            color = Gray600,
-                            lineHeight = 20.sp
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LokacaraTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            placeholder = stringResource(R.string.auth_password_placeholder),
-                            isPassword = true,
-                            isOutlined = true,
-                            containerColor = Color.White
-                        )
-                    }
+                    Text(
+                        text = "Akun Lokacara Anda akan dihapus permanen. Data profil, tiket, event, dan sertifikat yang terkait dengan akun ini dapat ikut terdampak. Masukkan kata sandi untuk melanjutkan.",
+                        fontFamily = NunitoFont,
+                        fontSize = 14.sp,
+                        color = Gray600,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LokacaraTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = stringResource(R.string.auth_password_placeholder),
+                        isPassword = true,
+                        isOutlined = true,
+                        containerColor = Color.White
+                    )
                     if (deleteError != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -180,35 +152,22 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                if (!isGoogleAuth) {
-                    TextButton(
-                        onClick = { viewModel.deleteAccount(password) },
-                        enabled = !isDeleting && password.isNotBlank()
-                    ) {
-                        if (isDeleting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = SemanticErrorBase
-                            )
-                        } else {
-                            Text(
-                                text = stringResource(R.string.delete),
-                                color = SemanticErrorBase,
-                                fontFamily = NunitoFont,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                } else {
-                    TextButton(
-                        onClick = { showDeleteDialog = false; viewModel.clearDeleteError(); password = "" }
-                    ) {
+                TextButton(
+                    onClick = { viewModel.deleteAccount(password) },
+                    enabled = !isDeleting && password.isNotBlank()
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = SemanticErrorBase
+                        )
+                    } else {
                         Text(
-                            text = stringResource(R.string.cancel),
+                            text = stringResource(R.string.delete),
+                            color = SemanticErrorBase,
                             fontFamily = NunitoFont,
-                            fontWeight = FontWeight.Bold,
-                            color = Gray500
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -280,36 +239,12 @@ fun SettingsScreen(
                     .border(1.dp, Gray100, RoundedCornerShape(22.dp))
                     .padding(vertical = 8.dp)
             ) {
-                if (!isGoogleAuth) {
-                    SettingsActionRow(
-                        icon = Icons.Rounded.Lock,
-                        title = stringResource(R.string.settings_change_password),
-                        subtitle = "Perbarui kata sandi masuk akun",
-                        onClick = { navController.navigate(Screen.ChangePassword.route) }
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 14.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.settings_change_password),
-                                fontFamily = NunitoFont,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = Gray400
-                            )
-                            Text(
-                                text = "Akun Google: kata sandi dikelola melalui Google",
-                                fontFamily = NunitoFont,
-                                fontSize = 12.sp,
-                                color = Gray400
-                            )
-                        }
-                    }
-                }
+                SettingsActionRow(
+                    icon = Icons.Rounded.Lock,
+                    title = stringResource(R.string.settings_change_password),
+                    subtitle = "Perbarui kata sandi masuk akun",
+                    onClick = { navController.navigate(Screen.ChangePassword.route) }
+                )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,

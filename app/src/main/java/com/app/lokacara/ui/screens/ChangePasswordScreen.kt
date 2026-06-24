@@ -37,6 +37,7 @@ fun ChangePasswordScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val changePasswordSuccess by viewModel.changePasswordSuccess.collectAsStateWithLifecycle()
+    val isGoogleAuth by viewModel.isGoogleAuth.collectAsStateWithLifecycle()
 
     LaunchedEffect(changePasswordSuccess) {
         if (changePasswordSuccess) {
@@ -84,7 +85,7 @@ fun ChangePasswordScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Ubah Kata Sandi",
+                text = if (isGoogleAuth) "Buat Kata Sandi" else "Ubah Kata Sandi",
                 style = MaterialTheme.typography.headlineSmall,
                 color = Primary500,
                 textAlign = TextAlign.Center
@@ -93,7 +94,8 @@ fun ChangePasswordScreen(
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Pastikan kata sandi baru Anda unik dan kuat untuk menjaga keamanan akun.",
+                text = if (isGoogleAuth) "Akun Anda saat ini masuk melalui Google. Buat kata sandi agar bisa masuk dengan email dan kata sandi juga."
+                    else "Pastikan kata sandi baru Anda unik dan kuat untuk menjaga keamanan akun.",
                 fontFamily = NunitoFont,
                 fontSize = 14.sp,
                 color = Gray500,
@@ -110,7 +112,7 @@ fun ChangePasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    ChangePasswordFields(viewModel)
+                    ChangePasswordFields(viewModel = viewModel, isGoogleAuth = isGoogleAuth)
                 }
             }
 
@@ -142,7 +144,7 @@ fun ChangePasswordScreen(
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
                     Text(
-                        text = "Simpan Kata Sandi Baru",
+                        text = if (isGoogleAuth) "Buat Kata Sandi" else "Simpan Kata Sandi Baru",
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
@@ -155,12 +157,14 @@ fun ChangePasswordScreen(
 }
 
 @Composable
-private fun ChangePasswordFields(viewModel: AuthViewModel) {
+private fun ChangePasswordFields(viewModel: AuthViewModel, isGoogleAuth: Boolean) {
     val oldPassword by viewModel.oldPassword.collectAsStateWithLifecycle()
     val newPassword by viewModel.newPassword.collectAsStateWithLifecycle()
     val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
 
-    LokacaraTextField(value = oldPassword, onValueChange = { viewModel.oldPassword.value = it }, placeholder = stringResource(R.string.change_password_old_placeholder), label = stringResource(R.string.change_password_old_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
+    if (!isGoogleAuth) {
+        LokacaraTextField(value = oldPassword, onValueChange = { viewModel.oldPassword.value = it }, placeholder = stringResource(R.string.change_password_old_placeholder), label = stringResource(R.string.change_password_old_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
+    }
     LokacaraTextField(value = newPassword, onValueChange = { viewModel.newPassword.value = it }, placeholder = stringResource(R.string.change_password_new_placeholder), label = stringResource(R.string.change_password_new_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
     LokacaraTextField(value = confirmPassword, onValueChange = { viewModel.confirmPassword.value = it }, placeholder = stringResource(R.string.change_password_confirm_placeholder), label = stringResource(R.string.change_password_confirm_label), isPassword = true, isOutlined = true, containerColor = Gray50, shape = RoundedCornerShape(12.dp))
 }
