@@ -510,14 +510,28 @@ private fun EventDetailContent(
     qrToken: String?,
     onOpenMap: () -> Unit,
     onOpenLink: () -> Unit
-) {
+    ) {
+        val descriptionText = remember(event.description) {
+            event.description
+                .lines()
+                .filterNot { line ->
+                    line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
+                }
+                .joinToString("\n")
+                .trim()
+        }
+        val displayKontak = event.kontak.ifBlank {
+            event.description.lines().firstOrNull { line ->
+                line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
+            }?.replace(Regex("\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*"), "")?.ifBlank { null } ?: ""
+        }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken)
+        FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken, displayKontak = displayKontak)
 
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
@@ -529,16 +543,6 @@ private fun EventDetailContent(
 
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
-        val descriptionText = remember(event.description, event.kontak) {
-            if (event.kontak.isBlank()) event.description
-            else event.description
-                .lines()
-                .filterNot { line ->
-                    line.trim().let { it.contains("kontak", ignoreCase = true) && it.replace(Regex("[*:#\\s]"), "").startsWith("kontak", ignoreCase = true) }
-                }
-                .joinToString("\n")
-                .trim()
-        }
         FlatEventDescription(text = descriptionText)
     }
 }
@@ -549,7 +553,8 @@ private fun FlatEventStatus(
     isRegistered: Boolean,
     isHost: Boolean,
     isQrLoading: Boolean,
-    qrToken: String?
+    qrToken: String?,
+    displayKontak: String = ""
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -626,9 +631,9 @@ private fun FlatEventStatus(
             }
         }
 
-        if (event.kontak.isNotBlank()) {
+        if (displayKontak.isNotBlank()) {
             val context = LocalContext.current
-            val phone = remember(event.kontak) { event.kontak.replace(Regex("[^+0-9]"), "") }
+            val phone = remember(displayKontak) { displayKontak.replace(Regex("[^+0-9]"), "") }
             val onKontakClick = remember(phone) {{
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone"))
                 try { context.startActivity(intent) } catch (_: Exception) {}
@@ -669,7 +674,7 @@ private fun FlatEventStatus(
                             color = Gray500
                         )
                         Text(
-                            text = event.kontak,
+                            text = displayKontak,
                             fontFamily = NunitoFont,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
