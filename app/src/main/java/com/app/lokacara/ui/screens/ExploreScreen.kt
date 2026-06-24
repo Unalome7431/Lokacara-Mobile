@@ -160,6 +160,9 @@ fun ExploreScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         ExploreHeader()
+                        if (!isSearchExpanded) {
+                            CollapsedSearchBar(onClick = { viewModel.expandSearch() }, activeFilterCount = activeFilterCount)
+                        }
                         AnimatedVisibility(
                             visible = isSearchExpanded,
                             enter = expandVertically(tween(300)) + fadeIn(tween(300)),

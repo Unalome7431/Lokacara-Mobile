@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
+import coil.request.CachePolicy
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -247,6 +249,7 @@ fun ProfileAvatarImage(
     modifier: Modifier = Modifier,
     contentDescription: String = "Profile Picture"
 ) {
+    val context = LocalContext.current
     val resolvedModel = remember(imageModel) {
         when (imageModel) {
             is String -> imageModel
@@ -258,13 +261,14 @@ fun ProfileAvatarImage(
             else -> imageModel
         }
     }
-    val context = LocalContext.current
-    val imageRequest = remember(context, resolvedModel) {
+    val imageRequest = remember(resolvedModel) {
         ImageRequest.Builder(context)
             .data(resolvedModel)
             .size(400)
             .precision(Precision.INEXACT)
             .crossfade(false)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     }
     var hasError by remember(resolvedModel) { mutableStateOf(false) }
@@ -272,13 +276,15 @@ fun ProfileAvatarImage(
     if (resolvedModel == null || hasError) {
         ProfileAvatarPlaceholder(modifier = modifier)
     } else {
-        AsyncImage(
-            model = imageRequest,
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            onError = { hasError = true },
-            modifier = modifier
-        )
+        key(resolvedModel) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                onError = { hasError = true },
+                modifier = modifier
+            )
+        }
     }
 }
 
