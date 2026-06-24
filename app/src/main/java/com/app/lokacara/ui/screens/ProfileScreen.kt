@@ -70,7 +70,7 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasProfileIdentity = userProfile.name.isNotBlank() || userProfile.email.isNotBlank()
     var showLogoutConfirm by remember { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshDashboard() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     if (showLogoutConfirm) {
         AlertDialog(
