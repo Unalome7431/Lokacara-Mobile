@@ -49,6 +49,7 @@ class CreateEventViewModel @Inject constructor(
 
     val namaEvent = MutableStateFlow("")
     val penyelenggara = MutableStateFlow("")
+    val kontak = MutableStateFlow("")
     val waktuMulai = MutableStateFlow("")
     val waktuSelesai = MutableStateFlow("")
     val isOnline = MutableStateFlow(true)
@@ -107,7 +108,11 @@ class CreateEventViewModel @Inject constructor(
                     } else {
                         namaEvent.value = event.title
                         deskripsi.value = event.description
-                        penyelenggara.value = event.user?.name ?: userSessionManager.userSession.first().name
+                        val session = userSessionManager.userSession.first()
+                        penyelenggara.value = event.organizer_name?.takeIf { it.isNotBlank() } ?: event.user?.name ?: session.name
+                        kontak.value = event.contact?.takeIf { it.isNotBlank() }
+                            ?: event.contact_phone?.takeIf { it.isNotBlank() }
+                            ?: session.phone
                         kuota.value = event.capacity ?: 50
                         waktuMulai.value = event.start_datetime
                         waktuSelesai.value = event.end_datetime
@@ -164,6 +169,7 @@ class CreateEventViewModel @Inject constructor(
             val draft = draftManager.loadDraft() ?: return@launch
             namaEvent.value = draft.namaEvent
             penyelenggara.value = draft.penyelenggara
+            kontak.value = draft.kontak
             waktuMulai.value = draft.waktuMulai
             waktuSelesai.value = draft.waktuSelesai
             isOnline.value = draft.isOnline
@@ -232,6 +238,9 @@ class CreateEventViewModel @Inject constructor(
             if (session.name.isNotBlank()) {
                 penyelenggara.value = session.name
             }
+            if (session.phone.isNotBlank()) {
+                kontak.value = session.phone
+            }
         }
     }
 
@@ -239,6 +248,8 @@ class CreateEventViewModel @Inject constructor(
         val eventIsOnline = isOnline.value
         val title = namaEvent.value.trim()
         val desc = deskripsi.value.trim()
+        val organizerName = penyelenggara.value.trim()
+        val contactText = kontak.value.trim()
         val venueOrPlatform = aplikasiTempat.value.trim()
         val addressOrLink = alamat.value.trim()
         val cityName = city.value.trim()
@@ -248,10 +259,15 @@ class CreateEventViewModel @Inject constructor(
         val errors = mutableMapOf<String, String>()
         if (title.isBlank()) errors["title"] = "Nama event harus diisi"
         if (title.length > 255) errors["title"] = "Nama event maksimal 255 karakter"
+        if (organizerName.isBlank()) errors["organizer_name"] = "Penyelenggara harus diisi"
+        if (contactText.isBlank()) errors["contact"] = "Kontak harus diisi"
         if (desc.isBlank()) errors["description"] = "Deskripsi event harus diisi"
         if (desc.length > 5000) errors["description"] = "Deskripsi event maksimal 5000 karakter"
         if (selectedCategoryId.value == null) errors["category"] = "Kategori event harus dipilih"
-        if (waktuMulai.value.isBlank()) errors["start_time"] = "Waktu mulai harus diisi"
+        if (waktuMulai.value.isBlank()) {
+            errors["date"] = "Tanggal event harus diisi"
+            errors["start_time"] = "Waktu mulai harus diisi"
+        }
         if (waktuSelesai.value.isBlank()) errors["end_time"] = "Waktu selesai harus diisi"
         if (kuota.value <= 0 || kuota.value > 100_000) errors["capacity"] = "Kuota peserta harus di antara 1 sampai 100000"
         val priceValue = resolvePriceValue()
@@ -323,6 +339,8 @@ class CreateEventViewModel @Inject constructor(
             val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
             val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
             val typePart = type.toRequestBody("text/plain".toMediaTypeOrNull())
+            val organizerPart = organizerName.toRequestBody("text/plain".toMediaTypeOrNull())
+            val contactPart = contactText.toRequestBody("text/plain".toMediaTypeOrNull())
             val startDatePart = startDateStr.toRequestBody("text/plain".toMediaTypeOrNull())
             val startTimePart = startTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
             val endTimePart = endTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -380,6 +398,8 @@ class CreateEventViewModel @Inject constructor(
                         categoryId = catPart,
                         description = descPart,
                         type = typePart,
+                        organizerName = organizerPart,
+                        contact = contactPart,
                         locationName = locPart,
                         address = addrPart,
                         city = cityPart,
@@ -400,6 +420,8 @@ class CreateEventViewModel @Inject constructor(
                         categoryId = catPart,
                         description = descPart,
                         type = typePart,
+                        organizerName = organizerPart,
+                        contact = contactPart,
                         locationName = locPart,
                         address = addrPart,
                         city = cityPart,
@@ -517,6 +539,32 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
+    fun setEventDate(date: String) {
+        val startTime = apiTimePart(waktuMulai.value).ifBlank { DEFAULT_START_TIME }
+        val endTime = apiTimePart(waktuSelesai.value).ifBlank { DEFAULT_END_TIME }
+        val start = "$date $startTime"
+        val end = "$date $endTime"
+
+        waktuMulai.value = start
+        waktuSelesai.value = if (isEndAfterStart(start, end)) end else addHours(start, 1)
+        clearError()
+    }
+
+    fun setEventStartTime(time: String) {
+        val date = selectedEventDate().ifBlank { todayDate() }
+        setDateTime(isStart = true, date = date, time = time)
+        clearError()
+    }
+
+    fun setEventEndTime(time: String) {
+        val date = selectedEventDate().ifBlank { todayDate() }
+        if (waktuMulai.value.isBlank()) {
+            waktuMulai.value = "$date $DEFAULT_START_TIME"
+        }
+        waktuSelesai.value = "$date $time"
+        clearError()
+    }
+
     private fun addHours(input: String, hours: Int): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         return try {
@@ -553,10 +601,35 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
+    fun getDisplayDate(input: String): String {
+        if (input.isBlank()) return ""
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val date = sdf.parse(input.take(10)) ?: return input.take(10)
+            val display = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
+            display.format(date)
+        } catch (_: Exception) {
+            input.take(10)
+        }
+    }
+
+    fun getDisplayTime(input: String): String {
+        return apiTimePart(input).take(5)
+    }
+
+    fun getTimePickerHour(input: String, defaultHour: Int): Int {
+        return apiTimePart(input).take(2).toIntOrNull()?.coerceIn(0, 23) ?: defaultHour
+    }
+
+    fun getTimePickerMinute(input: String, defaultMinute: Int): Int {
+        return apiTimePart(input).drop(3).take(2).toIntOrNull()?.coerceIn(0, 59) ?: defaultMinute
+    }
+
     fun resetForm() {
         eventIdToEdit.value = null
         namaEvent.value = ""
         penyelenggara.value = ""
+        kontak.value = ""
         waktuMulai.value = ""
         waktuSelesai.value = ""
         isOnline.value = true
@@ -587,6 +660,7 @@ class CreateEventViewModel @Inject constructor(
     private fun currentDraft(): EventDraft = EventDraft(
         namaEvent = namaEvent.value,
         penyelenggara = penyelenggara.value,
+        kontak = kontak.value,
         waktuMulai = waktuMulai.value,
         waktuSelesai = waktuSelesai.value,
         isOnline = isOnline.value,
@@ -605,6 +679,8 @@ class CreateEventViewModel @Inject constructor(
 
     private fun hasMeaningfulDraft(): Boolean {
         return namaEvent.value.isNotBlank() ||
+            penyelenggara.value.isNotBlank() ||
+            kontak.value.isNotBlank() ||
             waktuMulai.value.isNotBlank() ||
             waktuSelesai.value.isNotBlank() ||
             !isOnline.value ||
@@ -637,5 +713,20 @@ class CreateEventViewModel @Inject constructor(
             val digits = priceAmount.value.filter(Char::isDigit)
             if (digits.isBlank()) null else digits.toIntOrNull()?.takeIf { it >= 1 }
         }
+    }
+
+    private fun selectedEventDate(): String = waktuMulai.value.take(10).takeIf { it.length == 10 } ?: ""
+
+    private fun apiTimePart(input: String): String {
+        return if (input.length >= 19) input.substring(11, 19) else ""
+    }
+
+    private fun todayDate(): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date())
+    }
+
+    private companion object {
+        const val DEFAULT_START_TIME = "12:00:00"
+        const val DEFAULT_END_TIME = "13:00:00"
     }
 }

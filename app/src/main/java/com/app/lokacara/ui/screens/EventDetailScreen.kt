@@ -252,7 +252,7 @@ fun EventDetailScreen(
             },
             text = {
                 Text(
-                    text = "Kamu yakin ingin membatalkan pendaftaran event ini?",
+                    text = "Pendaftaran kamu akan dibatalkan dan tiket event ini tidak lagi aktif.",
                     fontFamily = PlusJakartaSansFont,
                     color = Gray600
                 )
@@ -264,12 +264,12 @@ fun EventDetailScreen(
                         viewModel.leaveEvent()
                     }
                 ) {
-                    Text("Batalkan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                    Text("Ya, Batalkan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) {
-                    Text(stringResource(R.string.cancel), color = Gray600)
+                    Text("Tetap Terdaftar", color = Gray600)
                 }
             },
             containerColor = Color.White,
@@ -565,6 +565,53 @@ private fun FlatEventStatus(
             color = Gray600,
             lineHeight = 19.sp
         )
+
+        if (event.penyelenggara.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Primary100.copy(alpha = 0.7f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = Primary500,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Penyelenggara",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = Gray500
+                        )
+                        Text(
+                            text = event.penyelenggara,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Gray900,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
 
         if (isRegistered && !isHost) {
             Surface(
@@ -911,22 +958,32 @@ private fun EventBottomActionBar(
                     }
                 }
             } else if (isRegistered) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
-                        onClick = onLeave,
-                        enabled = !isJoining,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(stringResource(R.string.event_detail_cancel_registration), color = SemanticErrorBase, fontWeight = FontWeight.Bold)
-                    }
-                    Button(
-                        onClick = onOpenTickets,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                    ) {
-                        Text("Lihat Tiket", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = onOpenTickets,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                ) {
+                    Text("Lihat Tiket", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                TextButton(
+                    onClick = onLeave,
+                    enabled = !isJoining,
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    if (isJoining) {
+                        CircularProgressIndicator(
+                            color = SemanticErrorBase,
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.event_detail_cancel_registration),
+                            color = SemanticErrorBase,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             } else {

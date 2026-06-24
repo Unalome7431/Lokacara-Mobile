@@ -272,32 +272,49 @@ private fun SearchableLocationDropdown(
     val filtered = remember(value, suggestions) {
         if (value.isBlank()) suggestions else suggestions.filter { it.contains(value, true) }
     }
+    val visibleOptions = remember(filtered) {
+        filtered.take(MAX_LOCATION_DROPDOWN_ITEMS)
+    }
+    val shouldShowMenu = expanded
 
     ExposedDropdownMenuBox(
-        expanded = expanded && filtered.isNotEmpty(),
-        onExpandedChange = {
-            if (suggestions.isNotEmpty()) expanded = it
-        }
+        expanded = shouldShowMenu,
+        onExpandedChange = { expanded = it }
     ) {
         OutlinedTextField(
             value = value,
             onValueChange = { newVal ->
                 onValueChange(newVal)
-                expanded = newVal.isNotEmpty() || filtered.isNotEmpty()
+                expanded = true
             },
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
                 if (value.isNotEmpty()) {
-                    IconButton(onClick = onClear) {
+                    IconButton(onClick = {
+                        onClear()
+                        expanded = true
+                    }) {
                         Icon(Icons.Filled.Close, null, tint = Gray400, modifier = Modifier.size(18.dp))
+                    }
+                } else {
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = "Pilih lokasi",
+                            tint = Gray400,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             },
             leadingIcon = { Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) expanded = true
+                }
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true),
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,
@@ -305,19 +322,52 @@ private fun SearchableLocationDropdown(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
         ExposedDropdownMenu(
-            expanded = expanded && filtered.isNotEmpty(),
-            onDismissRequest = { expanded = false }
+            expanded = shouldShowMenu,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 280.dp)
         ) {
-            filtered.forEach { option ->
+            if (filtered.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont, fontSize = 14.sp) },
-                    onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                    leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    text = {
+                        Text(
+                            if (suggestions.isEmpty()) "Lokasi belum tersedia" else "Lokasi tidak ditemukan",
+                            color = Gray500,
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 13.sp
+                        )
+                    },
+                    onClick = {},
+                    enabled = false,
+                    leadingIcon = { Icon(icon, null, tint = Gray400, modifier = Modifier.size(16.dp)) }
                 )
+            } else {
+                visibleOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont, fontSize = 14.sp) },
+                        onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
+                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    )
+                }
+                if (filtered.size > visibleOptions.size) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Ketik lebih spesifik untuk hasil lainnya",
+                                color = Gray500,
+                                fontFamily = PlusJakartaSansFont,
+                                fontSize = 12.sp
+                            )
+                        },
+                        onClick = {},
+                        enabled = false
+                    )
+                }
             }
         }
     }
 }
+
+private const val MAX_LOCATION_DROPDOWN_ITEMS = 5
 
 @Composable
 fun ExploreCategories(
@@ -353,8 +403,8 @@ fun ActiveDiscoverySummary(
     onReset: () -> Unit
 ) {
     val chips = buildList {
-        if (priceFilter != PriceFilter.SEMUA) add("Harga: ${priceFilter.label}" to onClearPrice)
-        if (sortOption != SortOption.TERBARU) add("Urut: ${sortOption.label}" to onEditSearch)
+        if (priceFilter != PriceFilter.SEMUA) add(priceFilter.label to onClearPrice)
+        if (sortOption != SortOption.TERBARU) add(sortOption.label to onEditSearch)
     }
     if (chips.isEmpty()) return
 
@@ -765,8 +815,8 @@ fun FilterBottomSheet(
                         color = Gray700
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PriceFilter.entries.forEach { filter ->
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(PriceFilter.entries, key = { it.name }, contentType = { "bottom_sheet_price_filter" }) { filter ->
                             FilterChip(
                                 selected = priceFilter == filter,
                                 onClick = { onPriceChange(filter) },

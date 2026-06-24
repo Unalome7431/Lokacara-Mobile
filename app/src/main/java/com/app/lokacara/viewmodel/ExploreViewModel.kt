@@ -40,7 +40,7 @@ enum class PriceFilter(val label: String) {
     SEMUA("Semua"),
     GRATIS("Gratis"),
     DIBAWAH_50RB("< Rp50rb"),
-    LIMA_PULUH_SERATUS("Rp50rb-Rp100rb"),
+    LIMA_PULUH_SERATUS("Rp50rb - Rp100rb"),
     DIATAS_100RB("> Rp100rb")
 }
 
@@ -178,7 +178,7 @@ class ExploreViewModel @Inject constructor(
 
         val filtered = events.filter { event ->
             val matchName = name.isEmpty() || event.title.contains(name, ignoreCase = true)
-            val matchLoc = eventMatchesCanonicalCity(event, loc)
+            val matchLoc = eventMatchesSearchLocation(event, loc)
             val matchCatText = cat.isEmpty() || event.category.contains(cat, ignoreCase = true)
             val matchChip = chip == "Semua" || event.category.equals(chip, ignoreCase = true)
             val matchDate = when (dateFilter) {
@@ -218,6 +218,20 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    private fun eventMatchesSearchLocation(event: Event, locationQuery: String): Boolean {
+        val query = locationQuery.trim()
+        if (query.isBlank()) return true
+
+        val directMatch = listOfNotNull(
+            event.city,
+            event.location,
+            event.address,
+            event.platformName
+        ).any { value -> value.contains(query, ignoreCase = true) }
+
+        return directMatch || eventMatchesCanonicalCity(event, query)
+    }
+
     private var searchJob: Job? = null
     private var loadMoreJob: Job? = null
     private val requestGate = LatestRequestGate()
@@ -247,7 +261,10 @@ class ExploreViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.getLocations()) {
                 is ApiResult.Success -> {
-                    _locationSuggestions.value = result.data.data.map { it.name }
+                    _locationSuggestions.value = result.data.data
+                        .map { it.name.trim() }
+                        .filter { it.isNotBlank() }
+                        .distinctBy { it.lowercase(Locale.getDefault()) }
                 }
                 is ApiResult.Error -> {
                     SnackbarManager.showError("Gagal memuat lokasi")
@@ -384,7 +401,8 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(
                 keyword = query.ifBlank { null },
                 categoryId = catId,
-                location = _eventLocation.value.trim().ifBlank { null }
+                // Location is filtered locally so venue/address queries are not dropped by city-only backend matching.
+                location = null
             )) {
                 is ApiResult.Success -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
@@ -425,7 +443,8 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(
                 keyword = _eventName.value.ifBlank { null },
                 categoryId = catId,
-                location = _eventLocation.value.trim().ifBlank { null },
+                // Keep pagination consistent with the local venue/address location filter.
+                location = null,
                 page = targetPage
             )) {
                 is ApiResult.Success -> {
@@ -482,7 +501,28 @@ class ExploreViewModel @Inject constructor(
 
     private fun applyEvents(events: List<Event>) {
         _allEvents.value = events
+        mergeEventLocationsIntoSuggestions(events)
         prefetchExploreImages(events)
+    }
+
+    private fun mergeEventLocationsIntoSuggestions(events: List<Event>) {
+        val fromEvents = events
+            .flatMap { event -> locationSuggestionCandidates(event) }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        val merged = (_locationSuggestions.value + fromEvents)
+            .distinctBy { it.lowercase(Locale.getDefault()) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+        _locationSuggestions.value = merged
+    }
+
+    private fun locationSuggestionCandidates(event: Event): List<String> {
+        val addressSegments = event.address.orEmpty()
+            .split(',')
+            .map { it.trim() }
+            .filter { segment -> segment.isNotBlank() && segment.split(Regex("\\s+")).size <= 4 }
+
+        return listOfNotNull(event.city, event.location) + addressSegments
     }
 
     private fun prefetchExploreImages(events: List<Event>) {

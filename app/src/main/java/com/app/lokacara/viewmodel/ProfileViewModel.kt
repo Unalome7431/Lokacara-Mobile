@@ -78,9 +78,22 @@ class ProfileViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     init {
+        observeProfileImagePath()
         observeDashboard()
         loadUserProfile()
         loadDashboard()
+    }
+
+    private fun observeProfileImagePath() {
+        viewModelScope.launch {
+            userSessionManager.userSession.collect { session ->
+                val path = session.profileImagePath.takeIf { it.isNotBlank() } ?: return@collect
+                profileVersion = System.currentTimeMillis()
+                _userProfile.value = _userProfile.value.copy(
+                    profileImageUrl = withLocalAvatarVersion(path)
+                )
+            }
+        }
     }
 
     private fun observeDashboard() {
@@ -183,17 +196,19 @@ class ProfileViewModel @Inject constructor(
         localFallback: String? = null
     ): String? {
         val local = localFallback?.takeIf { it.isNotBlank() }
+        val localVersioned = local?.let(::withLocalAvatarVersion)
         val remote = remoteAvatar
             ?.takeIf { it.isNotBlank() }
             ?.let { imageUrlProvider.avatarUrl(it) }
             ?.withAvatarCacheBuster(updatedAt)
             ?.withAvatarCacheBuster(profileVersion.toString())
-        return remote ?: local?.let(::withLocalAvatarVersion)
+        return localVersioned ?: remote
     }
 
     private fun withLocalAvatarVersion(path: String): String {
         val file = File(path)
-        val version = file.lastModified().takeIf { it > 0L } ?: profileVersion
+        val version = maxOf(file.lastModified(), profileVersion).takeIf { it > 0L }
+            ?: System.currentTimeMillis()
         return "$path?v=$version"
     }
 

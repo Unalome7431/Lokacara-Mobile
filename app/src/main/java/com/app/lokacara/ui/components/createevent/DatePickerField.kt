@@ -19,9 +19,10 @@ fun DatePickerField(
     onClick: () -> Unit,
     label: String,
     placeholder: String,
+    modifier: Modifier = Modifier,
     isError: Boolean = false
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         Text(
             text = label,
             fontFamily = NunitoFont,
