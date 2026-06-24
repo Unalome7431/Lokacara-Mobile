@@ -7,10 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.DraftManager
 import com.app.lokacara.data.EventDraft
+import com.app.lokacara.data.media.isRemoteUri
+import com.app.lokacara.data.media.prepareMediaFromUri
+import com.app.lokacara.data.media.toMultipartBodyPart
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
-import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.data.validation.Validators
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.MapLocation
 import com.app.lokacara.ui.components.SnackbarManager
@@ -28,8 +32,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import android.graphics.BitmapFactory
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
@@ -345,40 +347,28 @@ class CreateEventViewModel @Inject constructor(
             val lngPart = if (lngStr.isNotBlank())
                 lngStr.toRequestBody("text/plain".toMediaTypeOrNull()) else null
 
-            val posterBody = try {
-                posterUri.value?.let { uri ->
-                    if (uri.scheme == "http" || uri.scheme == "https") {
-                        null
-                    } else {
-                        val ctx = getApplication<Application>()
-                        withContext(Dispatchers.IO) {
-                            val inputStream = ctx.contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Poster tidak dapat dibuka")
-                            var bytes = inputStream.use { it.readBytes() }
-                            if (bytes.size > 10_000_000) throw IllegalArgumentException("Ukuran poster maksimal 10 MB")
-                            val fileName = "poster_${System.currentTimeMillis()}.jpg"
-                            if (bytes.size > 300_000) {
-                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                                    ?: throw IllegalArgumentException("Format poster tidak didukung")
-                                val maxDim = 1600f
-                                val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
-                                val scaled = if (scale < 1f) {
-                                    android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                                } else bitmap
-                                val out = ByteArrayOutputStream()
-                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                                bytes = out.toByteArray()
-                                if (scaled !== bitmap) scaled.recycle()
-                                bitmap.recycle()
-                            }
-                            val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
-                            MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
+            val posterBody = posterUri.value?.let { uri ->
+                if (isRemoteUri(uri)) {
+                    null
+                } else {
+                    try {
+                        val prepared = prepareMediaFromUri(
+                            context = getApplication(),
+                            uri = uri,
+                            formDataName = "poster"
+                        )
+                        if (prepared.isFailure) {
+                            showError(prepared.exceptionOrNull()?.message ?: "Poster tidak valid")
+                            _isLoading.value = false
+                            return@launch
                         }
+                        prepared.getOrThrow().toMultipartBodyPart()
+                    } catch (e: IllegalArgumentException) {
+                        showError(e.message ?: "Poster tidak valid")
+                        _isLoading.value = false
+                        return@launch
                     }
                 }
-            } catch (e: IllegalArgumentException) {
-                showError(e.message ?: "Poster tidak valid")
-                _isLoading.value = false
-                return@launch
             }
 
             val currentEditId = eventIdToEdit.value

@@ -11,6 +11,10 @@ import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.mapDashboardCertificates
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.BoundedImagePrefetcher
+import com.app.lokacara.data.validation.Validators
+import com.app.lokacara.data.validation.isValidEmail
+import com.app.lokacara.data.validation.isDisplayableEmail
+import com.app.lokacara.data.validation.toDisplayEmail
 import com.app.lokacara.data.remote.ImageUrlProvider
 import com.app.lokacara.data.remote.toEvent
 import com.app.lokacara.model.CertificateData
@@ -219,7 +223,7 @@ class ProfileViewModel @Inject constructor(
             SnackbarManager.showError("Nama tidak boleh kosong")
             return
         }
-        if (field == UserSessionManager.Field.EMAIL && !isValidEmail(trimmedValue)) {
+        if (field == UserSessionManager.Field.EMAIL && !trimmedValue.isValidEmail()) {
             _errorMessage.value = "Format email tidak valid"
             SnackbarManager.showError("Format email tidak valid")
             return
@@ -242,7 +246,7 @@ class ProfileViewModel @Inject constructor(
         try {
             val session = userSessionManager.userSession.first()
             val resolvedEmail = profile.email.ifBlank { session.email }.trim()
-            if (resolvedEmail.isBlank() || !isValidEmail(resolvedEmail)) {
+            if (resolvedEmail.isBlank() || !resolvedEmail.isValidEmail()) {
                 _errorMessage.value = "Email tidak valid"
                 SnackbarManager.showError("Email tidak valid")
                 return
@@ -280,23 +284,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun isValidEmail(value: String): Boolean {
-        return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(value)
-    }
-
-    private fun String.isSyntheticEmail(): Boolean {
-        return trim().endsWith("@placeholder.local", ignoreCase = true)
-    }
-
-    private fun String.isDisplayableEmail(): Boolean {
-        val value = trim()
-        return value.isNotBlank() && !value.isSyntheticEmail()
-    }
-
-    private fun String.toDisplayEmail(): String {
-        return if (isDisplayableEmail()) trim() else ""
-    }
-
     fun saveProfilePhoto(uri: Uri) {
         if (_isLoading.value) return
         viewModelScope.launch {
@@ -320,8 +307,13 @@ class ProfileViewModel @Inject constructor(
                     SnackbarManager.show("Foto profil diperbarui")
                 }
                 is ApiResult.Error -> {
-                    _errorMessage.value = result.message
-                    SnackbarManager.showError(result.message)
+                    val message = if (result.code == 413) {
+                        "Ukuran foto terlalu besar. Coba pilih foto yang lebih kecil."
+                    } else {
+                        result.message
+                    }
+                    _errorMessage.value = message
+                    SnackbarManager.showError(message)
                 }
             }
             _isLoading.value = false

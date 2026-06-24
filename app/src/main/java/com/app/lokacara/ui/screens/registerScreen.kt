@@ -1,8 +1,5 @@
 package com.app.lokacara.ui.screens
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,23 +12,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
-import com.app.lokacara.R
-import com.app.lokacara.ui.components.GoogleButton
-import com.app.lokacara.ui.components.LokacaraTextField
-import com.app.lokacara.ui.components.SnackbarManager
-import com.app.lokacara.ui.theme.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.app.lokacara.R
+import com.app.lokacara.ui.components.LokacaraTextField
+import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
 fun RegisterScreen(
@@ -41,6 +33,11 @@ fun RegisterScreen(
     onLoginSuccess: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val name by viewModel.name.collectAsStateWithLifecycle()
+    val email by viewModel.email.collectAsStateWithLifecycle()
+    val password by viewModel.password.collectAsStateWithLifecycle()
+    val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
+    val isChecked by viewModel.isChecked.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val fieldErrors by viewModel.registerFieldErrors.collectAsStateWithLifecycle()
@@ -49,9 +46,7 @@ fun RegisterScreen(
 
     var isVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
+    LaunchedEffect(Unit) { isVisible = true }
 
     LaunchedEffect(registerSuccess) {
         if (registerSuccess) {
@@ -68,6 +63,67 @@ fun RegisterScreen(
         }
     }
 
+    RegisterContent(
+        isVisible = isVisible,
+        name = name,
+        email = email,
+        password = password,
+        confirmPassword = confirmPassword,
+        isChecked = isChecked,
+        isLoading = isLoading,
+        errorMessage = errorMessage,
+        fieldErrors = fieldErrors,
+        onNameChange = {
+            viewModel.name.value = it
+            viewModel.clearRegisterFieldError("name")
+        },
+        onEmailChange = {
+            viewModel.email.value = it
+            viewModel.clearRegisterFieldError("email")
+        },
+        onPasswordChange = {
+            viewModel.password.value = it
+            viewModel.clearRegisterFieldError("password")
+            viewModel.clearRegisterFieldError("confirmPassword")
+        },
+        onConfirmPasswordChange = {
+            viewModel.confirmPassword.value = it
+            viewModel.clearRegisterFieldError("confirmPassword")
+        },
+        onCheckedChange = {
+            viewModel.isChecked.value = it
+            viewModel.clearRegisterFieldError("agreement")
+        },
+        onRegisterClick = { viewModel.register() },
+        onNavigateToLogin = onNavigateToLogin,
+        onNavigateToTerms = onNavigateToTerms,
+        onNavigateToPrivacy = onNavigateToPrivacy,
+        onGoogleSignIn = { viewModel.loginWithGoogle(it.first, it.second) }
+    )
+}
+
+@Composable
+fun RegisterContent(
+    isVisible: Boolean,
+    name: String,
+    email: String,
+    password: String,
+    confirmPassword: String,
+    isChecked: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+    fieldErrors: Map<String, String>,
+    onNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onCheckedChange: (Boolean) -> Unit,
+    onRegisterClick: () -> Unit,
+    onNavigateToLogin: () -> Unit,
+    onNavigateToTerms: () -> Unit,
+    onNavigateToPrivacy: () -> Unit,
+    onGoogleSignIn: (Pair<String, String?>) -> Unit
+) {
     androidx.compose.animation.AnimatedVisibility(
         visible = isVisible,
         enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(500)) +
@@ -96,45 +152,10 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            val context = LocalContext.current
-            val googleWebClientId = stringResource(R.string.google_web_client_id)
-            val googleSignInOptions = remember(googleWebClientId) {
-                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
-                    requestEmail()
-                    if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
-                }.build()
-            }
-            val googleSignInClient = remember { GoogleSignIn.getClient(context, googleSignInOptions) }
-            val googleLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.StartActivityForResult()
-            ) { result ->
-                try {
-                    val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                    account.result?.let { acct ->
-                        acct.idToken?.let { idToken ->
-                            viewModel.loginWithGoogle(idToken, acct.email)
-                        }
-                    }
-                } catch (e: Exception) {
-                    SnackbarManager.showError("Gagal login dengan Google")
-                }
-            }
-
-            GoogleButton(
-                text = "Daftar dengan Google",
-                enabled = !isLoading && googleWebClientId.isNotBlank(),
-                onClick = { googleLauncher.launch(googleSignInClient.signInIntent) }
+            GoogleSignInSection(
+                isLoading = isLoading,
+                onGoogleSignIn = onGoogleSignIn
             )
-            if (googleWebClientId.isBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Daftar dengan Google belum dikonfigurasi di perangkat ini.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Gray500,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -151,17 +172,87 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            RegisterCredentialFields(
-                viewModel = viewModel,
-                fieldErrors = fieldErrors,
-                onNavigateToTerms = onNavigateToTerms,
-                onNavigateToPrivacy = onNavigateToPrivacy
+            LokacaraTextField(
+                value = name,
+                onValueChange = onNameChange,
+                placeholder = "Nama Lengkap"
             )
+            FieldErrorText(fieldErrors["name"])
+            Spacer(modifier = Modifier.height(16.dp))
+            LokacaraTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                placeholder = "Email",
+                keyboardType = KeyboardType.Email
+            )
+            FieldErrorText(fieldErrors["email"])
+            Spacer(modifier = Modifier.height(16.dp))
+            LokacaraTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                placeholder = "Kata Sandi",
+                isPassword = true
+            )
+            FieldErrorText(fieldErrors["password"])
+            Spacer(modifier = Modifier.height(16.dp))
+            LokacaraTextField(
+                value = confirmPassword,
+                onValueChange = onConfirmPasswordChange,
+                placeholder = "Konfirmasi Kata Sandi",
+                isPassword = true
+            )
+            FieldErrorText(fieldErrors["confirmPassword"])
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(
+                    checked = isChecked,
+                    onCheckedChange = onCheckedChange,
+                    colors = CheckboxDefaults.colors(checkedColor = Primary500, uncheckedColor = Gray300),
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        "Saya setuju dengan",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Gray500
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "persyaratan layanan",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = Primary500,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable(onClick = onNavigateToTerms)
+                                .padding(vertical = 4.dp)
+                        )
+                        Text(" dan ", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = Gray500)
+                        Text(
+                            text = "kebijakan privasi",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = Primary500,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable(onClick = onNavigateToPrivacy)
+                                .padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+            FieldErrorText(fieldErrors["agreement"])
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.register() },
+                onClick = onRegisterClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -210,7 +301,7 @@ fun RegisterScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = Primary500,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onNavigateToLogin() }
+                    modifier = Modifier.clickable(onClick = onNavigateToLogin)
                 )
             }
 
@@ -219,119 +310,12 @@ fun RegisterScreen(
             Image(
                 painter = painterResource(id = R.drawable.logo_lokacara),
                 contentDescription = "Logo Bawah",
-                modifier = Modifier.height(72.dp)
+                modifier = Modifier.height(112.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
-
-@Composable
-private fun RegisterCredentialFields(viewModel: AuthViewModel) {
-    RegisterCredentialFields(
-        viewModel = viewModel,
-        fieldErrors = emptyMap(),
-        onNavigateToTerms = {},
-        onNavigateToPrivacy = {}
-    )
-}
-
-@Composable
-private fun RegisterCredentialFields(
-    viewModel: AuthViewModel,
-    fieldErrors: Map<String, String>,
-    onNavigateToTerms: () -> Unit,
-    onNavigateToPrivacy: () -> Unit
-) {
-    val name by viewModel.name.collectAsStateWithLifecycle()
-    val email by viewModel.email.collectAsStateWithLifecycle()
-    val password by viewModel.password.collectAsStateWithLifecycle()
-    val confirmPassword by viewModel.confirmPassword.collectAsStateWithLifecycle()
-    val isChecked by viewModel.isChecked.collectAsStateWithLifecycle()
-
-    LokacaraTextField(
-        value = name,
-        onValueChange = {
-            viewModel.name.value = it
-            viewModel.clearRegisterFieldError("name")
-        },
-        placeholder = "Nama Lengkap"
-    )
-    FieldErrorText(fieldErrors["name"])
-    Spacer(modifier = Modifier.height(16.dp))
-    LokacaraTextField(
-        value = email,
-        onValueChange = {
-            viewModel.email.value = it
-            viewModel.clearRegisterFieldError("email")
-        },
-        placeholder = "Email",
-        keyboardType = KeyboardType.Email
-    )
-    FieldErrorText(fieldErrors["email"])
-    Spacer(modifier = Modifier.height(16.dp))
-    LokacaraTextField(
-        value = password,
-        onValueChange = {
-            viewModel.password.value = it
-            viewModel.clearRegisterFieldError("password")
-            viewModel.clearRegisterFieldError("confirmPassword")
-        },
-        placeholder = "Kata Sandi",
-        isPassword = true
-    )
-    FieldErrorText(fieldErrors["password"])
-    Spacer(modifier = Modifier.height(16.dp))
-    LokacaraTextField(
-        value = confirmPassword,
-        onValueChange = {
-            viewModel.confirmPassword.value = it
-            viewModel.clearRegisterFieldError("confirmPassword")
-        },
-        placeholder = "Konfirmasi Kata Sandi",
-        isPassword = true
-    )
-    FieldErrorText(fieldErrors["confirmPassword"])
-    Spacer(modifier = Modifier.height(16.dp))
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Checkbox(
-            checked = isChecked,
-            onCheckedChange = {
-                viewModel.isChecked.value = it
-                viewModel.clearRegisterFieldError("agreement")
-            },
-            colors = CheckboxDefaults.colors(checkedColor = Primary500, uncheckedColor = Gray300),
-            modifier = Modifier.padding(end = 4.dp)
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text("Saya setuju dengan", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = Gray500)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "persyaratan layanan",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = Primary500,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .clickable(onClick = onNavigateToTerms)
-                        .padding(top = 16.dp)
-                )
-                Text(" dan ", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = Gray500)
-                Text(
-                    text = "kebijakan privasi",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = Primary500,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .heightIn(min = 48.dp)
-                        .clickable(onClick = onNavigateToPrivacy)
-                        .padding(top = 16.dp)
-                )
-            }
-        }
-    }
-    FieldErrorText(fieldErrors["agreement"])
 }
 
 @Composable
@@ -350,9 +334,26 @@ private fun FieldErrorText(message: String?) {
 @Composable
 fun RegisterScreenPreview() {
     LokacaraMobileTheme {
-        RegisterScreen(
+        RegisterContent(
+            isVisible = true,
+            name = "",
+            email = "",
+            password = "",
+            confirmPassword = "",
+            isChecked = false,
+            isLoading = false,
+            errorMessage = null,
+            fieldErrors = emptyMap(),
+            onNameChange = {},
+            onEmailChange = {},
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onCheckedChange = {},
+            onRegisterClick = {},
             onNavigateToLogin = {},
-            viewModel = hiltViewModel()
+            onNavigateToTerms = {},
+            onNavigateToPrivacy = {},
+            onGoogleSignIn = {}
         )
     }
 }

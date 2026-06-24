@@ -3,6 +3,9 @@ package com.app.lokacara.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.validation.Validators
+import com.app.lokacara.data.validation.isValidEmail
+import com.app.lokacara.data.validation.isSyntheticEmail
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
@@ -216,32 +219,17 @@ class AuthViewModel @Inject constructor(
 
     private fun validateLogin(): Map<String, String> {
         val errors = mutableMapOf<String, String>()
-        val trimmedEmail = email.value.trim()
-        if (trimmedEmail.isBlank()) {
-            errors["email"] = "Email harus diisi"
-        } else if (!trimmedEmail.isValidEmail()) {
-            errors["email"] = "Format email tidak valid"
-        }
+        Validators.validateEmail(email.value)?.let { errors["email"] = it }
         if (password.value.isBlank()) errors["password"] = "Kata sandi harus diisi"
         return errors
     }
 
     private fun validateRegister(): Map<String, String> {
         val errors = mutableMapOf<String, String>()
-        val trimmedName = name.value.trim()
-        val trimmedEmail = email.value.trim()
-        if (trimmedName.isBlank()) errors["name"] = "Nama lengkap harus diisi"
-        if (trimmedEmail.isBlank()) {
-            errors["email"] = "Email harus diisi"
-        } else if (!trimmedEmail.isValidEmail()) {
-            errors["email"] = "Format email tidak valid"
-        }
-        if (password.value.length < 6) errors["password"] = "Kata sandi minimal 6 karakter"
-        if (confirmPassword.value.isBlank()) {
-            errors["confirmPassword"] = "Konfirmasi kata sandi harus diisi"
-        } else if (password.value != confirmPassword.value) {
-            errors["confirmPassword"] = "Konfirmasi kata sandi tidak sama"
-        }
+        Validators.validateName(name.value)?.let { errors["name"] = it }
+        Validators.validateEmail(email.value)?.let { errors["email"] = it }
+        Validators.validatePassword(password.value)?.let { errors["password"] = it }
+        Validators.validatePasswordConfirmation(password.value, confirmPassword.value)?.let { errors["confirmPassword"] = it }
         if (!isChecked.value) errors["agreement"] = "Setujui syarat dan kebijakan privasi untuk daftar"
         return errors
     }
@@ -272,14 +260,6 @@ class AuthViewModel @Inject constructor(
             apiEmail.isSyntheticEmail() && fallback.isValidEmail() && !fallback.isSyntheticEmail() -> fallback
             else -> apiEmail
         }
-    }
-
-    private fun String.isSyntheticEmail(): Boolean {
-        return trim().endsWith("@placeholder.local", ignoreCase = true)
-    }
-
-    private fun String.isValidEmail(): Boolean {
-        return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(trim())
     }
 
     private fun showError(message: String) {
