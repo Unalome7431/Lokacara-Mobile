@@ -46,7 +46,7 @@ import com.app.lokacara.viewmodel.PriceFilter
 import com.app.lokacara.viewmodel.ErrorType
 
 @Composable
-fun ExploreHeader() {
+fun ExploreHeader(onSearchClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,8 +64,15 @@ fun ExploreHeader() {
             fontFamily = NunitoFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
-            color = Color.Black
+            color = Color.Black,
+            modifier = Modifier.weight(1f)
         )
+        IconButton(
+            onClick = onSearchClick,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(Icons.Outlined.Search, "Cari", tint = Primary500, modifier = Modifier.size(22.dp))
+        }
     }
 }
 
