@@ -409,7 +409,7 @@ fun EmptyEventState(
         ) {
             Icon(androidx.compose.material.icons.Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Buat Event Sekarang", fontWeight = FontWeight.Bold)
+            Text("Ikuti Event Sekarang", fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -183,7 +183,7 @@ class AuthViewModel @Inject constructor(
             _errorMessage.value = null
             when (val result = repository.loginWithGoogle(idToken)) {
                 is ApiResult.Success -> {
-                    if (saveAuthenticatedSession(result.data, fallbackEmail)) {
+                    if (saveAuthenticatedSession(result.data, fallbackEmail, provider = "google")) {
                         settingsManager.setOnboardingCompleted()
                         _loginSuccess.value = true
                         SnackbarManager.show("Login berhasil")
@@ -234,7 +234,7 @@ class AuthViewModel @Inject constructor(
         return errors
     }
 
-    private suspend fun saveAuthenticatedSession(auth: AuthResponse, fallbackEmail: String? = null): Boolean {
+    private suspend fun saveAuthenticatedSession(auth: AuthResponse, fallbackEmail: String? = null, provider: String = "email"): Boolean {
         val token = auth.token?.takeIf { it.isNotBlank() }
         val user = auth.user
         if (token == null || user == null || user.id <= 0L) {
@@ -249,7 +249,8 @@ class AuthViewModel @Inject constructor(
             userId = user.id,
             name = user.name,
             email = resolveSessionEmail(user.email, fallbackEmail),
-            role = user.role
+            role = user.role,
+            provider = provider
         )
         return true
     }

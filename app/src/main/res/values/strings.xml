@@ -55,6 +55,7 @@
     <!-- Event Detail -->
     <string name="event_detail_title">Detail Event</string>
     <string name="event_detail_date_label">Waktu &amp; Tanggal</string>
+    <string name="event_detail_price_label">Harga</string>
     <string name="event_detail_location_label">Lokasi</string>
     <string name="event_detail_organizer_label">Penyelenggara</string>
     <string name="event_detail_unknown_organizer">Tidak diketahui</string>

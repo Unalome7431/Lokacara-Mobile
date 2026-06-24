@@ -33,8 +33,10 @@ fun NavController.navigateToMainTab(route: String) {
 
 fun NavController.navigateToExplore(category: String = "") {
     navigate(Screen.Explore.createRoute(category)) {
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
+        if (category.isNotBlank()) {
+            popUpTo(Screen.Home.route) { inclusive = false }
+        } else {
+            popUpTo(graph.findStartDestination().id) { saveState = true }
         }
         launchSingleTop = true
         restoreState = category.isBlank()

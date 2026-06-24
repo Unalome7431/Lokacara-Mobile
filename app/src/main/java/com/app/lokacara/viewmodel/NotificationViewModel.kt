@@ -3,7 +3,6 @@ package com.app.lokacara.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.LatestRequestGate
-import com.app.lokacara.data.filterNotifications
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.model.NotificationItem
 import com.app.lokacara.model.NotificationType
@@ -13,9 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
@@ -36,11 +33,7 @@ class NotificationViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    val selectedTab = MutableStateFlow(0)
-
-    val filteredNotifications = combine(_notifications, selectedTab) { notifs, tabIndex ->
-        filterNotifications(notifs, tabIndex)
-    }.flowOn(Dispatchers.Default)
+    val filteredNotifications: StateFlow<List<NotificationItem>> = _notifications
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

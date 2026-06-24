@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,6 +45,10 @@ class SettingsViewModel @Inject constructor(
 
     private val _deleteSuccess = MutableStateFlow(false)
     val deleteSuccess: StateFlow<Boolean> = _deleteSuccess.asStateFlow()
+
+    val isGoogleAuth: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.authProvider == "google" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {

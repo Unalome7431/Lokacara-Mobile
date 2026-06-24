@@ -29,7 +29,8 @@ data class UserSession(
     val profileImagePath: String = "",
     val accessToken: String = "",
     val userId: Long = 0L,
-    val userRole: String = ""
+    val userRole: String = "",
+    val authProvider: String = "email"
 )
 
 class UserSessionManager(private val context: Context) {
@@ -47,6 +48,7 @@ class UserSessionManager(private val context: Context) {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val USER_ID = longPreferencesKey("user_id")
         val USER_ROLE = stringPreferencesKey("user_role")
+        val AUTH_PROVIDER = stringPreferencesKey("auth_provider")
     }
 
     val userSession: Flow<UserSession> = context.userDataStore.data.map { prefs ->
@@ -59,7 +61,8 @@ class UserSessionManager(private val context: Context) {
             profileImagePath = prefs[PROFILE_IMAGE_PATH] ?: "",
             accessToken = decryptToken(prefs[ACCESS_TOKEN] ?: ""),
             userId = prefs[USER_ID] ?: 0L,
-            userRole = prefs[USER_ROLE] ?: ""
+            userRole = prefs[USER_ROLE] ?: "",
+            authProvider = prefs[AUTH_PROVIDER] ?: "email"
         )
     }
 
@@ -73,7 +76,7 @@ class UserSessionManager(private val context: Context) {
         }
     }
 
-    suspend fun saveAuth(token: String, userId: Long, name: String, email: String, role: String) {
+    suspend fun saveAuth(token: String, userId: Long, name: String, email: String, role: String, provider: String = "email") {
         context.userDataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
             prefs[ACCESS_TOKEN] = encryptToken(token)
@@ -81,6 +84,7 @@ class UserSessionManager(private val context: Context) {
             prefs[NAME] = name
             prefs[EMAIL] = email
             prefs[USER_ROLE] = role
+            prefs[AUTH_PROVIDER] = provider
         }
     }
 

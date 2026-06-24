@@ -598,7 +598,7 @@ private fun EventInfoGrid(event: Event) {
             )
             EventMetricCard(
                 icon = Icons.Outlined.ConfirmationNumber,
-                label = "Harga",
+                label = stringResource(R.string.event_detail_price_label),
                 value = event.price,
                 modifier = Modifier.weight(1f)
             )
