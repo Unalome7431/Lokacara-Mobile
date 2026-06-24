@@ -526,7 +526,10 @@ private fun EventDetailContent(
         }
         
         fun extractPhone(text: String): String {
-            return phoneRegex.find(text)?.value ?: text.replace(Regex("[*_\\-]"), "").trim()
+            val found = phoneRegex.find(text)?.value
+            if (!found.isNullOrBlank()) return found
+            val digitsOnly = text.replace(Regex("[^+0-9]"), "").trim()
+            return if (digitsOnly.length >= 6) digitsOnly else ""
         }
         
         fun cleanKontak(raw: String): String {
@@ -546,6 +549,8 @@ private fun EventDetailContent(
         
         val displayKontak = apiKontak.ifBlank { descKontak }.ifBlank {
             phoneRegex.find(event.description)?.value ?: ""
+        }.let { 
+            if (it.length >= 6 && it.any { c -> c.isDigit() }) it else ""
         }
     Column(
         modifier = Modifier
