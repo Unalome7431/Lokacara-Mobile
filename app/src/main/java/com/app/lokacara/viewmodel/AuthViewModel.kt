@@ -133,29 +133,29 @@ class AuthViewModel @Inject constructor(
         .map { it.authProvider == "google" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.hasLocalPassword }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun changePassword() {
         val isGoogleUser = isGoogleAuth.value
-        if (!isGoogleUser && oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
-        if (newPassword.value.length < 6) { showError("Kata sandi baru minimal 6 karakter"); return }
+        val requiresOldPassword = !isGoogleUser || hasLocalPassword.value
+        if (requiresOldPassword && oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
+        if (newPassword.value.length < 8) { showError("Kata sandi baru minimal 8 karakter"); return }
         if (newPassword.value != confirmPassword.value) { showError("Password baru dan konfirmasi tidak sama"); return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
-            val oldPass = if (isGoogleUser) "" else oldPassword.value
-            when (val result = repository.changePassword(oldPass, newPassword.value, confirmPassword.value)) {
+            val oldPasswordPayload = if (requiresOldPassword) oldPassword.value else ""
+            when (val result = repository.changePassword(oldPasswordPayload, newPassword.value, confirmPassword.value)) {
                 is ApiResult.Success -> {
-                    if (isGoogleUser) {
-                        userSessionManager.saveAuth(
-                            token = userSessionManager.userSession.first().accessToken,
-                            userId = userSessionManager.userSession.first().userId,
-                            name = userSessionManager.userSession.first().name,
-                            email = userSessionManager.userSession.first().email,
-                            role = userSessionManager.userSession.first().userRole,
-                            provider = "email"
-                        )
+                    if (!hasLocalPassword.value) {
+                        userSessionManager.updateAuthState(hasLocalPassword = true)
                     }
                     _changePasswordSuccess.value = true
-                    SnackbarManager.show(if (isGoogleUser) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah")
+                    SnackbarManager.show(
+                        if (isGoogleUser && !requiresOldPassword) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah"
+                    )
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
@@ -264,13 +264,17 @@ class AuthViewModel @Inject constructor(
             return false
         }
 
+        val resolvedProvider = user.provider ?: provider
+        val resolvedHasLocalPassword = user.has_password ?: (resolvedProvider != "google")
+
         userSessionManager.saveAuth(
             token = token,
             userId = user.id,
             name = user.name,
             email = resolveSessionEmail(user.email, fallbackEmail),
             role = user.role,
-            provider = provider
+            provider = resolvedProvider,
+            hasLocalPassword = resolvedHasLocalPassword
         )
         return true
     }

@@ -50,6 +50,10 @@ class SettingsViewModel @Inject constructor(
         .map { it.authProvider == "google" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.hasLocalPassword }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             val previous = notificationsEnabled.value
@@ -78,6 +82,27 @@ class SettingsViewModel @Inject constructor(
             _isDeleting.value = true
             _deleteError.value = null
             when (val result = safeApiCall { apiService.deleteAccount(mapOf("password" to password)) }) {
+                is ApiResult.Success -> {
+                    _deleteSuccess.value = true
+                    SnackbarManager.show("Akun berhasil dihapus")
+                }
+                is ApiResult.Error -> {
+                    _deleteError.value = result.message
+                }
+            }
+            _isDeleting.value = false
+        }
+    }
+
+    fun deleteGoogleAccount(googleToken: String) {
+        if (googleToken.isBlank()) {
+            _deleteError.value = "Token Google tidak valid"
+            return
+        }
+        viewModelScope.launch {
+            _isDeleting.value = true
+            _deleteError.value = null
+            when (val result = safeApiCall { apiService.deleteAccount(mapOf("google_token" to googleToken)) }) {
                 is ApiResult.Success -> {
                     _deleteSuccess.value = true
                     SnackbarManager.show("Akun berhasil dihapus")

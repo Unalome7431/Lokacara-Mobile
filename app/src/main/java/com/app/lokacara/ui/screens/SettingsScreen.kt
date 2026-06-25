@@ -1,5 +1,7 @@
 package com.app.lokacara.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,8 +55,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +66,7 @@ import androidx.navigation.compose.rememberNavController
 import com.app.lokacara.R
 import com.app.lokacara.ui.components.LokacaraTextField
 import com.app.lokacara.ui.components.ProfilePageScaffold
+import com.app.lokacara.ui.components.SnackbarManager
 import com.app.lokacara.ui.theme.Gray100
 import com.app.lokacara.ui.theme.Gray200
 import com.app.lokacara.ui.theme.Gray400
@@ -81,6 +84,8 @@ import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.navigation.navigateBackOrHome
 import com.app.lokacara.ui.navigation.navigateToLoginAndClearMain
 import com.app.lokacara.viewmodel.SettingsViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 
@@ -95,11 +100,36 @@ fun SettingsScreen(
     val deleteError by viewModel.deleteError.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
     val isGoogleAuth by viewModel.isGoogleAuth.collectAsStateWithLifecycle()
+    val hasLocalPassword by viewModel.hasLocalPassword.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val googleWebClientId = stringResource(R.string.google_web_client_id)
+    val googleSignInOptions = remember(googleWebClientId) {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).apply {
+            requestEmail()
+            if (googleWebClientId.isNotBlank()) requestIdToken(googleWebClientId)
+        }.build()
+    }
+    val googleSignInClient = remember(googleWebClientId) { GoogleSignIn.getClient(context, googleSignInOptions) }
+    val googleDeleteLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        try {
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            val idToken = account.result?.idToken
+            if (!idToken.isNullOrBlank()) {
+                viewModel.deleteGoogleAccount(idToken)
+            } else {
+                SnackbarManager.showError("Verifikasi Google gagal. Coba lagi.")
+            }
+        } catch (_: Exception) {
+            SnackbarManager.showError("Gagal memverifikasi akun Google")
+        }
+    }
+    val isGooglePasswordless = isGoogleAuth && !hasLocalPassword
 
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var googleAccountInfoDialog by rememberSaveable { mutableStateOf<GoogleAccountActionInfo?>(null) }
 
     LaunchedEffect(deleteSuccess) {
         if (deleteSuccess) {
@@ -127,21 +157,35 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Akun Lokacara Anda akan dihapus permanen. Data profil, tiket, event, dan sertifikat yang terkait dengan akun ini dapat ikut terdampak. Masukkan kata sandi untuk melanjutkan.",
+                        text = if (isGoogleAuth) {
+                            "Akun Lokacara Anda akan dihapus permanen. Lanjutkan dengan verifikasi ulang Google untuk mengonfirmasi penghapusan akun."
+                        } else {
+                            "Akun Lokacara Anda akan dihapus permanen. Data profil, tiket, event, dan sertifikat yang terkait dengan akun ini dapat ikut terdampak. Masukkan kata sandi untuk melanjutkan."
+                        },
                         fontFamily = NunitoFont,
                         fontSize = 14.sp,
                         color = Gray600,
                         lineHeight = 20.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    LokacaraTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        placeholder = stringResource(R.string.auth_password_placeholder),
-                        isPassword = true,
-                        isOutlined = true,
-                        containerColor = Color.White
-                    )
+                    if (!isGoogleAuth) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LokacaraTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = stringResource(R.string.auth_password_placeholder),
+                            isPassword = true,
+                            isOutlined = true,
+                            containerColor = Color.White
+                        )
+                    } else if (googleWebClientId.isBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Login Google belum dikonfigurasi di perangkat ini.",
+                            fontFamily = NunitoFont,
+                            fontSize = 13.sp,
+                            color = SemanticErrorBase
+                        )
+                    }
                     if (deleteError != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -155,8 +199,14 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.deleteAccount(password) },
-                    enabled = !isDeleting && password.isNotBlank()
+                    onClick = {
+                        if (isGoogleAuth) {
+                            googleDeleteLauncher.launch(googleSignInClient.signInIntent)
+                        } else {
+                            viewModel.deleteAccount(password)
+                        }
+                    },
+                    enabled = !isDeleting && if (isGoogleAuth) googleWebClientId.isNotBlank() else password.isNotBlank()
                 ) {
                     if (isDeleting) {
                         CircularProgressIndicator(
@@ -166,7 +216,7 @@ fun SettingsScreen(
                         )
                     } else {
                         Text(
-                            text = stringResource(R.string.delete),
+                            text = if (isGoogleAuth) "Lanjutkan" else stringResource(R.string.delete),
                             color = SemanticErrorBase,
                             fontFamily = NunitoFont,
                             fontWeight = FontWeight.Bold
@@ -181,41 +231,6 @@ fun SettingsScreen(
                         fontFamily = NunitoFont,
                         fontWeight = FontWeight.Bold,
                         color = Gray500
-                    )
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
-        )
-    }
-
-    googleAccountInfoDialog?.let { info ->
-        AlertDialog(
-            onDismissRequest = { googleAccountInfoDialog = null },
-            title = {
-                Text(
-                    text = info.title,
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            },
-            text = {
-                Text(
-                    text = info.message,
-                    fontFamily = NunitoFont,
-                    fontSize = 14.sp,
-                    color = Gray600,
-                    lineHeight = 20.sp
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { googleAccountInfoDialog = null }) {
-                    Text(
-                        text = stringResource(R.string.ok),
-                        fontFamily = NunitoFont,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary500
                     )
                 }
             },
@@ -277,29 +292,20 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp)
             ) {
                 if (isGoogleAuth) {
-                    GoogleAuthInfoCard()
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
-                    SettingsActionRow(
-                        icon = Icons.Rounded.Lock,
-                        title = stringResource(R.string.settings_change_password),
-                        subtitle = "Akun Google tidak memakai kata sandi lokal",
-                        onClick = {
-                            googleAccountInfoDialog = GoogleAccountActionInfo(
-                                title = "Kata Sandi Tidak Tersedia",
-                                message = "Akun ini masuk menggunakan Google, jadi flow ubah kata sandi lokal belum dipakai di aplikasi. Jika nanti backend mendukung akun Google dengan kata sandi tambahan, menu ini bisa diaktifkan lagi."
-                            )
-                        }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
-                } else {
-                    SettingsActionRow(
-                        icon = Icons.Rounded.Lock,
-                        title = stringResource(R.string.settings_change_password),
-                        subtitle = "Perbarui kata sandi masuk akun",
-                        onClick = { navController.navigate(Screen.ChangePassword.route) }
-                    )
+                    GoogleAuthInfoCard(hasLocalPassword = hasLocalPassword)
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 }
+                SettingsActionRow(
+                    icon = Icons.Rounded.Lock,
+                    title = stringResource(R.string.settings_change_password),
+                    subtitle = when {
+                        isGooglePasswordless -> "Tambahkan kata sandi lokal untuk akun Google"
+                        isGoogleAuth -> "Perbarui kata sandi lokal akun Google Anda"
+                        else -> "Perbarui kata sandi masuk akun"
+                    },
+                    onClick = { navController.navigate(Screen.ChangePassword.route) }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
                     title = stringResource(R.string.settings_privacy_policy),
@@ -353,16 +359,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            if (isGoogleAuth) {
-                                googleAccountInfoDialog = GoogleAccountActionInfo(
-                                    title = "Hapus Akun Belum Tersedia",
-                                    message = "Akun Google perlu verifikasi ulang dengan Google sebelum bisa dihapus. Saat ini backend hapus akun masih meminta kata sandi, jadi flow hapus akun untuk login Google belum bisa dijalankan dari aplikasi."
-                                )
-                            } else {
-                                showDeleteDialog = true
-                            }
-                        }
+                        .clickable { showDeleteDialog = true }
                         .padding(horizontal = 20.dp, vertical = 14.dp)
                         .heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -390,7 +387,11 @@ fun SettingsScreen(
                             color = SemanticErrorBase
                         )
                         Text(
-                            text = if (isGoogleAuth) "Butuh verifikasi Google, belum tersedia di aplikasi" else "Hapus permanen akun dan data terkait",
+                            text = if (isGoogleAuth) {
+                                "Verifikasi ulang dengan Google untuk hapus akun"
+                            } else {
+                                "Hapus permanen akun dan data terkait"
+                            },
                             fontFamily = NunitoFont,
                             fontSize = 12.sp,
                             color = Gray500
@@ -404,13 +405,8 @@ fun SettingsScreen(
     }
 }
 
-private data class GoogleAccountActionInfo(
-    val title: String,
-    val message: String
-)
-
 @Composable
-private fun GoogleAuthInfoCard() {
+private fun GoogleAuthInfoCard(hasLocalPassword: Boolean) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -431,7 +427,11 @@ private fun GoogleAuthInfoCard() {
                 color = Gray900
             )
             Text(
-                text = "Beberapa aksi keamanan masih memakai kata sandi lokal. Untuk akun Google, flow ubah kata sandi dan hapus akun belum didukung penuh di aplikasi.",
+                text = if (hasLocalPassword) {
+                    "Akun ini tetap terhubung ke Google, dan sekarang juga bisa memakai kata sandi lokal."
+                } else {
+                    "Akun ini terhubung ke Google. Anda bisa menambahkan kata sandi lokal tanpa melepas login Google."
+                },
                 fontFamily = NunitoFont,
                 fontSize = 12.sp,
                 color = Gray600,

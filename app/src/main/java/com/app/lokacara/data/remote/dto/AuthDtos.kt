@@ -23,6 +23,8 @@ data class UserDto(
     val name: String,
     val email: String,
     val role: String = "user",
+    val provider: String? = null,
+    val has_password: Boolean? = null,
     val phone: String? = null,
     val location: String? = null,
     val avatar_url: String? = null,

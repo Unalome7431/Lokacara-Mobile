@@ -111,6 +111,10 @@ class ProfileViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val user = result.data.user
                         if (user != null) {
+                            userSessionManager.updateAuthState(
+                                provider = user.provider,
+                                hasLocalPassword = user.has_password
+                            )
                             val session = userSessionManager.userSession.first()
                             val email = when {
                                 user.email.isDisplayableEmail() -> user.email.trim()
@@ -288,6 +292,12 @@ class ProfileViewModel @Inject constructor(
 
             when (val result = repository.updateProfile(body)) {
                 is ApiResult.Success -> {
+                    result.data.user?.let { user ->
+                        userSessionManager.updateAuthState(
+                            provider = user.provider,
+                            hasLocalPassword = user.has_password
+                        )
+                    }
                     userSessionManager.updateField(
                         field = updatedField,
                         value = when (updatedField) {
@@ -326,6 +336,10 @@ class ProfileViewModel @Inject constructor(
                         userSessionManager.updateProfileImagePath(path)
                     }
                     val user = result.data.user
+                    userSessionManager.updateAuthState(
+                        provider = user?.provider,
+                        hasLocalPassword = user?.has_password
+                    )
                     val displayImage = localPath?.let(::withLocalAvatarVersion) ?: resolveProfileImageUrl(
                         remoteAvatar = user?.avatar_url,
                         updatedAt = user?.updated_at ?: System.currentTimeMillis().toString()

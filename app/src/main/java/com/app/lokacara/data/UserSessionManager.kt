@@ -30,7 +30,8 @@ data class UserSession(
     val accessToken: String = "",
     val userId: Long = 0L,
     val userRole: String = "",
-    val authProvider: String = "email"
+    val authProvider: String = "email",
+    val hasLocalPassword: Boolean = true
 )
 
 class UserSessionManager(private val context: Context) {
@@ -49,6 +50,7 @@ class UserSessionManager(private val context: Context) {
         val USER_ID = longPreferencesKey("user_id")
         val USER_ROLE = stringPreferencesKey("user_role")
         val AUTH_PROVIDER = stringPreferencesKey("auth_provider")
+        val HAS_LOCAL_PASSWORD = booleanPreferencesKey("has_local_password")
     }
 
     val userSession: Flow<UserSession> = context.userDataStore.data.map { prefs ->
@@ -62,7 +64,8 @@ class UserSessionManager(private val context: Context) {
             accessToken = decryptToken(prefs[ACCESS_TOKEN] ?: ""),
             userId = prefs[USER_ID] ?: 0L,
             userRole = prefs[USER_ROLE] ?: "",
-            authProvider = prefs[AUTH_PROVIDER] ?: "email"
+            authProvider = prefs[AUTH_PROVIDER] ?: "email",
+            hasLocalPassword = prefs[HAS_LOCAL_PASSWORD] ?: true
         )
     }
 
@@ -76,7 +79,15 @@ class UserSessionManager(private val context: Context) {
         }
     }
 
-    suspend fun saveAuth(token: String, userId: Long, name: String, email: String, role: String, provider: String = "email") {
+    suspend fun saveAuth(
+        token: String,
+        userId: Long,
+        name: String,
+        email: String,
+        role: String,
+        provider: String = "email",
+        hasLocalPassword: Boolean = provider != "google"
+    ) {
         context.userDataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
             prefs[ACCESS_TOKEN] = encryptToken(token)
@@ -85,6 +96,14 @@ class UserSessionManager(private val context: Context) {
             prefs[EMAIL] = email
             prefs[USER_ROLE] = role
             prefs[AUTH_PROVIDER] = provider
+            prefs[HAS_LOCAL_PASSWORD] = hasLocalPassword
+        }
+    }
+
+    suspend fun updateAuthState(provider: String? = null, hasLocalPassword: Boolean? = null) {
+        context.userDataStore.edit { prefs ->
+            provider?.let { prefs[AUTH_PROVIDER] = it }
+            hasLocalPassword?.let { prefs[HAS_LOCAL_PASSWORD] = it }
         }
     }
 
