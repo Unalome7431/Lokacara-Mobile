@@ -94,10 +94,12 @@ fun SettingsScreen(
     val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
     val deleteError by viewModel.deleteError.collectAsStateWithLifecycle()
     val deleteSuccess by viewModel.deleteSuccess.collectAsStateWithLifecycle()
+    val isGoogleAuth by viewModel.isGoogleAuth.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var googleAccountInfoDialog by rememberSaveable { mutableStateOf<GoogleAccountActionInfo?>(null) }
 
     LaunchedEffect(deleteSuccess) {
         if (deleteSuccess) {
@@ -187,6 +189,41 @@ fun SettingsScreen(
         )
     }
 
+    googleAccountInfoDialog?.let { info ->
+        AlertDialog(
+            onDismissRequest = { googleAccountInfoDialog = null },
+            title = {
+                Text(
+                    text = info.title,
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    text = info.message,
+                    fontFamily = NunitoFont,
+                    fontSize = 14.sp,
+                    color = Gray600,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { googleAccountInfoDialog = null }) {
+                    Text(
+                        text = stringResource(R.string.ok),
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary500
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     ProfilePageScaffold(title = "Pengaturan", onBack = { navController.navigateBackOrHome() }) {
         Column(
             modifier = Modifier
@@ -239,13 +276,30 @@ fun SettingsScreen(
                     .border(1.dp, Gray100, RoundedCornerShape(22.dp))
                     .padding(vertical = 8.dp)
             ) {
-                SettingsActionRow(
-                    icon = Icons.Rounded.Lock,
-                    title = stringResource(R.string.settings_change_password),
-                    subtitle = "Perbarui kata sandi masuk akun",
-                    onClick = { navController.navigate(Screen.ChangePassword.route) }
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
+                if (isGoogleAuth) {
+                    GoogleAuthInfoCard()
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
+                    SettingsActionRow(
+                        icon = Icons.Rounded.Lock,
+                        title = stringResource(R.string.settings_change_password),
+                        subtitle = "Akun Google tidak memakai kata sandi lokal",
+                        onClick = {
+                            googleAccountInfoDialog = GoogleAccountActionInfo(
+                                title = "Kata Sandi Tidak Tersedia",
+                                message = "Akun ini masuk menggunakan Google, jadi flow ubah kata sandi lokal belum dipakai di aplikasi. Jika nanti backend mendukung akun Google dengan kata sandi tambahan, menu ini bisa diaktifkan lagi."
+                            )
+                        }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
+                } else {
+                    SettingsActionRow(
+                        icon = Icons.Rounded.Lock,
+                        title = stringResource(R.string.settings_change_password),
+                        subtitle = "Perbarui kata sandi masuk akun",
+                        onClick = { navController.navigate(Screen.ChangePassword.route) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp), thickness = 1.dp, color = Gray100)
+                }
                 SettingsActionRow(
                     icon = Icons.Rounded.PrivacyTip,
                     title = stringResource(R.string.settings_privacy_policy),
@@ -299,7 +353,16 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showDeleteDialog = true }
+                        .clickable {
+                            if (isGoogleAuth) {
+                                googleAccountInfoDialog = GoogleAccountActionInfo(
+                                    title = "Hapus Akun Belum Tersedia",
+                                    message = "Akun Google perlu verifikasi ulang dengan Google sebelum bisa dihapus. Saat ini backend hapus akun masih meminta kata sandi, jadi flow hapus akun untuk login Google belum bisa dijalankan dari aplikasi."
+                                )
+                            } else {
+                                showDeleteDialog = true
+                            }
+                        }
                         .padding(horizontal = 20.dp, vertical = 14.dp)
                         .heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -327,7 +390,7 @@ fun SettingsScreen(
                             color = SemanticErrorBase
                         )
                         Text(
-                            text = "Hapus permanen akun dan data terkait",
+                            text = if (isGoogleAuth) "Butuh verifikasi Google, belum tersedia di aplikasi" else "Hapus permanen akun dan data terkait",
                             fontFamily = NunitoFont,
                             fontSize = 12.sp,
                             color = Gray500
@@ -337,6 +400,43 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+private data class GoogleAccountActionInfo(
+    val title: String,
+    val message: String
+)
+
+@Composable
+private fun GoogleAuthInfoCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = Primary100.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Akun Google Terdeteksi",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Gray900
+            )
+            Text(
+                text = "Beberapa aksi keamanan masih memakai kata sandi lokal. Untuk akun Google, flow ubah kata sandi dan hapus akun belum didukung penuh di aplikasi.",
+                fontFamily = NunitoFont,
+                fontSize = 12.sp,
+                color = Gray600,
+                lineHeight = 18.sp
+            )
         }
     }
 }

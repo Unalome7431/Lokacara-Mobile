@@ -33,6 +33,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.util.Locale
 import javax.inject.Inject
 
@@ -533,8 +534,10 @@ class CreateEventViewModel @Inject constructor(
     }
 
     fun setEventDate(date: String) {
-        val startTime = apiTimePart(waktuMulai.value).ifBlank { DEFAULT_START_TIME }
-        val endTime = apiTimePart(waktuSelesai.value).ifBlank { DEFAULT_END_TIME }
+        val startTime = apiTimePart(waktuMulai.value).ifBlank { defaultStartTime() }
+        val endTime = apiTimePart(waktuSelesai.value).ifBlank {
+            apiTimePart(addHours("$date $startTime", 1)).ifBlank { defaultEndTime() }
+        }
         val start = "$date $startTime"
         val end = "$date $endTime"
 
@@ -552,7 +555,7 @@ class CreateEventViewModel @Inject constructor(
     fun setEventEndTime(time: String) {
         val date = selectedEventDate().ifBlank { todayDate() }
         if (waktuMulai.value.isBlank()) {
-            waktuMulai.value = "$date $DEFAULT_START_TIME"
+            waktuMulai.value = "$date ${defaultStartTime()}"
         }
         waktuSelesai.value = "$date $time"
         clearError()
@@ -616,6 +619,11 @@ class CreateEventViewModel @Inject constructor(
 
     fun getTimePickerMinute(input: String, defaultMinute: Int): Int {
         return apiTimePart(input).drop(3).take(2).toIntOrNull()?.coerceIn(0, 59) ?: defaultMinute
+    }
+
+    fun getDefaultTimePickerValue(offsetHours: Long = 0): Pair<Int, Int> {
+        val time = localTime(offsetHours)
+        return time.hour to time.minute
     }
 
     fun resetForm() {
@@ -718,8 +726,15 @@ class CreateEventViewModel @Inject constructor(
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date())
     }
 
-    private companion object {
-        const val DEFAULT_START_TIME = "12:00:00"
-        const val DEFAULT_END_TIME = "13:00:00"
+    private fun defaultStartTime(): String = formatApiTime(localTime())
+
+    private fun defaultEndTime(): String = formatApiTime(localTime(offsetHours = 1))
+
+    private fun localTime(offsetHours: Long = 0): LocalTime {
+        return LocalTime.now().plusHours(offsetHours)
+    }
+
+    private fun formatApiTime(time: LocalTime): String {
+        return String.format(Locale.US, "%02d:%02d:00", time.hour, time.minute)
     }
 }

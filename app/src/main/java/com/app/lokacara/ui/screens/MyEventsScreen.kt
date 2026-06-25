@@ -1,11 +1,14 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,6 +26,8 @@ import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,8 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -303,22 +311,58 @@ private fun MyEventsEmptyState(
     text: String,
     onClick: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Column(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        Color.White,
+                        Primary100.copy(alpha = 0.15f),
+                        Secondary100.copy(alpha = 0.15f)
+                    )
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(24.dp))
+            .padding(vertical = 42.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.Center
     ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(Color.White, CircleShape)
+                .shadow(2.dp, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.EventBusy,
+                contentDescription = null,
+                tint = Primary500,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         Text(
             text = text,
-            fontFamily = PlusJakartaSansFont,
-            fontSize = 14.sp,
-            color = Gray500,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            lineHeight = 20.sp
+            fontFamily = NunitoFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 17.sp,
+            color = Gray900,
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
         )
-        androidx.compose.material3.Button(
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
             onClick = onClick,
             shape = RoundedCornerShape(50),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Primary500),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary500),
             modifier = Modifier.height(48.dp).padding(horizontal = 16.dp)
         ) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))

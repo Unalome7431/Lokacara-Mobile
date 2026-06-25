@@ -81,10 +81,12 @@ import com.app.lokacara.ui.theme.Gray500
 import com.app.lokacara.ui.theme.Gray600
 import com.app.lokacara.ui.theme.Gray700
 import com.app.lokacara.ui.theme.Gray900
+import com.app.lokacara.ui.theme.MontserratFont
 import com.app.lokacara.ui.theme.NunitoFont
 import com.app.lokacara.ui.theme.PlusJakartaSansFont
 import com.app.lokacara.ui.theme.Primary100
 import com.app.lokacara.ui.theme.Primary500
+import com.app.lokacara.ui.theme.RobotoFont
 import com.app.lokacara.ui.theme.SemanticErrorBase
 import com.app.lokacara.ui.theme.SemanticErrorLight
 import com.app.lokacara.ui.theme.SemanticInfoBase
@@ -569,6 +571,8 @@ private fun sizeLabel(value: String): String = when (value) {
 }
 
 private fun previewFontFamily(value: String): FontFamily = when (value) {
+    "Roboto" -> RobotoFont
+    "Montserrat" -> MontserratFont
     "Playfair" -> FontFamily.Serif
     "GreatVibes" -> FontFamily.Cursive
     "Oswald" -> FontFamily.Monospace

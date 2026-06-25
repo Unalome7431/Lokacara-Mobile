@@ -240,9 +240,10 @@ fun CreateEventScreen(
     }
 
     if (showStartTimePicker) {
+        val defaultTime = remember { viewModel.getDefaultTimePickerValue() }
         val timePickerState = rememberTimePickerState(
-            initialHour = viewModel.getTimePickerHour(waktuMulai, defaultHour = 12),
-            initialMinute = viewModel.getTimePickerMinute(waktuMulai, defaultMinute = 0),
+            initialHour = viewModel.getTimePickerHour(waktuMulai, defaultHour = defaultTime.first),
+            initialMinute = viewModel.getTimePickerMinute(waktuMulai, defaultMinute = defaultTime.second),
             is24Hour = true
         )
         AlertDialog(
@@ -269,9 +270,10 @@ fun CreateEventScreen(
     }
 
     if (showEndTimePicker) {
+        val defaultTime = remember { viewModel.getDefaultTimePickerValue(offsetHours = 1) }
         val timePickerState = rememberTimePickerState(
-            initialHour = viewModel.getTimePickerHour(waktuSelesai, defaultHour = 13),
-            initialMinute = viewModel.getTimePickerMinute(waktuSelesai, defaultMinute = 0),
+            initialHour = viewModel.getTimePickerHour(waktuSelesai, defaultHour = defaultTime.first),
+            initialMinute = viewModel.getTimePickerMinute(waktuSelesai, defaultMinute = defaultTime.second),
             is24Hour = true
         )
         AlertDialog(

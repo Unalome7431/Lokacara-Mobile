@@ -24,7 +24,8 @@ enum class EventDetailAction {
     JOIN,
     LEAVE,
     REMINDER,
-    CANCEL
+    CANCEL,
+    REPORT
 }
 
 @HiltViewModel
@@ -66,6 +67,9 @@ class EventDetailViewModel @Inject constructor(
 
     private val _isCancelling = MutableStateFlow(false)
     val isCancelling: StateFlow<Boolean> = _isCancelling.asStateFlow()
+
+    private val _isReporting = MutableStateFlow(false)
+    val isReporting: StateFlow<Boolean> = _isReporting.asStateFlow()
 
     private val _isQrLoading = MutableStateFlow(false)
     val isQrLoading: StateFlow<Boolean> = _isQrLoading.asStateFlow()
@@ -249,6 +253,36 @@ class EventDetailViewModel @Inject constructor(
                 }
             }
             _isCancelling.value = false
+        }
+    }
+
+    fun reportEvent(reason: String) {
+        val trimmedReason = reason.trim()
+        if (currentEventId == 0L || _isHost.value || _isReporting.value) return
+        if (trimmedReason.isBlank()) {
+            _actionError.value = "Alasan laporan harus diisi"
+            SnackbarManager.showError("Alasan laporan harus diisi")
+            return
+        }
+
+        viewModelScope.launch {
+            _isReporting.value = true
+            _actionError.value = null
+            _successMessage.value = null
+            _lastAction.value = null
+            when (val result = safeApiCall { apiService.reportEvent(currentEventId, mapOf("reason" to trimmedReason)) }) {
+                is ApiResult.Success -> {
+                    val message = result.data.message.ifBlank { "Laporan berhasil dikirim" }
+                    _successMessage.value = message
+                    _lastAction.value = EventDetailAction.REPORT
+                    SnackbarManager.show(message)
+                }
+                is ApiResult.Error -> {
+                    _actionError.value = result.message
+                    SnackbarManager.showError(result.message)
+                }
+            }
+            _isReporting.value = false
         }
     }
 

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
@@ -59,6 +60,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -139,6 +141,7 @@ fun EventDetailScreen(
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isJoining by viewModel.isJoining.collectAsStateWithLifecycle()
     val isCancelling by viewModel.isCancelling.collectAsStateWithLifecycle()
+    val isReporting by viewModel.isReporting.collectAsStateWithLifecycle()
     val isQrLoading by viewModel.isQrLoading.collectAsStateWithLifecycle()
     val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
@@ -147,6 +150,8 @@ fun EventDetailScreen(
     val context = LocalContext.current
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var showCancelEventConfirm by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val showCollapsedHeader: Boolean by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100 }
@@ -154,6 +159,14 @@ fun EventDetailScreen(
 
     LaunchedEffect(eventId) {
         if (eventId > 0L) viewModel.loadEvent(eventId) else navController.navigateBackOrHome()
+    }
+
+    LaunchedEffect(lastAction, successMessage) {
+        if (lastAction == EventDetailAction.REPORT && successMessage != null) {
+            showReportDialog = false
+            reportReason = ""
+            viewModel.clearMessages()
+        }
     }
 
     Scaffold(
@@ -207,6 +220,8 @@ fun EventDetailScreen(
                                     isHost = isHost,
                                     isQrLoading = isQrLoading,
                                     qrToken = qrToken,
+                                    isReporting = isReporting,
+                                    onReportEvent = { showReportDialog = true },
                                     onOpenMap = { openEventMap(context, event) },
                                     onOpenLink = { openEventLink(context, event) }
                                 )
@@ -310,6 +325,22 @@ fun EventDetailScreen(
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    if (showReportDialog) {
+        ReportEventDialog(
+            reason = reportReason,
+            isReporting = isReporting,
+            onReasonChange = { reportReason = it },
+            onDismiss = {
+                if (!isReporting) {
+                    showReportDialog = false
+                    reportReason = ""
+                    viewModel.clearMessages()
+                }
+            },
+            onSubmit = { viewModel.reportEvent(reportReason) }
         )
     }
 
@@ -508,6 +539,8 @@ private fun EventDetailContent(
     isHost: Boolean,
     isQrLoading: Boolean,
     qrToken: String?,
+    isReporting: Boolean,
+    onReportEvent: () -> Unit,
     onOpenMap: () -> Unit,
     onOpenLink: () -> Unit
     ) {
@@ -571,6 +604,15 @@ private fun EventDetailContent(
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
         FlatEventDescription(text = descriptionText)
+
+        if (!isHost) {
+            HorizontalDivider(thickness = 1.dp, color = Gray100)
+
+            ReportEventSection(
+                isReporting = isReporting,
+                onReportEvent = onReportEvent
+            )
+        }
     }
 }
 
@@ -944,6 +986,134 @@ private fun FlatEventDescription(text: String) {
             }
         }
     }
+}
+
+@Composable
+private fun ReportEventSection(
+    isReporting: Boolean,
+    onReportEvent: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = SemanticErrorLight.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Flag,
+                    contentDescription = null,
+                    tint = SemanticErrorBase,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Laporkan Event",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Gray900
+                )
+                Text(
+                    text = "Beri tahu kami jika event ini bermasalah.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray600,
+                    lineHeight = 16.sp
+                )
+            }
+            TextButton(
+                onClick = onReportEvent,
+                enabled = !isReporting
+            ) {
+                if (isReporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = SemanticErrorBase
+                    )
+                } else {
+                    Text("Lapor", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportEventDialog(
+    reason: String,
+    isReporting: Boolean,
+    onReasonChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Laporkan Event",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Jelaskan alasan laporanmu. Tim Lokacara akan meninjau event ini.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 14.sp,
+                    color = Gray600,
+                    lineHeight = 20.sp
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { onReasonChange(it.take(500)) },
+                    enabled = !isReporting,
+                    label = { Text("Alasan laporan") },
+                    placeholder = { Text("Contoh: informasi event tidak sesuai") },
+                    minLines = 3,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onSubmit,
+                enabled = !isReporting && reason.isNotBlank()
+            ) {
+                if (isReporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = SemanticErrorBase
+                    )
+                } else {
+                    Text("Kirim Laporan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(enabled = !isReporting, onClick = onDismiss) {
+                Text("Batal", color = Gray600)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(22.dp)
+    )
 }
 
 @Composable

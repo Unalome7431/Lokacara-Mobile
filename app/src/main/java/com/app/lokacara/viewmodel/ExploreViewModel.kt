@@ -44,6 +44,12 @@ enum class PriceFilter(val label: String) {
     DIATAS_100RB("> Rp100rb")
 }
 
+enum class EventModeFilter(val label: String, val type: String?) {
+    SEMUA("Semua", null),
+    ONLINE("Online", "online"),
+    OFFLINE("Offline", "offline")
+}
+
 enum class SortOption(val label: String) {
     TERBARU("Terbaru"),
     TERPOPULER("Terpopuler"),
@@ -120,6 +126,9 @@ class ExploreViewModel @Inject constructor(
     private val _priceFilter = MutableStateFlow(PriceFilter.SEMUA)
     val priceFilter: StateFlow<PriceFilter> = _priceFilter.asStateFlow()
 
+    private val _eventModeFilter = MutableStateFlow(EventModeFilter.SEMUA)
+    val eventModeFilter: StateFlow<EventModeFilter> = _eventModeFilter.asStateFlow()
+
     private val _isGridView = MutableStateFlow(false)
     val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
 
@@ -141,11 +150,12 @@ class ExploreViewModel @Inject constructor(
         combine(_eventName, _eventLocation, _eventCategory) { name, location, category ->
             listOf(name, location, category).count(String::isNotEmpty)
         },
-        combine(_selectedCategoryChip, _dateFilter, _priceFilter) { category, date, price ->
+        combine(_selectedCategoryChip, _dateFilter, _priceFilter, _eventModeFilter) { category, date, price, mode ->
             listOf(
                 category != DEFAULT_CATEGORY,
                 date != DateFilter.SEMUA,
-                price != PriceFilter.SEMUA
+                price != PriceFilter.SEMUA,
+                mode != EventModeFilter.SEMUA
             ).count { it }
         }
     ) { textFilters, optionFilters -> textFilters + optionFilters }
@@ -155,9 +165,10 @@ class ExploreViewModel @Inject constructor(
         combine(_allEvents, debouncedEventName) { events, name -> events to name },
         combine(debouncedEventLocation, debouncedEventCategory) { loc, cat -> loc to cat },
         combine(_selectedCategoryChip, _sortOption) { chip, sort -> chip to sort },
-        combine(_dateFilter, _priceFilter) { date, price -> date to price },
+        combine(_dateFilter, _priceFilter, _eventModeFilter) { date, price, mode -> Triple(date, price, mode) },
         _customDateRange
-    ) { (events, name), (loc, cat), (chip, sort), (dateFilter, priceFilter), customRange ->
+    ) { (events, name), (loc, cat), (chip, sort), filters, customRange ->
+        val (dateFilter, priceFilter, eventModeFilter) = filters
         val now = java.util.Calendar.getInstance()
         val todayStart = java.util.Calendar.getInstance().apply {
             set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
@@ -199,7 +210,8 @@ class ExploreViewModel @Inject constructor(
                 PriceFilter.LIMA_PULUH_SERATUS -> parsePrice(event.price) in 50000..100000
                 PriceFilter.DIATAS_100RB -> parsePrice(event.price) > 100000
             }
-            matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice
+            val matchMode = eventModeFilter.type == null || event.type.equals(eventModeFilter.type, ignoreCase = true)
+            matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice && matchMode
         }
         when (sort) {
             SortOption.TERBARU -> filtered.sortedByDescending { it.dateEpoch }
@@ -346,6 +358,11 @@ class ExploreViewModel @Inject constructor(
         analytics.logEvent("price_filter_selected", mapOf("filter" to filter.label))
     }
 
+    fun selectEventModeFilter(filter: EventModeFilter) {
+        _eventModeFilter.value = filter
+        analytics.logEvent("event_mode_filter_selected", mapOf("filter" to filter.label))
+    }
+
     fun toggleGridView() {
         _isGridView.value = !_isGridView.value
         analytics.logEvent("grid_view_toggled", mapOf("enabled" to _isGridView.value.toString()))
@@ -370,6 +387,7 @@ class ExploreViewModel @Inject constructor(
                 _selectedCategoryChip.value == DEFAULT_CATEGORY &&
                 _dateFilter.value == DateFilter.SEMUA &&
                 _priceFilter.value == PriceFilter.SEMUA &&
+                _eventModeFilter.value == EventModeFilter.SEMUA &&
                 !_isSearchExpanded.value
 
         if (alreadyDefault) return
@@ -380,6 +398,7 @@ class ExploreViewModel @Inject constructor(
         _selectedCategoryChip.value = targetCategory
         _dateFilter.value = DateFilter.SEMUA
         _priceFilter.value = PriceFilter.SEMUA
+        _eventModeFilter.value = EventModeFilter.SEMUA
         _customDateRange.value = null
         _isSearchExpanded.value = false
         searchEvents("")
@@ -493,6 +512,7 @@ class ExploreViewModel @Inject constructor(
         _selectedCategoryChip.value = DEFAULT_CATEGORY
         _dateFilter.value = DateFilter.SEMUA
         _priceFilter.value = PriceFilter.SEMUA
+        _eventModeFilter.value = EventModeFilter.SEMUA
         _customDateRange.value = null
         _isSearchExpanded.value = false
         searchEvents("")

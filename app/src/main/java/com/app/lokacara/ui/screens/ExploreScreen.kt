@@ -38,6 +38,7 @@ import com.app.lokacara.ui.theme.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.app.lokacara.viewmodel.DateFilter
 import com.app.lokacara.viewmodel.ErrorType
+import com.app.lokacara.viewmodel.EventModeFilter
 import com.app.lokacara.viewmodel.ExploreViewModel
 import com.app.lokacara.viewmodel.PriceFilter
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -59,6 +60,7 @@ fun ExploreScreen(
     val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
     val dateFilter by viewModel.dateFilter.collectAsStateWithLifecycle()
     val priceFilter by viewModel.priceFilter.collectAsStateWithLifecycle()
+    val eventModeFilter by viewModel.eventModeFilter.collectAsStateWithLifecycle()
     val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
     val categorySuggestions by viewModel.categorySuggestions.collectAsStateWithLifecycle()
     val showDatePicker by viewModel.showDatePicker.collectAsStateWithLifecycle()
@@ -209,13 +211,13 @@ fun ExploreScreen(
                             eventLocation = eventLocation,
                             selectedCategory = selectedCategoryChip,
                             priceFilter = priceFilter,
-                            sortOption = sortOption,
-                            activeFilterCount = activeFilterCount,
+                            eventModeFilter = eventModeFilter,
                             onEditSearch = { viewModel.expandSearch() },
                             onClearName = { viewModel.clearEventName() },
                             onClearLocation = { viewModel.clearEventLocation() },
                             onClearCategory = { viewModel.selectCategoryChip("Semua") },
                             onClearPrice = { viewModel.selectPriceFilter(PriceFilter.SEMUA) },
+                            onClearEventMode = { viewModel.selectEventModeFilter(EventModeFilter.SEMUA) },
                             onReset = { viewModel.resetFilters() }
                         )
                         if (error != null && events.isNotEmpty()) {
@@ -345,6 +347,8 @@ fun ExploreScreen(
             onSortChange = { viewModel.selectSortOption(it) },
             priceFilter = priceFilter,
             onPriceChange = { viewModel.selectPriceFilter(it) },
+            eventModeFilter = eventModeFilter,
+            onEventModeChange = { viewModel.selectEventModeFilter(it) },
             onReset = { viewModel.resetFilters() },
             onDismiss = { showBottomSheet = false }
         )

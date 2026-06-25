@@ -42,6 +42,7 @@ import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.SortOption
 import com.app.lokacara.viewmodel.DateFilter
+import com.app.lokacara.viewmodel.EventModeFilter
 import com.app.lokacara.viewmodel.PriceFilter
 import com.app.lokacara.viewmodel.ErrorType
 
@@ -393,18 +394,21 @@ fun ActiveDiscoverySummary(
     eventLocation: String,
     selectedCategory: String,
     priceFilter: PriceFilter,
-    sortOption: SortOption,
-    activeFilterCount: Int,
+    eventModeFilter: EventModeFilter,
     onEditSearch: () -> Unit,
     onClearName: () -> Unit,
     onClearLocation: () -> Unit,
     onClearCategory: () -> Unit,
     onClearPrice: () -> Unit,
+    onClearEventMode: () -> Unit,
     onReset: () -> Unit
 ) {
     val chips = buildList {
+        if (eventName.isNotBlank()) add(eventName to onClearName)
+        if (eventLocation.isNotBlank()) add(eventLocation to onClearLocation)
+        if (selectedCategory != "Semua") add(selectedCategory to onClearCategory)
         if (priceFilter != PriceFilter.SEMUA) add(priceFilter.label to onClearPrice)
-        if (sortOption != SortOption.TERBARU) add(sortOption.label to onEditSearch)
+        if (eventModeFilter != EventModeFilter.SEMUA) add(eventModeFilter.label to onClearEventMode)
     }
     if (chips.isEmpty()) return
 
@@ -416,16 +420,9 @@ fun ActiveDiscoverySummary(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "$activeFilterCount filter aktif",
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Gray700
-            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onEditSearch, modifier = Modifier.height(36.dp)) {
                     Text("Edit", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = Primary500, fontSize = 12.sp)
@@ -731,6 +728,8 @@ fun FilterBottomSheet(
     onSortChange: (SortOption) -> Unit,
     priceFilter: PriceFilter,
     onPriceChange: (PriceFilter) -> Unit,
+    eventModeFilter: EventModeFilter,
+    onEventModeChange: (EventModeFilter) -> Unit,
     onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -787,6 +786,46 @@ fun FilterBottomSheet(
                                         fontSize = 11.sp,
                                         fontWeight = if (sortOption == option) FontWeight.Bold else FontWeight.Medium,
                                         color = if (sortOption == option) Color.White else Gray700
+                                    )
+                                },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Primary500,
+                                    containerColor = Gray100
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(tween(275)) + slideInVertically(tween(275)) { it / 3 }
+            ) {
+                Column {
+                    Text(
+                        "Tipe Event",
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Gray700
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        EventModeFilter.entries.forEach { filter ->
+                            FilterChip(
+                                selected = eventModeFilter == filter,
+                                onClick = { onEventModeChange(filter) },
+                                label = {
+                                    Text(
+                                        filter.label,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (eventModeFilter == filter) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (eventModeFilter == filter) Color.White else Gray700
                                     )
                                 },
                                 shape = RoundedCornerShape(100.dp),
