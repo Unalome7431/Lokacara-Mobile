@@ -30,6 +30,10 @@ class SettingsViewModel @Inject constructor(
     private val apiService: ApiService
 ) : AndroidViewModel(application) {
 
+    init {
+        syncAuthCapabilities()
+    }
+
     val notificationsEnabled: StateFlow<Boolean> = settingsManager.notificationsEnabled
         .stateIn(
             scope = viewModelScope,
@@ -53,6 +57,21 @@ class SettingsViewModel @Inject constructor(
     val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
         .map { it.hasLocalPassword }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private fun syncAuthCapabilities() {
+        viewModelScope.launch {
+            when (val result = safeApiCall { apiService.getProfile() }) {
+                is ApiResult.Success -> {
+                    val user = result.data.user ?: return@launch
+                    userSessionManager.updateAuthState(
+                        provider = user.provider,
+                        hasLocalPassword = user.has_password
+                    )
+                }
+                is ApiResult.Error -> Unit
+            }
+        }
+    }
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {

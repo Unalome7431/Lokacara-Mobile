@@ -9,6 +9,7 @@ import com.app.lokacara.data.validation.isSyntheticEmail
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AuthResponse
 import com.app.lokacara.repository.AuthRepository
 import com.app.lokacara.ui.components.SnackbarManager
@@ -29,7 +30,12 @@ class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
+    private val apiService: ApiService,
 ) : AndroidViewModel(application) {
+
+    init {
+        syncAuthCapabilities()
+    }
 
     val name = MutableStateFlow("")
     val email = MutableStateFlow("")
@@ -136,6 +142,21 @@ class AuthViewModel @Inject constructor(
     val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
         .map { it.hasLocalPassword }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private fun syncAuthCapabilities() {
+        viewModelScope.launch {
+            when (val result = com.app.lokacara.data.remote.safeApiCall { apiService.getProfile() }) {
+                is ApiResult.Success -> {
+                    val user = result.data.user ?: return@launch
+                    userSessionManager.updateAuthState(
+                        provider = user.provider,
+                        hasLocalPassword = user.has_password
+                    )
+                }
+                is ApiResult.Error -> Unit
+            }
+        }
+    }
 
     fun changePassword() {
         val isGoogleUser = isGoogleAuth.value

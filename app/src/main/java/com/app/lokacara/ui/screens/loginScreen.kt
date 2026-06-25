@@ -48,6 +48,7 @@ fun LoginScreen(
     val forgotPasswordLoading by viewModel.forgotPasswordLoading.collectAsStateWithLifecycle()
     val forgotPasswordSuccess by viewModel.forgotPasswordSuccess.collectAsStateWithLifecycle()
     val forgotPasswordError by viewModel.forgotPasswordError.collectAsStateWithLifecycle()
+    val googleSignInConfigured = stringResource(R.string.google_web_client_id).isNotBlank()
 
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
@@ -100,6 +101,7 @@ fun LoginScreen(
             onEmailChange = { forgotEmail = it },
             isLoading = forgotPasswordLoading,
             errorMessage = forgotPasswordError,
+            googleSignInConfigured = googleSignInConfigured,
             onSubmit = { viewModel.forgotPassword(forgotEmail) },
             onDismiss = {
                 showForgotPasswordDialog = false
@@ -323,17 +325,28 @@ fun ForgotPasswordDialog(
     onEmailChange: (String) -> Unit,
     isLoading: Boolean,
     errorMessage: String?,
+    googleSignInConfigured: Boolean,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Lupa Kata Sandi", fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.forgot_password_title), fontFamily = NunitoFont, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
-                    "Masukkan email Anda untuk menerima link reset password.",
+                    stringResource(R.string.forgot_password_email_only_hint),
                     style = MaterialTheme.typography.bodySmall,
+                    color = Gray500
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (googleSignInConfigured) {
+                        stringResource(R.string.forgot_password_google_hint)
+                    } else {
+                        stringResource(R.string.forgot_password_google_config_missing)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
                     color = Gray500
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -361,13 +374,13 @@ fun ForgotPasswordDialog(
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Kirim", color = Color.White)
+                    Text(stringResource(R.string.forgot_password_send), color = Color.White)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Batal", color = Gray500)
+                Text(stringResource(R.string.forgot_password_cancel), color = Gray500)
             }
         },
         containerColor = Color.White,
