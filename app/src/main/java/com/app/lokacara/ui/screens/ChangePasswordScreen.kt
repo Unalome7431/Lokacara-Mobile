@@ -108,7 +108,7 @@ fun ChangePasswordScreen(
             isLoading = isLoading,
             errorMessage = errorMessage,
             isCreatePasswordFlow = isCreatePasswordFlow,
-            showOldPasswordField = !isCreatePasswordFlow
+            showOldPasswordField = !isGoogleAuth
         )
     }
 }

@@ -160,7 +160,7 @@ class AuthViewModel @Inject constructor(
 
     fun changePassword() {
         val isGoogleUser = isGoogleAuth.value
-        val requiresOldPassword = !isGoogleUser || hasLocalPassword.value
+        val requiresOldPassword = !isGoogleUser
         if (requiresOldPassword && oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
         if (newPassword.value.length < 8) { showError("Kata sandi baru minimal 8 karakter"); return }
         if (newPassword.value != confirmPassword.value) { showError("Password baru dan konfirmasi tidak sama"); return }
@@ -175,7 +175,7 @@ class AuthViewModel @Inject constructor(
                     }
                     _changePasswordSuccess.value = true
                     SnackbarManager.show(
-                        if (isGoogleUser && !requiresOldPassword) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah"
+                        if (isGoogleUser && !hasLocalPassword.value) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah"
                     )
                 }
                 is ApiResult.Error -> {
