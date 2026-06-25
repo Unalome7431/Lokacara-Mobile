@@ -1,10 +1,7 @@
 package com.app.lokacara.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -30,35 +27,18 @@ private val LightColorScheme = lightColorScheme(
     onErrorContainer = SemanticErrorBase
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Primary400,
-    onPrimary = Color.White,
-    primaryContainer = Primary800,
-    onPrimaryContainer = Primary100,
-    secondary = Secondary400,
-    onSecondary = Color.White,
-    secondaryContainer = Secondary800,
-    onSecondaryContainer = Secondary100,
-    background = Gray900,
-    onBackground = Gray100,
-    surface = Gray800,
-    onSurface = Gray100,
-    error = SemanticErrorBase,
-    onError = Color.White
-)
-
 @Composable
 fun LokacaraMobileTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
+        darkTheme -> LightColorScheme
         else -> LightColorScheme
     }
 

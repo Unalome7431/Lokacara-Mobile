@@ -94,6 +94,16 @@ fun NavGraph(
                         launchSingleTop = true
                     }
                 },
+                onNavigateToTerms = {
+                    rootNavController.navigate(Screen.TermsConditions.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToPrivacy = {
+                    rootNavController.navigate(Screen.PrivacyPolicy.route) {
+                        launchSingleTop = true
+                    }
+                },
                 onLoginSuccess = {
                     rootNavController.navigate("main_container") {
                         popUpTo(0) { inclusive = true }
@@ -120,6 +130,24 @@ fun NavGraph(
                     }
                 }
             )
+        }
+        composable(
+            Screen.TermsConditions.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
+            TermsConditionsScreen(navController = rootNavController)
+        }
+        composable(
+            Screen.PrivacyPolicy.route,
+            enterTransition = screenEnter,
+            exitTransition = screenExit,
+            popEnterTransition = screenPopEnter,
+            popExitTransition = screenPopExit
+        ) {
+            PrivacyPolicyScreen(navController = rootNavController)
         }
 
         composable(

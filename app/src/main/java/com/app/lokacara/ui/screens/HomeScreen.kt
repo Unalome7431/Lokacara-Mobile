@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -30,6 +32,7 @@ import androidx.navigation.NavController
 import com.app.lokacara.model.Event
 import com.app.lokacara.ui.components.*
 import com.app.lokacara.ui.navigation.Screen
+import com.app.lokacara.ui.navigation.navigateToExplore
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.HomeViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -53,14 +56,25 @@ fun HomeScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val hasMorePages = viewModel.hasMorePages
 
-    val listState = rememberLazyListState()
-
     val onEventClick = remember {
         { event: Event ->
             viewModel.onEventClick(event)
             navController.navigate(Screen.EventDetail.createRoute(event.id))
         }
     }
+
+    if (isLocationPickerVisible) {
+        LocationPickerDialog(
+            currentLocation = currentLocation,
+            onDismiss = { viewModel.dismissLocationPicker() },
+            onLocationSelected = { city, lat, lng ->
+                viewModel.setManualLocation(city, lat, lng)
+            },
+            onUseCurrentGps = { viewModel.useCurrentGps() }
+        )
+    }
+
+    val listState = rememberLazyListState()
 
     val hasMorePagesState by rememberUpdatedState(hasMorePages)
     val isLoadingMoreState by rememberUpdatedState(isLoadingMore)
@@ -85,21 +99,9 @@ fun HomeScreen(
             }
     }
 
-    // Location picker dialog
-    if (isLocationPickerVisible) {
-        LocationPickerDialog(
-            currentLocation = currentLocation,
-            onDismiss = { viewModel.dismissLocationPicker() },
-            onLocationSelected = { city, lat, lng ->
-                viewModel.setManualLocation(city, lat, lng)
-            },
-            onUseCurrentGps = { viewModel.useCurrentGps() }
-        )
-    }
-
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         when {
-            isLoading && groupedEvents.isEmpty() && feedError == null -> LoadingShimmer()
+            isLoading && groupedEvents.isEmpty() && feedError == null -> HomeLoadingShimmer()
             feedError != null && groupedEvents.isEmpty() -> {
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
@@ -116,7 +118,7 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Belum ada event di sekitarmu", fontFamily = NunitoFont, color = Gray500, fontSize = 15.sp)
                         Button(
-                            onClick = { navController.navigate(Screen.Explore.route) },
+                            onClick = { navController.navigateToExplore() },
                             colors = ButtonDefaults.buttonColors(containerColor = SvgPrimaryBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Jelajahi Event", fontWeight = FontWeight.Bold, color = Color.White) }
@@ -136,7 +138,6 @@ fun HomeScreen(
                         HomeHeader(navController = navController)
                     }
 
-                    // ── Popular Events ──
                     item(key = "popular_section", contentType = "popular") {
                         Box(modifier = Modifier.animateItem()) {
                             if (popularEvents.isNotEmpty()) {
@@ -148,7 +149,6 @@ fun HomeScreen(
                         }
                     }
 
-                    // ── Upcoming Events ──
                     item(key = "upcoming_section", contentType = "upcoming") {
                         Box(modifier = Modifier.animateItem()) {
                             UpcomingEventSection(
@@ -156,17 +156,12 @@ fun HomeScreen(
                                 onEventClick = { eventId ->
                                     navController.navigate(Screen.EventDetail.createRoute(eventId))
                                 },
-                                onExploreClick = {
-                                    navController.navigate(Screen.Explore.route)
-                                },
-                                onSeeAll = {
-                                    navController.navigate(Screen.Tickets.route)
-                                }
+                                onExploreClick = { navController.navigateToExplore() },
+                                onSeeAll = { navController.navigate(Screen.Tickets.route) }
                             )
                         }
                     }
 
-                    // ── Nearby Events ──
                     item(key = "nearby_header", contentType = "nearby_header") {
                         Box(modifier = Modifier.animateItem()) {
                             NearbyEventsHeader(
@@ -183,35 +178,72 @@ fun HomeScreen(
                                 contentPadding = PaddingValues(horizontal = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                    items(nearbyEvents, key = { it.id }, contentType = { "nearby_event" }) { event ->
-                                        Box(modifier = Modifier.animateItem()) {
-                                            EventCardCompact(
-                                                event = event,
-                                                onClick = { onEventClick(event) },
-                                                onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
-                                            )
-                                        }
+                                items(nearbyEvents, key = { it.id }, contentType = { "nearby_event" }) { event ->
+                                    Box(modifier = Modifier.animateItem()) {
+                                        EventCardCompact(
+                                            event = event,
+                                            onClick = { onEventClick(event) },
+                                            onBookmarkClick = { viewModel.toggleBookmark(event.id.toString()) }
+                                        )
                                     }
+                                }
                             }
                         }
                     } else {
                         item(key = "nearby_empty", contentType = "nearby_empty") {
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 24.dp, vertical = 16.dp)
+                                    .background(Gray100, RoundedCornerShape(18.dp))
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    "Tidak ada event di sekitar Anda saat ini",
+                                    "Belum ada event di sekitar lokasi ini",
                                     fontFamily = PlusJakartaSansFont,
-                                    fontSize = 13.sp,
-                                    color = Gray400
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Gray900
+                                )
+                                Text(
+                                    "Coba ganti kota, gunakan GPS, atau jelajahi semua event.",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 12.sp,
+                                    color = Gray500
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = { viewModel.showLocationPicker() },
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Pilih Kota", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Primary500)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.useCurrentGps() },
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Primary500),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
+                                        Text("Pakai GPS", fontFamily = PlusJakartaSansFont, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                                Text(
+                                    text = "Buka Explore",
+                                    fontFamily = PlusJakartaSansFont,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SvgOrange,
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .clickable { navController.navigateToExplore() }
+                                        .padding(top = 14.dp)
                                 )
                             }
                         }
                     }
 
-                    // ── Category Sections ──
                     if (sortedCategories.isNotEmpty()) {
                         item(key = "categories_title", contentType = "section_title") {
                             Text(
@@ -231,16 +263,13 @@ fun HomeScreen(
                                     categoryName = categoryName,
                                     events = events,
                                     onEventClick = onEventClick,
-                                    onSeeAll = {
-                                        navController.navigate(Screen.Explore.createRoute(categoryName))
-                                    },
+                                    onSeeAll = { navController.navigateToExplore(categoryName) },
                                     onBookmarkClick = { eventId -> viewModel.toggleBookmark(eventId) }
                                 )
                             }
                         }
                     }
 
-                    // ── Category error ──
                     if (categoryError != null) {
                         item(key = "category_error", contentType = "error") {
                             Box(
@@ -258,7 +287,6 @@ fun HomeScreen(
                         }
                     }
 
-                    // ── Load more indicator ──
                     if (isLoadingMore) {
                         item(key = "loading_more", contentType = "loading") {
                             Box(
@@ -282,7 +310,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LoadingShimmer() {
+private fun HomeLoadingShimmer() {
     Column(
         modifier = Modifier.fillMaxSize().padding(top = 80.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

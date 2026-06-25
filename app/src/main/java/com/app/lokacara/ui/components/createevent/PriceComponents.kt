@@ -61,13 +61,6 @@ fun PriceSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "Harga Event",
-            fontFamily = NunitoFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = Gray800
-        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             PriceChoiceChip(

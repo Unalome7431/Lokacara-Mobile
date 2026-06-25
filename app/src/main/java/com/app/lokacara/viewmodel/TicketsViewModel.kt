@@ -82,6 +82,9 @@ class TicketsViewModel @Inject constructor(
     private val _downloadedCertIds = MutableStateFlow<Set<Long>>(emptySet())
     val downloadedCertIds: StateFlow<Set<Long>> = _downloadedCertIds.asStateFlow()
 
+    private val _certificatePreviews = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val certificatePreviews: StateFlow<Map<Long, String>> = _certificatePreviews.asStateFlow()
+
     init {
         viewModelScope.launch {
             userSessionManager.userSession.collect { session ->
@@ -167,6 +170,7 @@ class TicketsViewModel @Inject constructor(
                     _upcomingEvents.value = upcoming
                     _historyEvents.value = history
                     prefetchTicketImages(today + upcoming + history)
+                    loadCertificatePreviews(history)
                 }
                 is ApiResult.Error -> {
                     if (!dashboardGate.isLatest(requestToken)) return@launch
@@ -214,6 +218,21 @@ class TicketsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = "Gagal mengunduh sertifikat"
+            }
+        }
+    }
+
+    private fun loadCertificatePreviews(historyEvents: List<HistoryEvent>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            for (event in historyEvents) {
+                if (event.id == 0L) continue
+                val certId = event.id.toString()
+                when (val result = certificateRepository.cacheParticipantCertificate(event.id, certId)) {
+                    is ApiResult.Success -> {
+                        _certificatePreviews.value = _certificatePreviews.value + (event.id to result.data)
+                    }
+                    is ApiResult.Error -> { }
+                }
             }
         }
     }

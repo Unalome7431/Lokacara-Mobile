@@ -15,6 +15,7 @@ private val Context.draftDataStore by preferencesDataStore(name = "event_draft")
 data class EventDraft(
     val namaEvent: String = "",
     val penyelenggara: String = "",
+    val kontak: String = "",
     val waktuMulai: String = "",
     val waktuSelesai: String = "",
     val isOnline: Boolean = true,
@@ -35,6 +36,7 @@ class DraftManager(private val context: Context) {
     companion object {
         val NAMA_EVENT = stringPreferencesKey("draft_nama_event")
         val PENYELENGGARA = stringPreferencesKey("draft_penyelenggara")
+        val KONTAK = stringPreferencesKey("draft_kontak")
         val WAKTU_MULAI = stringPreferencesKey("draft_waktu_mulai")
         val WAKTU_SELESAI = stringPreferencesKey("draft_waktu_selesai")
         val IS_ONLINE = booleanPreferencesKey("draft_is_online")
@@ -61,6 +63,7 @@ class DraftManager(private val context: Context) {
             prefs[HAS_DRAFT] = true
             prefs[NAMA_EVENT] = draft.namaEvent
             prefs[PENYELENGGARA] = draft.penyelenggara
+            prefs[KONTAK] = draft.kontak
             prefs[WAKTU_MULAI] = draft.waktuMulai
             prefs[WAKTU_SELESAI] = draft.waktuSelesai
             prefs[IS_ONLINE] = draft.isOnline
@@ -85,6 +88,7 @@ class DraftManager(private val context: Context) {
         return EventDraft(
             namaEvent = prefs[NAMA_EVENT] ?: "",
             penyelenggara = prefs[PENYELENGGARA] ?: "",
+            kontak = prefs[KONTAK] ?: "",
             waktuMulai = prefs[WAKTU_MULAI] ?: "",
             waktuSelesai = prefs[WAKTU_SELESAI] ?: "",
             isOnline = prefs[IS_ONLINE] ?: true,

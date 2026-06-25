@@ -42,11 +42,12 @@ import com.app.lokacara.ui.navigation.Screen
 import com.app.lokacara.ui.theme.*
 import com.app.lokacara.viewmodel.SortOption
 import com.app.lokacara.viewmodel.DateFilter
+import com.app.lokacara.viewmodel.EventModeFilter
 import com.app.lokacara.viewmodel.PriceFilter
 import com.app.lokacara.viewmodel.ErrorType
 
 @Composable
-fun ExploreHeader() {
+fun ExploreHeader(onSearchClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,8 +65,15 @@ fun ExploreHeader() {
             fontFamily = NunitoFont,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 20.sp,
-            color = Color.Black
+            color = Color.Black,
+            modifier = Modifier.weight(1f)
         )
+        IconButton(
+            onClick = onSearchClick,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(Icons.Outlined.Search, "Cari", tint = Primary500, modifier = Modifier.size(22.dp))
+        }
     }
 }
 
@@ -265,32 +273,49 @@ private fun SearchableLocationDropdown(
     val filtered = remember(value, suggestions) {
         if (value.isBlank()) suggestions else suggestions.filter { it.contains(value, true) }
     }
+    val visibleOptions = remember(filtered) {
+        filtered.take(MAX_LOCATION_DROPDOWN_ITEMS)
+    }
+    val shouldShowMenu = expanded
 
     ExposedDropdownMenuBox(
-        expanded = expanded && filtered.isNotEmpty(),
-        onExpandedChange = {
-            if (suggestions.isNotEmpty()) expanded = it
-        }
+        expanded = shouldShowMenu,
+        onExpandedChange = { expanded = it }
     ) {
         OutlinedTextField(
             value = value,
             onValueChange = { newVal ->
                 onValueChange(newVal)
-                expanded = newVal.isNotEmpty() || filtered.isNotEmpty()
+                expanded = true
             },
             placeholder = { Text(placeholder, fontSize = 12.sp, color = Gray400) },
             textStyle = TextStyle(fontFamily = PlusJakartaSansFont, fontSize = 14.sp, color = Gray900),
             trailingIcon = {
                 if (value.isNotEmpty()) {
-                    IconButton(onClick = onClear) {
+                    IconButton(onClick = {
+                        onClear()
+                        expanded = true
+                    }) {
                         Icon(Icons.Filled.Close, null, tint = Gray400, modifier = Modifier.size(18.dp))
+                    }
+                } else {
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = "Pilih lokasi",
+                            tint = Gray400,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             },
             leadingIcon = { Icon(icon, null, tint = Primary500, modifier = Modifier.size(20.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(),
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) expanded = true
+                }
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true),
             shape = RoundedCornerShape(12.dp),
             colors = textFieldColors,
             singleLine = true,
@@ -298,19 +323,52 @@ private fun SearchableLocationDropdown(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
         ExposedDropdownMenu(
-            expanded = expanded && filtered.isNotEmpty(),
-            onDismissRequest = { expanded = false }
+            expanded = shouldShowMenu,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 280.dp)
         ) {
-            filtered.forEach { option ->
+            if (filtered.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont, fontSize = 14.sp) },
-                    onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
-                    leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    text = {
+                        Text(
+                            if (suggestions.isEmpty()) "Lokasi belum tersedia" else "Lokasi tidak ditemukan",
+                            color = Gray500,
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 13.sp
+                        )
+                    },
+                    onClick = {},
+                    enabled = false,
+                    leadingIcon = { Icon(icon, null, tint = Gray400, modifier = Modifier.size(16.dp)) }
                 )
+            } else {
+                visibleOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option, color = Gray900, fontFamily = PlusJakartaSansFont, fontSize = 14.sp) },
+                        onClick = { onValueChange(option); expanded = false; focusManager.clearFocus() },
+                        leadingIcon = { Icon(icon, null, tint = Gray500, modifier = Modifier.size(16.dp)) }
+                    )
+                }
+                if (filtered.size > visibleOptions.size) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Ketik lebih spesifik untuk hasil lainnya",
+                                color = Gray500,
+                                fontFamily = PlusJakartaSansFont,
+                                fontSize = 12.sp
+                            )
+                        },
+                        onClick = {},
+                        enabled = false
+                    )
+                }
             }
         }
     }
 }
+
+private const val MAX_LOCATION_DROPDOWN_ITEMS = 5
 
 @Composable
 fun ExploreCategories(
@@ -326,6 +384,79 @@ fun ExploreCategories(
     ) {
         items(categories, key = { it }, contentType = { "category_filter" }) { cat ->
             CategoryChip(cat, selectedCategory == cat) { onCategorySelected(cat) }
+        }
+    }
+}
+
+@Composable
+fun ActiveDiscoverySummary(
+    eventName: String,
+    eventLocation: String,
+    selectedCategory: String,
+    priceFilter: PriceFilter,
+    eventModeFilter: EventModeFilter,
+    onEditSearch: () -> Unit,
+    onClearName: () -> Unit,
+    onClearLocation: () -> Unit,
+    onClearCategory: () -> Unit,
+    onClearPrice: () -> Unit,
+    onClearEventMode: () -> Unit,
+    onReset: () -> Unit
+) {
+    val chips = buildList {
+        if (eventName.isNotBlank()) add(eventName to onClearName)
+        if (eventLocation.isNotBlank()) add(eventLocation to onClearLocation)
+        if (selectedCategory != "Semua") add(selectedCategory to onClearCategory)
+        if (priceFilter != PriceFilter.SEMUA) add(priceFilter.label to onClearPrice)
+        if (eventModeFilter != EventModeFilter.SEMUA) add(eventModeFilter.label to onClearEventMode)
+    }
+    if (chips.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onEditSearch, modifier = Modifier.height(36.dp)) {
+                    Text("Edit", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = Primary500, fontSize = 12.sp)
+                }
+                TextButton(onClick = onReset, modifier = Modifier.height(36.dp)) {
+                    Text("Reset", fontFamily = PlusJakartaSansFont, fontWeight = FontWeight.Bold, color = SemanticErrorBase, fontSize = 12.sp)
+                }
+            }
+        }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(chips, key = { it.first }) { (label, onClear) ->
+                Surface(
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    color = Primary100.copy(alpha = 0.55f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 12.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = label,
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Gray800,
+                            maxLines = 1
+                        )
+                        IconButton(onClick = onClear, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = "Hapus $label", tint = Gray600, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -597,6 +728,8 @@ fun FilterBottomSheet(
     onSortChange: (SortOption) -> Unit,
     priceFilter: PriceFilter,
     onPriceChange: (PriceFilter) -> Unit,
+    eventModeFilter: EventModeFilter,
+    onEventModeChange: (EventModeFilter) -> Unit,
     onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -670,6 +803,46 @@ fun FilterBottomSheet(
 
             AnimatedVisibility(
                 visible = visible,
+                enter = fadeIn(tween(275)) + slideInVertically(tween(275)) { it / 3 }
+            ) {
+                Column {
+                    Text(
+                        "Tipe Event",
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Gray700
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        EventModeFilter.entries.forEach { filter ->
+                            FilterChip(
+                                selected = eventModeFilter == filter,
+                                onClick = { onEventModeChange(filter) },
+                                label = {
+                                    Text(
+                                        filter.label,
+                                        fontFamily = PlusJakartaSansFont,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (eventModeFilter == filter) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (eventModeFilter == filter) Color.White else Gray700
+                                    )
+                                },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Primary500,
+                                    containerColor = Gray100
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            AnimatedVisibility(
+                visible = visible,
                 enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 3 }
             ) {
                 Column {
@@ -681,8 +854,8 @@ fun FilterBottomSheet(
                         color = Gray700
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PriceFilter.entries.forEach { filter ->
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(PriceFilter.entries, key = { it.name }, contentType = { "bottom_sheet_price_filter" }) { filter ->
                             FilterChip(
                                 selected = priceFilter == filter,
                                 onClick = { onPriceChange(filter) },
@@ -742,6 +915,9 @@ fun ErrorStateView(
     onRetry: (() -> Unit)? = null,
     errorType: ErrorType? = null
 ) {
+    LaunchedEffect(message) {
+        if (message.isNotBlank()) SnackbarManager.showError(message)
+    }
     val title = when (errorType) {
         ErrorType.NETWORK -> "Gangguan Jaringan"
         ErrorType.SERVER -> "Gangguan Server"

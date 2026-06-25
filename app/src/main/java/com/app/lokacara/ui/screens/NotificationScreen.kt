@@ -38,13 +38,8 @@ fun NotificationScreen(
     navController: NavController,
     viewModel: NotificationViewModel = hiltViewModel()
 ) {
-    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val notifications by viewModel.filteredNotifications.collectAsStateWithLifecycle(initialValue = emptyList())
     val groupedNotifications = remember(notifications) { notifications.groupBy { it.dateGroup } }
-    val tabs = listOf(
-        stringResource(R.string.tab_notifications_activity),
-        stringResource(R.string.tab_notifications_info)
-    )
 
     Column(modifier = Modifier.fillMaxSize().background(SvgBackground).systemBarsPadding()) {
 
@@ -76,18 +71,6 @@ fun NotificationScreen(
                 fontSize = 20.sp,
                 color = Gray900
             )
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            tabs.forEachIndexed { index, title ->
-                Column(
-                    modifier = Modifier.weight(1f).clickable { viewModel.selectedTab.value = index },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(title, color = if (selectedTab == index) Primary500 else Gray500, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(modifier = Modifier.fillMaxWidth(0.5f).height(3.dp).background(if (selectedTab == index) Primary500 else Color.Transparent))
-                }
-            }
         }
 
         if (notifications.isEmpty()) {

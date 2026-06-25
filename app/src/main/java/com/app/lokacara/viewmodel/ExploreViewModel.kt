@@ -40,8 +40,14 @@ enum class PriceFilter(val label: String) {
     SEMUA("Semua"),
     GRATIS("Gratis"),
     DIBAWAH_50RB("< Rp50rb"),
-    LIMA_PULUH_SERATUS("Rp50rb-Rp100rb"),
+    LIMA_PULUH_SERATUS("Rp50rb - Rp100rb"),
     DIATAS_100RB("> Rp100rb")
+}
+
+enum class EventModeFilter(val label: String, val type: String?) {
+    SEMUA("Semua", null),
+    ONLINE("Online", "online"),
+    OFFLINE("Offline", "offline")
 }
 
 enum class SortOption(val label: String) {
@@ -120,6 +126,9 @@ class ExploreViewModel @Inject constructor(
     private val _priceFilter = MutableStateFlow(PriceFilter.SEMUA)
     val priceFilter: StateFlow<PriceFilter> = _priceFilter.asStateFlow()
 
+    private val _eventModeFilter = MutableStateFlow(EventModeFilter.SEMUA)
+    val eventModeFilter: StateFlow<EventModeFilter> = _eventModeFilter.asStateFlow()
+
     private val _isGridView = MutableStateFlow(false)
     val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
 
@@ -141,11 +150,12 @@ class ExploreViewModel @Inject constructor(
         combine(_eventName, _eventLocation, _eventCategory) { name, location, category ->
             listOf(name, location, category).count(String::isNotEmpty)
         },
-        combine(_selectedCategoryChip, _dateFilter, _priceFilter) { category, date, price ->
+        combine(_selectedCategoryChip, _dateFilter, _priceFilter, _eventModeFilter) { category, date, price, mode ->
             listOf(
                 category != DEFAULT_CATEGORY,
                 date != DateFilter.SEMUA,
-                price != PriceFilter.SEMUA
+                price != PriceFilter.SEMUA,
+                mode != EventModeFilter.SEMUA
             ).count { it }
         }
     ) { textFilters, optionFilters -> textFilters + optionFilters }
@@ -155,9 +165,10 @@ class ExploreViewModel @Inject constructor(
         combine(_allEvents, debouncedEventName) { events, name -> events to name },
         combine(debouncedEventLocation, debouncedEventCategory) { loc, cat -> loc to cat },
         combine(_selectedCategoryChip, _sortOption) { chip, sort -> chip to sort },
-        combine(_dateFilter, _priceFilter) { date, price -> date to price },
+        combine(_dateFilter, _priceFilter, _eventModeFilter) { date, price, mode -> Triple(date, price, mode) },
         _customDateRange
-    ) { (events, name), (loc, cat), (chip, sort), (dateFilter, priceFilter), customRange ->
+    ) { (events, name), (loc, cat), (chip, sort), filters, customRange ->
+        val (dateFilter, priceFilter, eventModeFilter) = filters
         val now = java.util.Calendar.getInstance()
         val todayStart = java.util.Calendar.getInstance().apply {
             set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
@@ -178,7 +189,7 @@ class ExploreViewModel @Inject constructor(
 
         val filtered = events.filter { event ->
             val matchName = name.isEmpty() || event.title.contains(name, ignoreCase = true)
-            val matchLoc = eventMatchesCanonicalCity(event, loc)
+            val matchLoc = eventMatchesSearchLocation(event, loc)
             val matchCatText = cat.isEmpty() || event.category.contains(cat, ignoreCase = true)
             val matchChip = chip == "Semua" || event.category.equals(chip, ignoreCase = true)
             val matchDate = when (dateFilter) {
@@ -199,7 +210,8 @@ class ExploreViewModel @Inject constructor(
                 PriceFilter.LIMA_PULUH_SERATUS -> parsePrice(event.price) in 50000..100000
                 PriceFilter.DIATAS_100RB -> parsePrice(event.price) > 100000
             }
-            matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice
+            val matchMode = eventModeFilter.type == null || event.type.equals(eventModeFilter.type, ignoreCase = true)
+            matchName && matchLoc && matchCatText && matchChip && matchDate && matchPrice && matchMode
         }
         when (sort) {
             SortOption.TERBARU -> filtered.sortedByDescending { it.dateEpoch }
@@ -216,6 +228,20 @@ class ExploreViewModel @Inject constructor(
             price.startsWith("Rp ") -> price.removePrefix("Rp ").replace(".", "").trim().toIntOrNull() ?: Int.MAX_VALUE
             else -> Int.MAX_VALUE
         }
+    }
+
+    private fun eventMatchesSearchLocation(event: Event, locationQuery: String): Boolean {
+        val query = locationQuery.trim()
+        if (query.isBlank()) return true
+
+        val directMatch = listOfNotNull(
+            event.city,
+            event.location,
+            event.address,
+            event.platformName
+        ).any { value -> value.contains(query, ignoreCase = true) }
+
+        return directMatch || eventMatchesCanonicalCity(event, query)
     }
 
     private var searchJob: Job? = null
@@ -240,17 +266,20 @@ class ExploreViewModel @Inject constructor(
                     }
                 }
                 is ApiResult.Error -> {
-                    SnackbarManager.show("Gagal memuat kategori")
+                    SnackbarManager.showError("Gagal memuat kategori")
                 }
             }
         }
         viewModelScope.launch {
             when (val result = repository.getLocations()) {
                 is ApiResult.Success -> {
-                    _locationSuggestions.value = result.data.data.map { it.name }
+                    _locationSuggestions.value = result.data.data
+                        .map { it.name.trim() }
+                        .filter { it.isNotBlank() }
+                        .distinctBy { it.lowercase(Locale.getDefault()) }
                 }
                 is ApiResult.Error -> {
-                    SnackbarManager.show("Gagal memuat lokasi")
+                    SnackbarManager.showError("Gagal memuat lokasi")
                 }
             }
         }
@@ -329,6 +358,11 @@ class ExploreViewModel @Inject constructor(
         analytics.logEvent("price_filter_selected", mapOf("filter" to filter.label))
     }
 
+    fun selectEventModeFilter(filter: EventModeFilter) {
+        _eventModeFilter.value = filter
+        analytics.logEvent("event_mode_filter_selected", mapOf("filter" to filter.label))
+    }
+
     fun toggleGridView() {
         _isGridView.value = !_isGridView.value
         analytics.logEvent("grid_view_toggled", mapOf("enabled" to _isGridView.value.toString()))
@@ -353,6 +387,7 @@ class ExploreViewModel @Inject constructor(
                 _selectedCategoryChip.value == DEFAULT_CATEGORY &&
                 _dateFilter.value == DateFilter.SEMUA &&
                 _priceFilter.value == PriceFilter.SEMUA &&
+                _eventModeFilter.value == EventModeFilter.SEMUA &&
                 !_isSearchExpanded.value
 
         if (alreadyDefault) return
@@ -363,6 +398,7 @@ class ExploreViewModel @Inject constructor(
         _selectedCategoryChip.value = targetCategory
         _dateFilter.value = DateFilter.SEMUA
         _priceFilter.value = PriceFilter.SEMUA
+        _eventModeFilter.value = EventModeFilter.SEMUA
         _customDateRange.value = null
         _isSearchExpanded.value = false
         searchEvents("")
@@ -384,7 +420,8 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(
                 keyword = query.ifBlank { null },
                 categoryId = catId,
-                location = _eventLocation.value.trim().ifBlank { null }
+                // Location is filtered locally so venue/address queries are not dropped by city-only backend matching.
+                location = null
             )) {
                 is ApiResult.Success -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
@@ -401,6 +438,7 @@ class ExploreViewModel @Inject constructor(
                     if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
                     _errorType.value = if (result.message.contains("jaringan") || result.message.contains("koneksi")) ErrorType.NETWORK else ErrorType.SERVER
+                    SnackbarManager.showError(result.message)
                     if (_allEvents.value.isEmpty()) {
                         _allEvents.value = emptyList()
                         _totalEvents.value = 0
@@ -424,7 +462,8 @@ class ExploreViewModel @Inject constructor(
             when (val result = repository.searchEvents(
                 keyword = _eventName.value.ifBlank { null },
                 categoryId = catId,
-                location = _eventLocation.value.trim().ifBlank { null },
+                // Keep pagination consistent with the local venue/address location filter.
+                location = null,
                 page = targetPage
             )) {
                 is ApiResult.Success -> {
@@ -441,6 +480,7 @@ class ExploreViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (!requestGate.isLatest(requestToken)) return@launch
                     _error.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             if (requestGate.isLatest(requestToken)) _isLoadingMore.value = false
@@ -472,6 +512,7 @@ class ExploreViewModel @Inject constructor(
         _selectedCategoryChip.value = DEFAULT_CATEGORY
         _dateFilter.value = DateFilter.SEMUA
         _priceFilter.value = PriceFilter.SEMUA
+        _eventModeFilter.value = EventModeFilter.SEMUA
         _customDateRange.value = null
         _isSearchExpanded.value = false
         searchEvents("")
@@ -480,7 +521,28 @@ class ExploreViewModel @Inject constructor(
 
     private fun applyEvents(events: List<Event>) {
         _allEvents.value = events
+        mergeEventLocationsIntoSuggestions(events)
         prefetchExploreImages(events)
+    }
+
+    private fun mergeEventLocationsIntoSuggestions(events: List<Event>) {
+        val fromEvents = events
+            .flatMap { event -> locationSuggestionCandidates(event) }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        val merged = (_locationSuggestions.value + fromEvents)
+            .distinctBy { it.lowercase(Locale.getDefault()) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+        _locationSuggestions.value = merged
+    }
+
+    private fun locationSuggestionCandidates(event: Event): List<String> {
+        val addressSegments = event.address.orEmpty()
+            .split(',')
+            .map { it.trim() }
+            .filter { segment -> segment.isNotBlank() && segment.split(Regex("\\s+")).size <= 4 }
+
+        return listOfNotNull(event.city, event.location) + addressSegments
     }
 
     private fun prefetchExploreImages(events: List<Event>) {

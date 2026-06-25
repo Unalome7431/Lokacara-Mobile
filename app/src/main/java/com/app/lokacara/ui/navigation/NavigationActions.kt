@@ -23,19 +23,14 @@ fun String?.isMainTabRoute(): Boolean {
 fun NavController.navigateToMainTab(route: String) {
     val targetRoute = if (route == Screen.Explore.route) Screen.Explore.createRoute() else route
     navigate(targetRoute) {
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
-        }
+        popUpTo(graph.findStartDestination().id) { inclusive = false }
         launchSingleTop = true
-        restoreState = true
     }
 }
 
 fun NavController.navigateToExplore(category: String = "") {
     navigate(Screen.Explore.createRoute(category)) {
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
-        }
+        popUpTo(graph.findStartDestination().id) { inclusive = false }
         launchSingleTop = true
         restoreState = category.isBlank()
     }

@@ -1,6 +1,7 @@
 package com.app.lokacara.ui.components.createevent
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
@@ -21,7 +22,9 @@ import com.app.lokacara.ui.theme.*
 fun EventReadinessCard(
     completed: Int,
     total: Int,
-    progress: Float
+    progress: Float,
+    incompleteItems: List<String> = emptyList(),
+    onIncompleteClick: (String) -> Unit = {}
 ) {
     Surface(
         modifier = Modifier
@@ -79,6 +82,49 @@ fun EventReadinessCard(
                 color = if (completed == total) SvgOrange else SvgPrimaryBlue,
                 trackColor = CreateEventNeutralTrack
             )
+
+            if (incompleteItems.isNotEmpty()) {
+                Text(
+                    text = "Lengkapi bagian berikut:",
+                    fontFamily = NunitoFont,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Gray700
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    incompleteItems.forEach { item ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .clickable { onIncompleteClick(item) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = CreateEventNeutralSurface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = item,
+                                    fontFamily = NunitoFont,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Gray900
+                                )
+                                Text(
+                                    text = "Isi",
+                                    fontFamily = NunitoFont,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SvgPrimaryBlue
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

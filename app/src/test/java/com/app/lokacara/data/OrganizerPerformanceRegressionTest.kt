@@ -30,10 +30,12 @@ class OrganizerPerformanceRegressionTest {
     }
 
     @Test
-    fun `create event readiness keeps seven required checks`() {
+    fun `create event readiness includes organizer contact checks`() {
         val completed = completedEventRequirements(
             hasName = true,
             hasCategory = true,
+            hasOrganizer = true,
+            hasContact = true,
             hasSchedule = true,
             hasLocation = false,
             hasDescription = true,
@@ -41,7 +43,7 @@ class OrganizerPerformanceRegressionTest {
             hasValidCapacity = true
         )
 
-        assertEquals(6, completed)
+        assertEquals(8, completed)
     }
 
     private fun attendee(id: Long, status: String) = AttendeeDto(

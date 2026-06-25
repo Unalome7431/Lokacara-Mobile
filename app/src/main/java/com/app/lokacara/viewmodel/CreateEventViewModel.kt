@@ -7,10 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.DraftManager
 import com.app.lokacara.data.EventDraft
+import com.app.lokacara.data.media.isRemoteUri
+import com.app.lokacara.data.media.prepareMediaFromUri
+import com.app.lokacara.data.media.toMultipartBodyPart
 import com.app.lokacara.data.remote.ApiResult
 import com.app.lokacara.data.remote.ApiService
-import com.app.lokacara.data.remote.dto.CategoryDto
 import com.app.lokacara.data.remote.safeApiCall
+import com.app.lokacara.data.remote.dto.CategoryDto
+import com.app.lokacara.data.validation.Validators
 import com.app.lokacara.repository.ExploreRepository
 import com.app.lokacara.ui.components.MapLocation
 import com.app.lokacara.ui.components.SnackbarManager
@@ -28,9 +32,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import android.graphics.BitmapFactory
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.util.Locale
 import javax.inject.Inject
 
@@ -47,6 +50,7 @@ class CreateEventViewModel @Inject constructor(
 
     val namaEvent = MutableStateFlow("")
     val penyelenggara = MutableStateFlow("")
+    val kontak = MutableStateFlow("")
     val waktuMulai = MutableStateFlow("")
     val waktuSelesai = MutableStateFlow("")
     val isOnline = MutableStateFlow(true)
@@ -101,11 +105,15 @@ class CreateEventViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val event = result.data.event
                     if (event == null) {
-                        _errorMessage.value = "Event tidak ditemukan"
+                        showError("Event tidak ditemukan")
                     } else {
                         namaEvent.value = event.title
                         deskripsi.value = event.description
-                        penyelenggara.value = event.user?.name ?: userSessionManager.userSession.first().name
+                        val session = userSessionManager.userSession.first()
+                        penyelenggara.value = event.organizer_name?.takeIf { it.isNotBlank() } ?: event.user?.name ?: session.name
+                        kontak.value = event.contact?.takeIf { it.isNotBlank() }
+                            ?: event.contact_phone?.takeIf { it.isNotBlank() }
+                            ?: session.phone
                         kuota.value = event.capacity ?: 50
                         waktuMulai.value = event.start_datetime
                         waktuSelesai.value = event.end_datetime
@@ -162,6 +170,7 @@ class CreateEventViewModel @Inject constructor(
             val draft = draftManager.loadDraft() ?: return@launch
             namaEvent.value = draft.namaEvent
             penyelenggara.value = draft.penyelenggara
+            kontak.value = draft.kontak
             waktuMulai.value = draft.waktuMulai
             waktuSelesai.value = draft.waktuSelesai
             isOnline.value = draft.isOnline
@@ -230,6 +239,9 @@ class CreateEventViewModel @Inject constructor(
             if (session.name.isNotBlank()) {
                 penyelenggara.value = session.name
             }
+            if (session.phone.isNotBlank()) {
+                kontak.value = session.phone
+            }
         }
     }
 
@@ -237,6 +249,8 @@ class CreateEventViewModel @Inject constructor(
         val eventIsOnline = isOnline.value
         val title = namaEvent.value.trim()
         val desc = deskripsi.value.trim()
+        val organizerName = penyelenggara.value.trim()
+        val contactText = kontak.value.trim()
         val venueOrPlatform = aplikasiTempat.value.trim()
         val addressOrLink = alamat.value.trim()
         val cityName = city.value.trim()
@@ -249,7 +263,10 @@ class CreateEventViewModel @Inject constructor(
         if (desc.isBlank()) errors["description"] = "Deskripsi event harus diisi"
         if (desc.length > 5000) errors["description"] = "Deskripsi event maksimal 5000 karakter"
         if (selectedCategoryId.value == null) errors["category"] = "Kategori event harus dipilih"
-        if (waktuMulai.value.isBlank()) errors["start_time"] = "Waktu mulai harus diisi"
+        if (waktuMulai.value.isBlank()) {
+            errors["date"] = "Tanggal event harus diisi"
+            errors["start_time"] = "Waktu mulai harus diisi"
+        }
         if (waktuSelesai.value.isBlank()) errors["end_time"] = "Waktu selesai harus diisi"
         if (kuota.value <= 0 || kuota.value > 100_000) errors["capacity"] = "Kuota peserta harus di antara 1 sampai 100000"
         val priceValue = resolvePriceValue()
@@ -265,8 +282,9 @@ class CreateEventViewModel @Inject constructor(
             errors["location"] = "Pilih lokasi dari peta atau gunakan lokasi saat ini"
         }
         if (errors.isNotEmpty()) {
+            val message = errors.values.first()
             _fieldErrors.value = errors
-            _errorMessage.value = errors.values.first()
+            showError(message)
             return
         }
         _fieldErrors.value = emptyMap()
@@ -284,12 +302,12 @@ class CreateEventViewModel @Inject constructor(
                 val endMillis = sdf.parse(waktuSelesai.value)?.time ?: 0L
                 if (endMillis <= startMillis) {
                     _fieldErrors.value = mapOf("end_time" to "Waktu selesai harus setelah waktu mulai")
-                    _errorMessage.value = "Waktu selesai harus setelah waktu mulai"
+                    showError("Waktu selesai harus setelah waktu mulai")
                     return
                 }
             } catch (_: Exception) {
                 _fieldErrors.value = mapOf("start_time" to "Format tanggal tidak valid")
-                _errorMessage.value = "Format tanggal tidak valid"
+                showError("Format tanggal tidak valid")
                 _isLoading.value = false
                 return
             }
@@ -303,7 +321,7 @@ class CreateEventViewModel @Inject constructor(
         } else ""
         if (!eventIsOnline && (offlineLocationName.isBlank() || offlineAddress.isBlank())) {
             _fieldErrors.value = mapOf("location" to "Detail lokasi offline belum lengkap")
-            _errorMessage.value = "Detail lokasi offline belum lengkap"
+            showError("Detail lokasi offline belum lengkap")
             return
         }
         if (!eventIsOnline) {
@@ -317,8 +335,9 @@ class CreateEventViewModel @Inject constructor(
 
             val type = if (eventIsOnline) "online" else "offline"
 
+            val descWithKontak = if (contactText.isNotBlank()) "$desc\nKontak: $contactText" else desc
             val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
-            val descPart = desc.toRequestBody("text/plain".toMediaTypeOrNull())
+            val descPart = descWithKontak.toRequestBody("text/plain".toMediaTypeOrNull())
             val typePart = type.toRequestBody("text/plain".toMediaTypeOrNull())
             val startDatePart = startDateStr.toRequestBody("text/plain".toMediaTypeOrNull())
             val startTimePart = startTimeStr.toRequestBody("text/plain".toMediaTypeOrNull())
@@ -344,40 +363,28 @@ class CreateEventViewModel @Inject constructor(
             val lngPart = if (lngStr.isNotBlank())
                 lngStr.toRequestBody("text/plain".toMediaTypeOrNull()) else null
 
-            val posterBody = try {
-                posterUri.value?.let { uri ->
-                    if (uri.scheme == "http" || uri.scheme == "https") {
-                        null
-                    } else {
-                        val ctx = getApplication<Application>()
-                        withContext(Dispatchers.IO) {
-                            val inputStream = ctx.contentResolver.openInputStream(uri) ?: throw IllegalArgumentException("Poster tidak dapat dibuka")
-                            var bytes = inputStream.use { it.readBytes() }
-                            if (bytes.size > 10_000_000) throw IllegalArgumentException("Ukuran poster maksimal 10 MB")
-                            val fileName = "poster_${System.currentTimeMillis()}.jpg"
-                            if (bytes.size > 300_000) {
-                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                                    ?: throw IllegalArgumentException("Format poster tidak didukung")
-                                val maxDim = 1600f
-                                val scale = minOf(maxDim / bitmap.width, maxDim / bitmap.height, 1f)
-                                val scaled = if (scale < 1f) {
-                                    android.graphics.Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
-                                } else bitmap
-                                val out = ByteArrayOutputStream()
-                                scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
-                                bytes = out.toByteArray()
-                                if (scaled !== bitmap) scaled.recycle()
-                                bitmap.recycle()
-                            }
-                            val originalType = ctx.contentResolver.getType(uri) ?: "image/jpeg"
-                            MultipartBody.Part.createFormData("poster", fileName, bytes.toRequestBody(originalType.toMediaTypeOrNull()))
+            val posterBody = posterUri.value?.let { uri ->
+                if (isRemoteUri(uri)) {
+                    null
+                } else {
+                    try {
+                        val prepared = prepareMediaFromUri(
+                            context = getApplication(),
+                            uri = uri,
+                            formDataName = "poster"
+                        )
+                        if (prepared.isFailure) {
+                            showError(prepared.exceptionOrNull()?.message ?: "Poster tidak valid")
+                            _isLoading.value = false
+                            return@launch
                         }
+                        prepared.getOrThrow().toMultipartBodyPart()
+                    } catch (e: IllegalArgumentException) {
+                        showError(e.message ?: "Poster tidak valid")
+                        _isLoading.value = false
+                        return@launch
                     }
                 }
-            } catch (e: IllegalArgumentException) {
-                _errorMessage.value = e.message ?: "Poster tidak valid"
-                _isLoading.value = false
-                return@launch
             }
 
             val currentEditId = eventIdToEdit.value
@@ -526,6 +533,34 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
+    fun setEventDate(date: String) {
+        val startTime = apiTimePart(waktuMulai.value).ifBlank { defaultStartTime() }
+        val endTime = apiTimePart(waktuSelesai.value).ifBlank {
+            apiTimePart(addHours("$date $startTime", 1)).ifBlank { defaultEndTime() }
+        }
+        val start = "$date $startTime"
+        val end = "$date $endTime"
+
+        waktuMulai.value = start
+        waktuSelesai.value = if (isEndAfterStart(start, end)) end else addHours(start, 1)
+        clearError()
+    }
+
+    fun setEventStartTime(time: String) {
+        val date = selectedEventDate().ifBlank { todayDate() }
+        setDateTime(isStart = true, date = date, time = time)
+        clearError()
+    }
+
+    fun setEventEndTime(time: String) {
+        val date = selectedEventDate().ifBlank { todayDate() }
+        if (waktuMulai.value.isBlank()) {
+            waktuMulai.value = "$date ${defaultStartTime()}"
+        }
+        waktuSelesai.value = "$date $time"
+        clearError()
+    }
+
     private fun addHours(input: String, hours: Int): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         return try {
@@ -562,10 +597,40 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
+    fun getDisplayDate(input: String): String {
+        if (input.isBlank()) return ""
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val date = sdf.parse(input.take(10)) ?: return input.take(10)
+            val display = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
+            display.format(date)
+        } catch (_: Exception) {
+            input.take(10)
+        }
+    }
+
+    fun getDisplayTime(input: String): String {
+        return apiTimePart(input).take(5)
+    }
+
+    fun getTimePickerHour(input: String, defaultHour: Int): Int {
+        return apiTimePart(input).take(2).toIntOrNull()?.coerceIn(0, 23) ?: defaultHour
+    }
+
+    fun getTimePickerMinute(input: String, defaultMinute: Int): Int {
+        return apiTimePart(input).drop(3).take(2).toIntOrNull()?.coerceIn(0, 59) ?: defaultMinute
+    }
+
+    fun getDefaultTimePickerValue(offsetHours: Long = 0): Pair<Int, Int> {
+        val time = localTime(offsetHours)
+        return time.hour to time.minute
+    }
+
     fun resetForm() {
         eventIdToEdit.value = null
         namaEvent.value = ""
         penyelenggara.value = ""
+        kontak.value = ""
         waktuMulai.value = ""
         waktuSelesai.value = ""
         isOnline.value = true
@@ -588,9 +653,15 @@ class CreateEventViewModel @Inject constructor(
         _fieldErrors.value = emptyMap()
     }
 
+    private fun showError(message: String) {
+        _errorMessage.value = message
+        SnackbarManager.showError(message)
+    }
+
     private fun currentDraft(): EventDraft = EventDraft(
         namaEvent = namaEvent.value,
         penyelenggara = penyelenggara.value,
+        kontak = kontak.value,
         waktuMulai = waktuMulai.value,
         waktuSelesai = waktuSelesai.value,
         isOnline = isOnline.value,
@@ -609,6 +680,8 @@ class CreateEventViewModel @Inject constructor(
 
     private fun hasMeaningfulDraft(): Boolean {
         return namaEvent.value.isNotBlank() ||
+            penyelenggara.value.isNotBlank() ||
+            kontak.value.isNotBlank() ||
             waktuMulai.value.isNotBlank() ||
             waktuSelesai.value.isNotBlank() ||
             !isOnline.value ||
@@ -641,5 +714,27 @@ class CreateEventViewModel @Inject constructor(
             val digits = priceAmount.value.filter(Char::isDigit)
             if (digits.isBlank()) null else digits.toIntOrNull()?.takeIf { it >= 1 }
         }
+    }
+
+    private fun selectedEventDate(): String = waktuMulai.value.take(10).takeIf { it.length == 10 } ?: ""
+
+    private fun apiTimePart(input: String): String {
+        return if (input.length >= 19) input.substring(11, 19) else ""
+    }
+
+    private fun todayDate(): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date())
+    }
+
+    private fun defaultStartTime(): String = formatApiTime(localTime())
+
+    private fun defaultEndTime(): String = formatApiTime(localTime(offsetHours = 1))
+
+    private fun localTime(offsetHours: Long = 0): LocalTime {
+        return LocalTime.now().plusHours(offsetHours)
+    }
+
+    private fun formatApiTime(time: LocalTime): String {
+        return String.format(Locale.US, "%02d:%02d:00", time.hour, time.minute)
     }
 }

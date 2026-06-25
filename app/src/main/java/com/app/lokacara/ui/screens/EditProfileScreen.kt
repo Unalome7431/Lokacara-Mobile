@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -84,6 +85,7 @@ fun EditProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     var showDialog by remember { mutableStateOf(false) }
     var editField by remember { mutableStateOf<UserSessionManager.Field?>(null) }
@@ -119,6 +121,7 @@ fun EditProfileScreen(
             label = editField?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "",
             initialValue = editFieldValue,
             keyboardType = editKeyboardType,
+            isSaving = isLoading,
             onDismiss = { showDialog = false },
             onSave = { newValue ->
                 editField?.let { field -> viewModel.updateProfileField(field, newValue) }
@@ -165,10 +168,21 @@ fun EditProfileScreen(
                     imageModel = profileImageUri ?: userProfile.profileImageUrl,
                     modifier = avatarModifier
                 )
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .size(112.dp)
+                            .background(Color.White.copy(alpha = 0.72f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Primary500, modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
+                    }
+                }
 
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
+                        .padding(6.dp)
                         .background(Primary500, CircleShape)
                         .border(2.dp, Color.White, CircleShape)
                         .clickable {
@@ -288,6 +302,7 @@ fun EditFieldDialog(
     label: String,
     initialValue: String,
     keyboardType: KeyboardType = KeyboardType.Text,
+    isSaving: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
@@ -317,13 +332,17 @@ fun EditFieldDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSave(text) }) {
-                Text(
-                    text = "Simpan",
-                    color = Primary500,
-                    fontFamily = NunitoFont,
-                    fontWeight = FontWeight.Bold
-                )
+            TextButton(onClick = { onSave(text) }, enabled = !isSaving) {
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Primary500)
+                } else {
+                    Text(
+                        text = "Simpan",
+                        color = Primary500,
+                        fontFamily = NunitoFont,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         },
         dismissButton = {

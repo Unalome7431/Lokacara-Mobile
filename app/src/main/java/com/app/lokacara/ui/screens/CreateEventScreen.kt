@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -50,7 +52,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -107,6 +108,7 @@ fun CreateEventScreen(
     val selectedCategoryName by viewModel.selectedCategoryName.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val penyelenggara by viewModel.penyelenggara.collectAsStateWithLifecycle()
+    val kontak by viewModel.kontak.collectAsStateWithLifecycle()
     val waktuMulai by viewModel.waktuMulai.collectAsStateWithLifecycle()
     val waktuSelesai by viewModel.waktuSelesai.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
@@ -135,14 +137,26 @@ fun CreateEventScreen(
     val completedRequirements = completedEventRequirements(
         hasName = namaEvent.isNotBlank(),
         hasCategory = selectedCategoryName.isNotBlank(),
+        hasOrganizer = penyelenggara.isNotBlank(),
+        hasContact = kontak.isNotBlank(),
         hasSchedule = scheduleReady,
         hasLocation = locationReady,
         hasDescription = deskripsi.isNotBlank(),
         hasPrice = priceReady,
         hasValidCapacity = kuota in 1..100_000
     )
-    val totalRequirements = 7
+    val totalRequirements = 9
     val formProgress = completedRequirements / totalRequirements.toFloat()
+    val formListState = rememberLazyListState()
+    var draftStatus by remember(hasDraft, isEditMode) {
+        mutableStateOf(
+            when {
+                isEditMode -> ""
+                hasDraft -> "Draf tersimpan"
+                else -> ""
+            }
+        )
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -169,6 +183,19 @@ fun CreateEventScreen(
         }
     }
 
+    LaunchedEffect(
+        namaEvent, penyelenggara, kontak, waktuMulai, waktuSelesai,
+        isOnline, isFreePrice, priceAmount, aplikasiTempat, alamat,
+        city, deskripsi, kuota, selectedCategoryName, latitude, longitude
+    ) {
+        if (isEditMode) return@LaunchedEffect
+        kotlinx.coroutines.delay(2000)
+        if (completedRequirements > 0) {
+            viewModel.saveDraft()
+            draftStatus = "Tersimpan otomatis"
+        }
+    }
+
     val lightBlueBg = CreateEventLightBlue
     val darkerBlueBg = CreateEventDarkerBlue
     val context = LocalContext.current
@@ -186,39 +213,37 @@ fun CreateEventScreen(
         )
     }
 
-    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEventDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
-    var tempStartDateMillis by remember { mutableLongStateOf(0L) }
-
-    var showEndDatePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-    var tempEndDateMillis by remember { mutableLongStateOf(0L) }
 
-    if (showStartDatePicker) {
+    if (showEventDatePicker) {
         val datePickerState = rememberDatePickerState()
         DatePickerDialog(
-            onDismissRequest = { showStartDatePicker = false },
+            onDismissRequest = { showEventDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        tempStartDateMillis = millis
-                        showStartDatePicker = false
-                        showStartTimePicker = true
+                        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(millis)
+                        viewModel.setEventDate(dateStr)
+                        showEventDatePicker = false
                     }
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showStartDatePicker = false }) { Text("Batal") }
-            }
+                TextButton(onClick = { showEventDatePicker = false }) { Text("Batal") }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Color.White)
         ) {
             DatePicker(state = datePickerState)
         }
     }
 
     if (showStartTimePicker) {
+        val defaultTime = remember { viewModel.getDefaultTimePickerValue() }
         val timePickerState = rememberTimePickerState(
-            initialHour = 12,
-            initialMinute = 0,
+            initialHour = viewModel.getTimePickerHour(waktuMulai, defaultHour = defaultTime.first),
+            initialMinute = viewModel.getTimePickerMinute(waktuMulai, defaultMinute = defaultTime.second),
             is24Hour = true
         )
         AlertDialog(
@@ -231,47 +256,24 @@ fun CreateEventScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempStartDateMillis)
                     val timeStr = String.format(Locale.US, "%02d:%02d:00", timePickerState.hour, timePickerState.minute)
-                    viewModel.setDateTime(isStart = true, date = dateStr, time = timeStr)
+                    viewModel.setEventStartTime(timeStr)
                     showStartTimePicker = false
-                    tempStartDateMillis = 0L
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showStartTimePicker = false; tempStartDateMillis = 0L }) { Text("Batal") }
+                TextButton(onClick = { showStartTimePicker = false }) { Text("Batal") }
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(16.dp)
         )
     }
 
-    if (showEndDatePicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showEndDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        tempEndDateMillis = millis
-                        showEndDatePicker = false
-                        showEndTimePicker = true
-                    }
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEndDatePicker = false }) { Text("Batal") }
-            },
-            colors = DatePickerDefaults.colors(containerColor = Color.White)
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
     if (showEndTimePicker) {
+        val defaultTime = remember { viewModel.getDefaultTimePickerValue(offsetHours = 1) }
         val timePickerState = rememberTimePickerState(
-            initialHour = 12,
-            initialMinute = 0,
+            initialHour = viewModel.getTimePickerHour(waktuSelesai, defaultHour = defaultTime.first),
+            initialMinute = viewModel.getTimePickerMinute(waktuSelesai, defaultMinute = defaultTime.second),
             is24Hour = true
         )
         AlertDialog(
@@ -284,15 +286,13 @@ fun CreateEventScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(tempEndDateMillis)
                     val timeStr = String.format(Locale.US, "%02d:%02d:00", timePickerState.hour, timePickerState.minute)
-                    viewModel.setDateTime(isStart = false, date = dateStr, time = timeStr)
+                    viewModel.setEventEndTime(timeStr)
                     showEndTimePicker = false
-                    tempEndDateMillis = 0L
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showEndTimePicker = false; tempEndDateMillis = 0L }) { Text("Batal") }
+                TextButton(onClick = { showEndTimePicker = false }) { Text("Batal") }
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(16.dp)
@@ -333,14 +333,30 @@ fun CreateEventScreen(
             )
             Spacer(modifier = Modifier.weight(1f))
             if (!isEditMode) {
-                Text(
-                    text = "Simpan Draf",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SvgOrange,
-                    modifier = Modifier.clickable { viewModel.saveDraft() }
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Simpan Draf",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SvgOrange,
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .clickable {
+                                viewModel.saveDraft()
+                                draftStatus = "Tersimpan"
+                            }
+                            .padding(top = 14.dp)
+                    )
+                    if (draftStatus.isNotBlank()) {
+                        Text(
+                            text = draftStatus,
+                            fontFamily = NunitoFont,
+                            fontSize = 10.sp,
+                            color = Gray500
+                        )
+                    }
+                }
             }
         }
 
@@ -369,7 +385,10 @@ fun CreateEventScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = SvgPrimaryBlue,
-                            modifier = Modifier.clickable { viewModel.loadDraft() }
+                            modifier = Modifier.clickable {
+                                viewModel.loadDraft()
+                                draftStatus = "Draf dimuat"
+                            }
                         )
                         Text(
                             text = "Hapus",
@@ -377,7 +396,10 @@ fun CreateEventScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = SemanticErrorBase,
-                            modifier = Modifier.clickable { viewModel.deleteDraft() }
+                            modifier = Modifier.clickable {
+                                viewModel.deleteDraft()
+                                draftStatus = ""
+                            }
                         )
                     }
                 }
@@ -393,6 +415,7 @@ fun CreateEventScreen(
         LazyColumn(
             modifier = Modifier
                 .weight(1f),
+            state = formListState,
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -526,11 +549,23 @@ fun CreateEventScreen(
 
         CreateEventTextField(
             value = penyelenggara,
-            onValueChange = { viewModel.penyelenggara.value = it },
-            label = "Penyelenggara & Kontak",
-            placeholder = "Masukkan nama penyelenggara atau kontak",
-            containerColor = lightBlueBg
+            onValueChange = { viewModel.penyelenggara.value = it; viewModel.clearError() },
+            label = "Penyelenggara",
+            placeholder = "Masukkan nama penyelenggara",
+            containerColor = lightBlueBg,
+            isError = fieldErrors.containsKey("organizer_name")
         )
+        FieldError(fieldErrors["organizer_name"])
+
+        CreateEventTextField(
+            value = kontak,
+            onValueChange = { viewModel.kontak.value = it; viewModel.clearError() },
+            label = "Kontak",
+            placeholder = "Nomor WhatsApp, email, atau kontak event",
+            containerColor = lightBlueBg,
+            isError = fieldErrors.containsKey("contact")
+        )
+        FieldError(fieldErrors["contact"])
         }
         }
 
@@ -548,20 +583,32 @@ fun CreateEventScreen(
             }
             ) {
             DatePickerField(
-                value = if (waktuMulai.isNotBlank()) viewModel.getDisplayDateTime(waktuMulai) else "",
-                onClick = { showStartDatePicker = true },
-                label = "Mulai",
-                placeholder = "Pilih tanggal dan waktu mulai",
-                isError = fieldErrors.containsKey("start_time")
+                value = if (waktuMulai.isNotBlank()) viewModel.getDisplayDate(waktuMulai) else "",
+                onClick = { showEventDatePicker = true },
+                label = "Tanggal",
+                placeholder = "Pilih tanggal event",
+                isError = fieldErrors.containsKey("date")
             )
+            FieldError(fieldErrors["date"])
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DatePickerField(
+                    value = if (waktuMulai.isNotBlank()) viewModel.getDisplayTime(waktuMulai) else "",
+                    onClick = { showStartTimePicker = true },
+                    label = "Waktu Mulai",
+                    placeholder = "Mulai",
+                    modifier = Modifier.weight(1f),
+                    isError = fieldErrors.containsKey("start_time")
+                )
+                DatePickerField(
+                    value = if (waktuSelesai.isNotBlank()) viewModel.getDisplayTime(waktuSelesai) else "",
+                    onClick = { showEndTimePicker = true },
+                    label = "Waktu Berakhir",
+                    placeholder = "Selesai",
+                    modifier = Modifier.weight(1f),
+                    isError = fieldErrors.containsKey("end_time")
+                )
+            }
             FieldError(fieldErrors["start_time"])
-            DatePickerField(
-                value = if (waktuSelesai.isNotBlank()) viewModel.getDisplayDateTime(waktuSelesai) else "",
-                onClick = { showEndDatePicker = true },
-                label = "Selesai",
-                placeholder = "Pilih tanggal dan waktu selesai",
-                isError = fieldErrors.containsKey("end_time")
-            )
             FieldError(fieldErrors["end_time"])
         }
         }
@@ -570,7 +617,7 @@ fun CreateEventScreen(
         SectionContainer(
             title = "Harga Event",
             subtitle = "Gratis atau berbayar",
-            backgroundColor = darkerBlueBg
+            backgroundColor = lightBlueBg
         ) {
             PriceSection(
                 isFree = isFreePrice,

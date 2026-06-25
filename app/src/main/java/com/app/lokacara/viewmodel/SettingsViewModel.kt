@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +29,10 @@ class SettingsViewModel @Inject constructor(
     private val pushTokenManager: PushTokenManager,
     private val apiService: ApiService
 ) : AndroidViewModel(application) {
+
+    init {
+        syncAuthCapabilities()
+    }
 
     val notificationsEnabled: StateFlow<Boolean> = settingsManager.notificationsEnabled
         .stateIn(
@@ -43,6 +49,29 @@ class SettingsViewModel @Inject constructor(
 
     private val _deleteSuccess = MutableStateFlow(false)
     val deleteSuccess: StateFlow<Boolean> = _deleteSuccess.asStateFlow()
+
+    val isGoogleAuth: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.authProvider == "google" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.hasLocalPassword }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private fun syncAuthCapabilities() {
+        viewModelScope.launch {
+            when (val result = safeApiCall { apiService.getProfile() }) {
+                is ApiResult.Success -> {
+                    val user = result.data.user ?: return@launch
+                    userSessionManager.updateAuthState(
+                        provider = user.provider,
+                        hasLocalPassword = user.has_password
+                    )
+                }
+                is ApiResult.Error -> Unit
+            }
+        }
+    }
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -72,6 +101,27 @@ class SettingsViewModel @Inject constructor(
             _isDeleting.value = true
             _deleteError.value = null
             when (val result = safeApiCall { apiService.deleteAccount(mapOf("password" to password)) }) {
+                is ApiResult.Success -> {
+                    _deleteSuccess.value = true
+                    SnackbarManager.show("Akun berhasil dihapus")
+                }
+                is ApiResult.Error -> {
+                    _deleteError.value = result.message
+                }
+            }
+            _isDeleting.value = false
+        }
+    }
+
+    fun deleteGoogleAccount(googleToken: String) {
+        if (googleToken.isBlank()) {
+            _deleteError.value = "Token Google tidak valid"
+            return
+        }
+        viewModelScope.launch {
+            _isDeleting.value = true
+            _deleteError.value = null
+            when (val result = safeApiCall { apiService.deleteAccount(mapOf("google_token" to googleToken)) }) {
                 is ApiResult.Success -> {
                     _deleteSuccess.value = true
                     SnackbarManager.show("Akun berhasil dihapus")

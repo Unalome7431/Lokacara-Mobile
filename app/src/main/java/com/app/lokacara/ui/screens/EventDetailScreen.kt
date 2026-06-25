@@ -35,12 +35,16 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Visibility
@@ -56,6 +60,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -119,6 +124,7 @@ import com.app.lokacara.ui.theme.SemanticErrorLight
 import com.app.lokacara.ui.theme.SemanticSuccessBase
 import com.app.lokacara.ui.theme.SemanticSuccessLight
 import com.app.lokacara.ui.theme.SvgBackground
+import com.app.lokacara.ui.theme.SvgOrange
 import com.app.lokacara.viewmodel.EventDetailAction
 import com.app.lokacara.viewmodel.EventDetailViewModel
 
@@ -135,6 +141,7 @@ fun EventDetailScreen(
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isJoining by viewModel.isJoining.collectAsStateWithLifecycle()
     val isCancelling by viewModel.isCancelling.collectAsStateWithLifecycle()
+    val isReporting by viewModel.isReporting.collectAsStateWithLifecycle()
     val isQrLoading by viewModel.isQrLoading.collectAsStateWithLifecycle()
     val qrToken by viewModel.qrToken.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
@@ -143,6 +150,8 @@ fun EventDetailScreen(
     val context = LocalContext.current
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var showCancelEventConfirm by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val showCollapsedHeader: Boolean by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100 }
@@ -150,6 +159,14 @@ fun EventDetailScreen(
 
     LaunchedEffect(eventId) {
         if (eventId > 0L) viewModel.loadEvent(eventId) else navController.navigateBackOrHome()
+    }
+
+    LaunchedEffect(lastAction, successMessage) {
+        if (lastAction == EventDetailAction.REPORT && successMessage != null) {
+            showReportDialog = false
+            reportReason = ""
+            viewModel.clearMessages()
+        }
     }
 
     Scaffold(
@@ -203,6 +220,8 @@ fun EventDetailScreen(
                                     isHost = isHost,
                                     isQrLoading = isQrLoading,
                                     qrToken = qrToken,
+                                    isReporting = isReporting,
+                                    onReportEvent = { showReportDialog = true },
                                     onOpenMap = { openEventMap(context, event) },
                                     onOpenLink = { openEventLink(context, event) }
                                 )
@@ -251,7 +270,7 @@ fun EventDetailScreen(
             },
             text = {
                 Text(
-                    text = "Kamu yakin ingin membatalkan pendaftaran event ini?",
+                    text = "Pendaftaran kamu akan dibatalkan dan tiket event ini tidak lagi aktif.",
                     fontFamily = PlusJakartaSansFont,
                     color = Gray600
                 )
@@ -263,12 +282,12 @@ fun EventDetailScreen(
                         viewModel.leaveEvent()
                     }
                 ) {
-                    Text("Batalkan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                    Text("Ya, Batalkan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) {
-                    Text(stringResource(R.string.cancel), color = Gray600)
+                    Text("Tetap Terdaftar", color = Gray600)
                 }
             },
             containerColor = Color.White,
@@ -306,6 +325,22 @@ fun EventDetailScreen(
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    if (showReportDialog) {
+        ReportEventDialog(
+            reason = reportReason,
+            isReporting = isReporting,
+            onReasonChange = { reportReason = it },
+            onDismiss = {
+                if (!isReporting) {
+                    showReportDialog = false
+                    reportReason = ""
+                    viewModel.clearMessages()
+                }
+            },
+            onSubmit = { viewModel.reportEvent(reportReason) }
         )
     }
 
@@ -432,14 +467,23 @@ private fun EventHero(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = event.penyelenggara.ifEmpty { stringResource(R.string.event_detail_unknown_organizer) },
-                fontFamily = PlusJakartaSansFont,
-                fontSize = 13.sp,
-                color = Color.White.copy(alpha = 0.82f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Person,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.72f),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = event.penyelenggara.ifEmpty { stringResource(R.string.event_detail_unknown_organizer) },
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.82f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -469,7 +513,7 @@ private fun CollapsedEventHeader(
                     text = event.title,
                     fontFamily = NunitoFont,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     color = Gray900,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -495,16 +539,59 @@ private fun EventDetailContent(
     isHost: Boolean,
     isQrLoading: Boolean,
     qrToken: String?,
+    isReporting: Boolean,
+    onReportEvent: () -> Unit,
     onOpenMap: () -> Unit,
     onOpenLink: () -> Unit
-) {
+    ) {
+        val phoneRegex = Regex("(?:0|\\+62|62)\\s*\\d{2,}[\\-\\s]?\\d{3,}[\\-\\s]?\\d{3,}")
+        val kontakLabelRegex = Regex("^[-\\s]*\\*{0,2}[Kk]ontak\\*{0,2}\\s*:?\\s*")
+        
+        val descriptionText = remember(event.description) {
+            event.description
+                .lines()
+                .filterNot { line ->
+                    val t = line.trim()
+                    t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
+                }
+                .joinToString("\n")
+                .trim()
+        }
+        
+        fun extractPhone(text: String): String {
+            val found = phoneRegex.find(text)?.value
+            if (!found.isNullOrBlank()) return found
+            val digitsOnly = text.replace(Regex("[^+0-9]"), "").trim()
+            return if (digitsOnly.length >= 6) digitsOnly else ""
+        }
+        
+        fun cleanKontak(raw: String): String {
+            return raw
+                .replace(kontakLabelRegex, "")
+                .replace(Regex("^[-\\s]+"), "")
+                .let { extractPhone(it) }
+        }
+        
+        val apiKontak = cleanKontak(event.kontak)
+        val descKontak = event.description.lines()
+            .firstOrNull { line -> 
+                val t = line.trim()
+                t.contains("kontak", ignoreCase = true) || phoneRegex.containsMatchIn(t)
+            }
+            ?.let { cleanKontak(it) } ?: ""
+        
+        val displayKontak = apiKontak.ifBlank { descKontak }.ifBlank {
+            phoneRegex.find(event.description)?.value ?: ""
+        }.let { 
+            if (it.length >= 6 && it.any { c -> c.isDigit() }) it else ""
+        }
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken)
+        FlatEventStatus(event = event, isRegistered = isRegistered, isHost = isHost, isQrLoading = isQrLoading, qrToken = qrToken, displayKontak = displayKontak)
 
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
@@ -516,7 +603,16 @@ private fun EventDetailContent(
 
         HorizontalDivider(thickness = 1.dp, color = Gray100)
 
-        FlatEventDescription(text = event.description)
+        FlatEventDescription(text = descriptionText)
+
+        if (!isHost) {
+            HorizontalDivider(thickness = 1.dp, color = Gray100)
+
+            ReportEventSection(
+                isReporting = isReporting,
+                onReportEvent = onReportEvent
+            )
+        }
     }
 }
 
@@ -526,7 +622,8 @@ private fun FlatEventStatus(
     isRegistered: Boolean,
     isHost: Boolean,
     isQrLoading: Boolean,
-    qrToken: String?
+    qrToken: String?,
+    displayKontak: String = ""
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -555,6 +652,121 @@ private fun FlatEventStatus(
             color = Gray600,
             lineHeight = 19.sp
         )
+
+        if (event.penyelenggara.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Primary100.copy(alpha = 0.7f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = Primary500,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Penyelenggara",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = Gray500
+                        )
+                        Text(
+                            text = event.penyelenggara,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Gray900,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        if (displayKontak.isNotBlank()) {
+            val context = LocalContext.current
+            val phone = remember(displayKontak) { displayKontak.replace(Regex("[^+0-9]"), "") }
+            val onKontakClick = remember(phone) {{
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phone"))
+                try { context.startActivity(intent) } catch (_: Exception) {}
+            }}
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 1.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onKontakClick)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(SvgOrange.copy(alpha = 0.15f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Call,
+                            contentDescription = null,
+                            tint = SvgOrange,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Kontak",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = Gray500
+                        )
+                        Text(
+                            text = displayKontak,
+                            fontFamily = NunitoFont,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Gray900,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Hubungi via WhatsApp",
+                            fontFamily = PlusJakartaSansFont,
+                            fontSize = 11.sp,
+                            color = SvgOrange
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                        contentDescription = "Hubungi",
+                        tint = SvgOrange,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
 
         if (isRegistered && !isHost) {
             Surface(
@@ -598,7 +810,7 @@ private fun EventInfoGrid(event: Event) {
             )
             EventMetricCard(
                 icon = Icons.Outlined.ConfirmationNumber,
-                label = "Harga",
+                label = stringResource(R.string.event_detail_price_label),
                 value = event.price,
                 modifier = Modifier.weight(1f)
             )
@@ -777,6 +989,134 @@ private fun FlatEventDescription(text: String) {
 }
 
 @Composable
+private fun ReportEventSection(
+    isReporting: Boolean,
+    onReportEvent: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = SemanticErrorLight.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Flag,
+                    contentDescription = null,
+                    tint = SemanticErrorBase,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Laporkan Event",
+                    fontFamily = NunitoFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Gray900
+                )
+                Text(
+                    text = "Beri tahu kami jika event ini bermasalah.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 12.sp,
+                    color = Gray600,
+                    lineHeight = 16.sp
+                )
+            }
+            TextButton(
+                onClick = onReportEvent,
+                enabled = !isReporting
+            ) {
+                if (isReporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = SemanticErrorBase
+                    )
+                } else {
+                    Text("Lapor", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportEventDialog(
+    reason: String,
+    isReporting: Boolean,
+    onReasonChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Laporkan Event",
+                fontFamily = NunitoFont,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Jelaskan alasan laporanmu. Tim Lokacara akan meninjau event ini.",
+                    fontFamily = PlusJakartaSansFont,
+                    fontSize = 14.sp,
+                    color = Gray600,
+                    lineHeight = 20.sp
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { onReasonChange(it.take(500)) },
+                    enabled = !isReporting,
+                    label = { Text("Alasan laporan") },
+                    placeholder = { Text("Contoh: informasi event tidak sesuai") },
+                    minLines = 3,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onSubmit,
+                enabled = !isReporting && reason.isNotBlank()
+            ) {
+                if (isReporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = SemanticErrorBase
+                    )
+                } else {
+                    Text("Kirim Laporan", color = SemanticErrorBase, fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(enabled = !isReporting, onClick = onDismiss) {
+                Text("Batal", color = Gray600)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(22.dp)
+    )
+}
+
+@Composable
 private fun HostManagementPanel(
     event: Event,
     navController: NavController,
@@ -889,7 +1229,7 @@ private fun EventBottomActionBar(
                         modifier = Modifier.weight(1f).height(52.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Batal", fontWeight = FontWeight.Bold, color = SemanticErrorBase)
+                        Text("Batalkan Event", fontWeight = FontWeight.Bold, color = SemanticErrorBase)
                     }
                     Button(
                         onClick = onEditEvent,
@@ -901,22 +1241,32 @@ private fun EventBottomActionBar(
                     }
                 }
             } else if (isRegistered) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
-                        onClick = onLeave,
-                        enabled = !isJoining,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(stringResource(R.string.event_detail_cancel_registration), color = SemanticErrorBase, fontWeight = FontWeight.Bold)
-                    }
-                    Button(
-                        onClick = onOpenTickets,
-                        modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary500)
-                    ) {
-                        Text("Lihat Tiket", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = onOpenTickets,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary500)
+                ) {
+                    Text("Lihat Tiket", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                TextButton(
+                    onClick = onLeave,
+                    enabled = !isJoining,
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    if (isJoining) {
+                        CircularProgressIndicator(
+                            color = SemanticErrorBase,
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.event_detail_cancel_registration),
+                            color = SemanticErrorBase,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             } else {

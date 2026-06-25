@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
+import coil.request.CachePolicy
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -247,38 +249,53 @@ fun ProfileAvatarImage(
     modifier: Modifier = Modifier,
     contentDescription: String = "Profile Picture"
 ) {
+    val context = LocalContext.current
     val resolvedModel = remember(imageModel) {
         when (imageModel) {
             is String -> imageModel
                 .trim()
                 .takeIf { it.isNotEmpty() }
                 ?.let { value ->
-                    if (value.startsWith("/") && File(value).exists()) File(value) else value
+                    val localPath = value.substringBefore("?")
+                    if (localPath.startsWith("/") && File(localPath).exists()) File(localPath) else value
                 }
             else -> imageModel
         }
     }
-    val context = LocalContext.current
-    val imageRequest = remember(context, resolvedModel) {
+    val cacheSignature = remember(imageModel, resolvedModel) {
+        when (imageModel) {
+            is String -> imageModel.trim()
+            is File -> "${imageModel.absolutePath}?v=${imageModel.lastModified()}"
+            null -> "profile-avatar-empty"
+            else -> imageModel.hashCode().toString()
+        }
+    }
+    val imageRequest = remember(resolvedModel, cacheSignature) {
         ImageRequest.Builder(context)
             .data(resolvedModel)
             .size(400)
             .precision(Precision.INEXACT)
             .crossfade(false)
+            .memoryCacheKey(cacheSignature)
+            .diskCacheKey(cacheSignature)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
             .build()
     }
-    var hasError by remember(resolvedModel) { mutableStateOf(false) }
+    var hasError by remember(cacheSignature) { mutableStateOf(false) }
 
     if (resolvedModel == null || hasError) {
         ProfileAvatarPlaceholder(modifier = modifier)
     } else {
-        AsyncImage(
-            model = imageRequest,
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            onError = { hasError = true },
-            modifier = modifier
-        )
+        key(cacheSignature) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                onError = { hasError = true },
+                modifier = modifier
+            )
+        }
     }
 }
 
@@ -409,7 +426,7 @@ fun EmptyEventState(
         ) {
             Icon(androidx.compose.material.icons.Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Buat Event Sekarang", fontWeight = FontWeight.Bold)
+            Text("Ikuti Event Sekarang", fontWeight = FontWeight.Bold)
         }
     }
 }

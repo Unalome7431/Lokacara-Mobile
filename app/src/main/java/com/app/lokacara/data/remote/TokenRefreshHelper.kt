@@ -58,7 +58,9 @@ class TokenRefreshHelper @Inject constructor(
                     userId = session.userId,
                     name = session.name,
                     email = session.email,
-                    role = session.userRole
+                    role = session.userRole,
+                    provider = session.authProvider,
+                    hasLocalPassword = session.hasLocalPassword
                 )
                 sessionManager.saveUserSession(
                     name = session.name,

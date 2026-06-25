@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Download
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -76,10 +78,13 @@ fun BigTicketCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                     TicketInfoItem("Tanggal", date, Color.White)
                     TicketInfoItem("Jam", time, Color.White)
-                    TicketInfoItem("Tempat", location, Color.White)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                    TicketInfoItem("Tempat", location, Color.White, maxLines = 2)
                     TicketInfoItem("Kode Unik", uniqueCode, Color.White)
                 }
             }
@@ -130,16 +135,16 @@ fun BigTicketCard(
 }
 
 @Composable
-fun TicketInfoItem(label: String, value: String, color: Color) {
-    Row(modifier = Modifier.widthIn(max = 140.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("$label: ", fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
+fun TicketInfoItem(label: String, value: String, color: Color, maxLines: Int = 1) {
+    Column(modifier = Modifier.widthIn(max = 140.dp)) {
+        Text("$label", fontSize = 11.sp, color = color.copy(alpha = 0.7f), fontFamily = PlusJakartaSansFont)
         Text(
             value,
             fontSize = 12.sp,
             color = color,
             fontWeight = FontWeight.Bold,
             fontFamily = PlusJakartaSansFont,
-            maxLines = 1,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -337,7 +342,8 @@ fun HistoryDetailDialog(
     event: HistoryEvent,
     onDismiss: () -> Unit,
     onDownload: () -> Unit = {},
-    isDownloaded: Boolean = false
+    isDownloaded: Boolean = false,
+    certificatePreview: String? = null
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
@@ -350,12 +356,24 @@ fun HistoryDetailDialog(
                         .background(Primary100),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.WorkspacePremium,
-                        contentDescription = "Sertifikat",
-                        tint = Primary500,
-                        modifier = Modifier.size(72.dp)
-                    )
+                    if (certificatePreview != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(certificatePreview)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Sertifikat",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.WorkspacePremium,
+                            contentDescription = "Sertifikat",
+                            tint = Primary500,
+                            modifier = Modifier.size(72.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -97,6 +97,7 @@ fun TicketsScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val downloadedCertIds by viewModel.downloadedCertIds.collectAsStateWithLifecycle()
+    val certificatePreviews by viewModel.certificatePreviews.collectAsStateWithLifecycle()
     val hasContent = todayEvents.isNotEmpty() || upcomingEvents.isNotEmpty() || historyEvents.isNotEmpty()
 
     if (isLoading && !hasContent) {
@@ -118,7 +119,7 @@ fun TicketsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -197,6 +198,7 @@ fun TicketsScreen(
                     RiwayatContent(
                         historyEvents = historyEvents,
                         downloadedCertIds = downloadedCertIds,
+                        certificatePreviews = certificatePreviews,
                         onDownloadCert = { viewModel.downloadCertificate(it) }
                     )
                 }
@@ -263,6 +265,7 @@ fun MendatangContent(
 fun RiwayatContent(
     historyEvents: List<HistoryEvent>,
     downloadedCertIds: Set<Long> = emptySet(),
+    certificatePreviews: Map<Long, String> = emptyMap(),
     onDownloadCert: (HistoryEvent) -> Unit = {}
 ) {
     var selectedEvent by remember { mutableStateOf<HistoryEvent?>(null) }
@@ -292,7 +295,8 @@ fun RiwayatContent(
             event = it,
             onDismiss = { selectedEvent = null },
             onDownload = { onDownloadCert(it) },
-            isDownloaded = it.id in downloadedCertIds
+            isDownloaded = it.id in downloadedCertIds,
+            certificatePreview = certificatePreviews[it.id]
         )
     }
 }

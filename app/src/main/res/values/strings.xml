@@ -55,6 +55,7 @@
     <!-- Event Detail -->
     <string name="event_detail_title">Detail Event</string>
     <string name="event_detail_date_label">Waktu &amp; Tanggal</string>
+    <string name="event_detail_price_label">Harga</string>
     <string name="event_detail_location_label">Lokasi</string>
     <string name="event_detail_organizer_label">Penyelenggara</string>
     <string name="event_detail_unknown_organizer">Tidak diketahui</string>
@@ -204,6 +205,12 @@
 
     <!-- Forget Password -->
     <string name="forgot_password">Lupa Kata Sandi?</string>
+    <string name="forgot_password_title">Lupa Kata Sandi</string>
+    <string name="forgot_password_email_only_hint">Gunakan reset password hanya untuk akun yang masuk dengan email dan kata sandi.</string>
+    <string name="forgot_password_google_hint">Jika akun Anda terhubung ke Google, silakan masuk kembali dengan tombol Google.</string>
+    <string name="forgot_password_google_config_missing">Login Google belum dikonfigurasi di perangkat ini.</string>
+    <string name="forgot_password_send">Kirim</string>
+    <string name="forgot_password_cancel">Batal</string>
     <string name="no_account">Belum memiliki akun? </string>
 
     <!-- Audit Error Messages -->

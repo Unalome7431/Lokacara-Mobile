@@ -433,22 +433,38 @@ fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .width(160.dp)
-            .height(220.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         shadowElevation = 4.dp
     ) {
         Column {
-            AsyncImage(
-                model = event.imageUrl,
-                contentDescription = event.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                AsyncImage(
+                    model = event.imageUrl,
+                    contentDescription = event.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Surface(
+                    color = Secondary500,
+                    shape = RoundedCornerShape(bottomEnd = 8.dp),
+                    modifier = Modifier.align(Alignment.TopStart)
+                ) {
+                    Text(
+                        text = event.type.replaceFirstChar { it.uppercase() },
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontFamily = PlusJakartaSansFont,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        maxLines = 1
+                    )
+                }
+            }
             Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Text(
                     text = event.title,
@@ -472,7 +488,7 @@ fun UpcomingEventCard(event: UpcomingEvent, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${event.date}  •  ${event.time}",
                     fontFamily = PlusJakartaSansFont,
@@ -605,7 +621,7 @@ fun LocationPickerDialog(
                             result.onSuccess { (cityName, lat, lng) ->
                                 onLocationSelected(cityName, lat, lng)
                             }.onFailure {
-                                SnackbarManager.show("Lokasi tidak ditemukan")
+                                SnackbarManager.showError("Lokasi tidak ditemukan")
                             }
                         }
                     }

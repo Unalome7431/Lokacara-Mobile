@@ -38,6 +38,7 @@ import com.app.lokacara.ui.theme.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.app.lokacara.viewmodel.DateFilter
 import com.app.lokacara.viewmodel.ErrorType
+import com.app.lokacara.viewmodel.EventModeFilter
 import com.app.lokacara.viewmodel.ExploreViewModel
 import com.app.lokacara.viewmodel.PriceFilter
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -54,16 +55,18 @@ fun ExploreScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
     val hasMorePages by viewModel.hasMorePages.collectAsStateWithLifecycle()
-    val totalEvents by viewModel.totalEvents.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorType by viewModel.errorType.collectAsStateWithLifecycle()
     val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
     val dateFilter by viewModel.dateFilter.collectAsStateWithLifecycle()
     val priceFilter by viewModel.priceFilter.collectAsStateWithLifecycle()
+    val eventModeFilter by viewModel.eventModeFilter.collectAsStateWithLifecycle()
     val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
     val categorySuggestions by viewModel.categorySuggestions.collectAsStateWithLifecycle()
     val showDatePicker by viewModel.showDatePicker.collectAsStateWithLifecycle()
     val activeFilterCount by viewModel.activeFilterCount.collectAsStateWithLifecycle()
+    val eventName by viewModel.eventName.collectAsStateWithLifecycle()
+    val eventLocation by viewModel.eventLocation.collectAsStateWithLifecycle()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -122,7 +125,6 @@ fun ExploreScreen(
                 "loading" -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item { ExploreHeader() }
-                        item { CollapsedSearchBar(onClick = { viewModel.expandSearch() }, onFilterClick = {}, activeFilterCount = activeFilterCount) }
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
                             ExploreCategories(
@@ -158,7 +160,7 @@ fun ExploreScreen(
                     onRefresh = { viewModel.refresh() }
                 ) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        ExploreHeader()
+                        ExploreHeader(onSearchClick = { viewModel.expandSearch() })
                         AnimatedVisibility(
                             visible = isSearchExpanded,
                             enter = expandVertically(tween(300)) + fadeIn(tween(300)),
@@ -193,20 +195,31 @@ fun ExploreScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(resultCountLabel(events.size, totalEvents, hasActiveFilter), fontFamily = PlusJakartaSansFont, fontSize = 13.sp, color = Gray500)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
+                            IconButton(onClick = { viewModel.toggleGridView() }, modifier = Modifier.size(32.dp)) {
                                     Icon(
                                         imageVector = if (isGridView) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView,
                                         contentDescription = "Toggle view", tint = Gray500, modifier = Modifier.size(18.dp)
                                     )
                                 }
                                 SortDropdown(selected = sortOption, onOptionSelected = { viewModel.selectSortOption(it) })
-                            }
                         }
+                        ActiveDiscoverySummary(
+                            eventName = eventName,
+                            eventLocation = eventLocation,
+                            selectedCategory = selectedCategoryChip,
+                            priceFilter = priceFilter,
+                            eventModeFilter = eventModeFilter,
+                            onEditSearch = { viewModel.expandSearch() },
+                            onClearName = { viewModel.clearEventName() },
+                            onClearLocation = { viewModel.clearEventLocation() },
+                            onClearCategory = { viewModel.selectCategoryChip("Semua") },
+                            onClearPrice = { viewModel.selectPriceFilter(PriceFilter.SEMUA) },
+                            onClearEventMode = { viewModel.selectEventModeFilter(EventModeFilter.SEMUA) },
+                            onReset = { viewModel.resetFilters() }
+                        )
                         if (error != null && events.isNotEmpty()) {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp)
@@ -259,7 +272,14 @@ fun ExploreScreen(
                                 state = listState
                             ) {
                                 if (events.isEmpty() && !isLoading) {
-                                    item { EmptyStateView(hasActiveFilter = hasActiveFilter, onResetFilters = { viewModel.resetFilters() }) }
+                                    item {
+                                        EmptyStateView(
+                                            title = if (hasActiveFilter) "Tidak ada event yang cocok" else "Belum ada event tersedia",
+                                            subtitle = if (hasActiveFilter) "Ubah kata kunci, lokasi, atau filter untuk melihat hasil lain" else "Coba muat ulang atau jelajahi kategori lain nanti",
+                                            hasActiveFilter = hasActiveFilter,
+                                            onResetFilters = { viewModel.resetFilters() }
+                                        )
+                                    }
                                 } else {
                                     items(items = events, key = { event -> event.id }, contentType = { "event_list" }) { event ->
                                         Box(modifier = Modifier.animateItem()) {
@@ -327,6 +347,8 @@ fun ExploreScreen(
             onSortChange = { viewModel.selectSortOption(it) },
             priceFilter = priceFilter,
             onPriceChange = { viewModel.selectPriceFilter(it) },
+            eventModeFilter = eventModeFilter,
+            onEventModeChange = { viewModel.selectEventModeFilter(it) },
             onReset = { viewModel.resetFilters() },
             onDismiss = { showBottomSheet = false }
         )
@@ -359,14 +381,6 @@ private fun ExploreExpandedSearch(
         onSearchSubmit = onSearchSubmit,
         onCancel = onCancel
     )
-}
-
-private fun resultCountLabel(visibleCount: Int, totalEvents: Int, hasActiveFilter: Boolean): String {
-    return if (!hasActiveFilter && totalEvents > visibleCount) {
-        "$visibleCount dari $totalEvents event"
-    } else {
-        "$visibleCount event ditemukan"
-    }
 }
 
 @Composable

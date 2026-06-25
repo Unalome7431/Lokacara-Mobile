@@ -3,16 +3,24 @@ package com.app.lokacara.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.lokacara.data.validation.Validators
+import com.app.lokacara.data.validation.isValidEmail
+import com.app.lokacara.data.validation.isSyntheticEmail
 import com.app.lokacara.data.SettingsManager
 import com.app.lokacara.data.UserSessionManager
 import com.app.lokacara.data.remote.ApiResult
+import com.app.lokacara.data.remote.ApiService
 import com.app.lokacara.data.remote.dto.AuthResponse
 import com.app.lokacara.repository.AuthRepository
 import com.app.lokacara.ui.components.SnackbarManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,7 +30,12 @@ class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
     private val userSessionManager: UserSessionManager,
     private val settingsManager: SettingsManager,
+    private val apiService: ApiService,
 ) : AndroidViewModel(application) {
+
+    init {
+        syncAuthCapabilities()
+    }
 
     val name = MutableStateFlow("")
     val email = MutableStateFlow("")
@@ -36,6 +49,12 @@ class AuthViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _loginFieldErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val loginFieldErrors: StateFlow<Map<String, String>> = _loginFieldErrors.asStateFlow()
+
+    private val _registerFieldErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val registerFieldErrors: StateFlow<Map<String, String>> = _registerFieldErrors.asStateFlow()
+
     private val _loginSuccess = MutableStateFlow(false)
     val loginSuccess: StateFlow<Boolean> = _loginSuccess.asStateFlow()
 
@@ -43,15 +62,18 @@ class AuthViewModel @Inject constructor(
     val registerSuccess: StateFlow<Boolean> = _registerSuccess.asStateFlow()
 
     fun login() {
-        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
-        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
-        if (!emailRegex.matches(email.value.trim())) {
-            _errorMessage.value = "Format email tidak valid"
+        if (_isLoading.value) return
+        val errors = validateLogin()
+        if (errors.isNotEmpty()) {
+            val message = errors.values.first()
+            _loginFieldErrors.value = errors
+            _errorMessage.value = message
+            SnackbarManager.showError(message)
             return
         }
-        if (password.value.isBlank()) { _errorMessage.value = "Kata sandi harus diisi"; return }
         viewModelScope.launch {
             _errorMessage.value = null
+            _loginFieldErrors.value = emptyMap()
             _isLoading.value = true
             when (val result = repository.login(email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
@@ -71,18 +93,18 @@ class AuthViewModel @Inject constructor(
     }
 
     fun register() {
-        if (name.value.isBlank()) { _errorMessage.value = "Nama harus diisi"; return }
-        if (email.value.isBlank()) { _errorMessage.value = "Email harus diisi"; return }
-        val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
-        if (!emailRegex.matches(email.value.trim())) {
-            _errorMessage.value = "Format email tidak valid"
+        if (_isLoading.value) return
+        val errors = validateRegister()
+        if (errors.isNotEmpty()) {
+            val message = errors.values.first()
+            _registerFieldErrors.value = errors
+            _errorMessage.value = message
+            SnackbarManager.showError(message)
             return
         }
-        if (password.value.length < 6) { _errorMessage.value = "Kata sandi minimal 6 karakter"; return }
-        if (password.value != confirmPassword.value) { _errorMessage.value = "Password dan konfirmasi password tidak sama"; return }
-        if (!isChecked.value) { _errorMessage.value = "Anda harus menyetujui syarat & ketentuan"; return }
         viewModelScope.launch {
             _errorMessage.value = null
+            _registerFieldErrors.value = emptyMap()
             _isLoading.value = true
             when (val result = repository.register(name.value.trim(), email.value.trim(), password.value)) {
                 is ApiResult.Success -> {
@@ -91,6 +113,7 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -112,20 +135,52 @@ class AuthViewModel @Inject constructor(
     val oldPassword = MutableStateFlow("")
     val newPassword = MutableStateFlow("")
 
+    val isGoogleAuth: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.authProvider == "google" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val hasLocalPassword: StateFlow<Boolean> = userSessionManager.userSession
+        .map { it.hasLocalPassword }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    private fun syncAuthCapabilities() {
+        viewModelScope.launch {
+            when (val result = com.app.lokacara.data.remote.safeApiCall { apiService.getProfile() }) {
+                is ApiResult.Success -> {
+                    val user = result.data.user ?: return@launch
+                    userSessionManager.updateAuthState(
+                        provider = user.provider,
+                        hasLocalPassword = user.has_password
+                    )
+                }
+                is ApiResult.Error -> Unit
+            }
+        }
+    }
+
     fun changePassword() {
-        if (oldPassword.value.isBlank()) { _errorMessage.value = "Kata sandi lama harus diisi"; return }
-        if (newPassword.value.length < 6) { _errorMessage.value = "Kata sandi baru minimal 6 karakter"; return }
-        if (newPassword.value != confirmPassword.value) { _errorMessage.value = "Password baru dan konfirmasi tidak sama"; return }
+        val isGoogleUser = isGoogleAuth.value
+        val requiresOldPassword = !isGoogleUser
+        if (requiresOldPassword && oldPassword.value.isBlank()) { showError("Kata sandi lama harus diisi"); return }
+        if (newPassword.value.length < 8) { showError("Kata sandi baru minimal 8 karakter"); return }
+        if (newPassword.value != confirmPassword.value) { showError("Password baru dan konfirmasi tidak sama"); return }
         viewModelScope.launch {
             _errorMessage.value = null
             _isLoading.value = true
-            when (val result = repository.changePassword(oldPassword.value, newPassword.value, confirmPassword.value)) {
+            val oldPasswordPayload = if (requiresOldPassword) oldPassword.value else ""
+            when (val result = repository.changePassword(oldPasswordPayload, newPassword.value, confirmPassword.value)) {
                 is ApiResult.Success -> {
+                    if (!hasLocalPassword.value) {
+                        userSessionManager.updateAuthState(hasLocalPassword = true)
+                    }
                     _changePasswordSuccess.value = true
-                    SnackbarManager.show("Kata sandi berhasil diubah")
+                    SnackbarManager.show(
+                        if (isGoogleUser && !hasLocalPassword.value) "Kata sandi berhasil dibuat" else "Kata sandi berhasil diubah"
+                    )
                 }
                 is ApiResult.Error -> {
                     _errorMessage.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _isLoading.value = false
@@ -137,11 +192,13 @@ class AuthViewModel @Inject constructor(
     fun forgotPassword(email: String) {
         if (email.isBlank()) {
             _forgotPasswordError.value = "Email harus diisi"
+            SnackbarManager.showError("Email harus diisi")
             return
         }
         val emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex()
         if (!emailRegex.matches(email.trim())) {
             _forgotPasswordError.value = "Format email tidak valid"
+            SnackbarManager.showError("Format email tidak valid")
             return
         }
         viewModelScope.launch {
@@ -154,6 +211,7 @@ class AuthViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _forgotPasswordError.value = result.message
+                    SnackbarManager.showError(result.message)
                 }
             }
             _forgotPasswordLoading.value = false
@@ -166,7 +224,7 @@ class AuthViewModel @Inject constructor(
             _errorMessage.value = null
             when (val result = repository.loginWithGoogle(idToken)) {
                 is ApiResult.Success -> {
-                    if (saveAuthenticatedSession(result.data, fallbackEmail)) {
+                    if (saveAuthenticatedSession(result.data, fallbackEmail, provider = "google")) {
                         settingsManager.setOnboardingCompleted()
                         _loginSuccess.value = true
                         SnackbarManager.show("Login berhasil")
@@ -184,9 +242,40 @@ class AuthViewModel @Inject constructor(
     fun resetForgotPasswordSuccess() { _forgotPasswordSuccess.value = false }
     fun resetLoginSuccess() { _loginSuccess.value = false }
     fun resetRegisterSuccess() { _registerSuccess.value = false }
-    fun clearError() { _errorMessage.value = null }
+    fun clearError() {
+        _errorMessage.value = null
+        _loginFieldErrors.value = emptyMap()
+        _registerFieldErrors.value = emptyMap()
+    }
 
-    private suspend fun saveAuthenticatedSession(auth: AuthResponse, fallbackEmail: String? = null): Boolean {
+    fun clearLoginFieldError(field: String) {
+        _errorMessage.value = null
+        _loginFieldErrors.value = _loginFieldErrors.value - field
+    }
+
+    fun clearRegisterFieldError(field: String) {
+        _errorMessage.value = null
+        _registerFieldErrors.value = _registerFieldErrors.value - field
+    }
+
+    private fun validateLogin(): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+        Validators.validateEmail(email.value)?.let { errors["email"] = it }
+        if (password.value.isBlank()) errors["password"] = "Kata sandi harus diisi"
+        return errors
+    }
+
+    private fun validateRegister(): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+        Validators.validateName(name.value)?.let { errors["name"] = it }
+        Validators.validateEmail(email.value)?.let { errors["email"] = it }
+        Validators.validatePassword(password.value)?.let { errors["password"] = it }
+        Validators.validatePasswordConfirmation(password.value, confirmPassword.value)?.let { errors["confirmPassword"] = it }
+        if (!isChecked.value) errors["agreement"] = "Setujui syarat dan kebijakan privasi untuk daftar"
+        return errors
+    }
+
+    private suspend fun saveAuthenticatedSession(auth: AuthResponse, fallbackEmail: String? = null, provider: String = "email"): Boolean {
         val token = auth.token?.takeIf { it.isNotBlank() }
         val user = auth.user
         if (token == null || user == null || user.id <= 0L) {
@@ -196,12 +285,17 @@ class AuthViewModel @Inject constructor(
             return false
         }
 
+        val resolvedProvider = user.provider ?: provider
+        val resolvedHasLocalPassword = user.has_password ?: (resolvedProvider != "google")
+
         userSessionManager.saveAuth(
             token = token,
             userId = user.id,
             name = user.name,
             email = resolveSessionEmail(user.email, fallbackEmail),
-            role = user.role
+            role = user.role,
+            provider = resolvedProvider,
+            hasLocalPassword = resolvedHasLocalPassword
         )
         return true
     }
@@ -214,12 +308,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun String.isSyntheticEmail(): Boolean {
-        return trim().endsWith("@placeholder.local", ignoreCase = true)
-    }
-
-    private fun String.isValidEmail(): Boolean {
-        return "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".toRegex().matches(trim())
+    private fun showError(message: String) {
+        _errorMessage.value = message
+        SnackbarManager.showError(message)
     }
 
     fun resetForm() {
@@ -228,5 +319,6 @@ class AuthViewModel @Inject constructor(
         password.value = ""
         confirmPassword.value = ""
         isChecked.value = false
+        clearError()
     }
 }

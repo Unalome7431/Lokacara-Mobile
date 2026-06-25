@@ -71,7 +71,7 @@ fun countdownLabel(startDatetime: String): String? {
 
 fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
     val categoryName = category?.name ?: "Lainnya"
-    val penyelenggara = user?.name ?: "Penyelenggara"
+    val penyelenggara = organizer_name?.takeIf { it.isNotBlank() } ?: user?.name ?: "Penyelenggara"
     val location = location_name ?: platform_name ?: ""
     val dateDisplay = formatDate(start_datetime)
     val epoch = parseDateEpoch(start_datetime)
@@ -91,6 +91,7 @@ fun EventDto.toEvent(imageUrlProvider: ImageUrlProvider): Event {
         category = categoryName,
         isBookmarked = false,
         penyelenggara = penyelenggara,
+        kontak = contact ?: contact_phone ?: "",
         address = address,
         city = city,
         platformName = platform_name,
